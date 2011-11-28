@@ -484,7 +484,8 @@ def testSecretFile():
 import sys, getpass, getopt
 
 def printUsage(s):
-    print s
+    if s:
+        print "ERROR: %s" % s
     print
     print"Commands:"
     print "  test"
@@ -493,20 +494,23 @@ def printUsage(s):
     sys.exit(-1)
 
 
-def newSecretFile():
-    print "No secret file found, creating new one."
+def newSecretFile(extraRandStr=""):
+    print "No secret file found, creating new one..."
+    if not extraRandStr:
+        while len(extraRandStr)<20:
+            extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")    
     passwordStr = ""
     while not passwordStr:
         password1, password2 = "a", "b"
         while password1 != password2:
-            password1 = getpass.getpass("  Choose password for secret file: ")    
-            password2 = getpass.getpass("  Re-enter password for secret file: ")  
+            password1 = getpass.getpass("Choose password for secret file: ")    
+            password2 = getpass.getpass("Re-enter password for secret file: ")  
             if password1 != password2:
                 print "PASSWORDS DON'T MATCH!"      
             else:
                 passwordStr = password1    
     sf = TACK_SecretFile()
-    sf.generate()
+    sf.generate(extraRandStr)
     b = sf.write(passwordStr)
     f = open("__TACK_secret_file.dat", "wb")
     f.write(b)
@@ -522,7 +526,7 @@ def openSecretFile(sfBytes):
         print "PASSWORD INCORRECT!"
     return sf
     
-def newTACKCert(sf, sslBytes):
+def newTACKCert(sf, sslBytes):    
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = time.time()
     pinExp = currentTime + 1440 * pinDays
@@ -535,7 +539,7 @@ def newTACKCert(sf, sslBytes):
     pin.pin_break_code_sha256 = sf.pin_break_code_sha256
     
     sig = TACK_Sig()
-    sig.sig_type = TACK_Sig_type.in_chain_cert
+    sig.sig_type = TACK_Sig_Type.in_chain_cert
     sig.sig_expiration = sigExp
     sig.sig_generation = 0
     sig.sig_target_sha256 = SHA256(sslBytes)
@@ -547,11 +551,11 @@ def updateTACKCert():
 
 def pin(argv):
     if len(argv) != 1:
-        printUsage("Missing argument!")    
+        printUsage("Missing argument: SSL certificate file")    
     try:
         sslBytes = bytearray(open(argv[0]).read())
     except IOError:
-        raise SyntaxError("Missing SSL certificate file!")
+        printUsage("SSL certificate file not found: %s" % argv[0])
     try:
         tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
     except IOError:
@@ -563,6 +567,7 @@ def pin(argv):
 
     if not sfBytes:
         if not tcBytes:
+            # No secret file or TACK cert, so generate new ones
             sf = newSecretFile()
             newTACKCert(sf, sslBytes)
         else:
