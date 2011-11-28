@@ -235,6 +235,21 @@ class TACK_Pin_Break_Codes:
 import os, rijndael, ecdsa
 from ecdsa import ellipticcurve
 
+#  File format:
+#
+#  version        1  byte
+#  iter_count     4 bytes
+#  salt          16 bytes
+#  IV            16 bytes         } auth
+#    EC privkey  32 bytes  } enc  } auth
+#    pin_break   24 bytes  } enc  } auth
+#    zero_pad     8 bytes  } enc  } auth
+#  EC pubkey     64 bytes         } auth
+#  pin_break_sha256	32 bytes      } auth
+#  HMAC          32 bytes	
+# 
+#  total		229
+
 def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])
 
@@ -248,8 +263,9 @@ def pbkdf2_hmac_sha256(password, salt, iterations):
     return result
 
 # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
-def deriveSecretFileKeys(password, salt):
-    masterKey = pbkdf2_hmac_sha256(password, salt, 8192)
+def deriveSecretFileKeys(password, salt, iter_count):
+    assert(iter_count>0)
+    masterKey = pbkdf2_hmac_sha256(password, salt, iter_count)
     encKey = HMAC_SHA256(masterKey, bytearray([1]))
     authKey = HMAC_SHA256(masterKey, bytearray([2]))
     return (encKey, authKey)
@@ -283,6 +299,7 @@ class TACK_SecretFile:
         self.out_of_chain_key = bytearray(64)
         self.pin_break_code = bytearray(24)
         self.pin_break_code_sha256 = bytearray(32)
+        self.iter_count = 0
         
     def generate(self, extraRandBytes=None):
         self.version = 1        
@@ -309,6 +326,7 @@ class TACK_SecretFile:
         self.out_of_chain_key = numberToBytes(public_key.x(), 32) + \
                                 numberToBytes(public_key.y(), 32)
         self.pin_break_code_sha256 = SHA256(self.pin_break_code)
+        self.iter_count = 8192
 
     def sign(self, hash):
         private_key = bytesToNumber(self.private_key)
@@ -351,17 +369,18 @@ class TACK_SecretFile:
         self.version = p.getInt(1)
         if self.version != 1:
             raise SyntaxError()
+        self.iter_count = p.getInt(4)
         salt = p.getBytes(16)
         IV = p.getBytes(16)
         ciphertext = p.getBytes(64)
-        out_of_chain_key = p.getBytes(64)
-        pin_break_code_sha256 = p.getBytes(32)
+        self.out_of_chain_key = p.getBytes(64)
+        self.pin_break_code_sha256 = p.getBytes(32)
         mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
-        encKey, authKey = deriveSecretFileKeys(password, salt)
+        encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
         macData = IV + ciphertext + \
-            out_of_chain_key + self.pin_break_code_sha256
+            self.out_of_chain_key + self.pin_break_code_sha256
         calcMac = HMAC_SHA256(authKey, macData)
         if not constTimeCompare(calcMac, mac):
             return False        
@@ -373,14 +392,15 @@ class TACK_SecretFile:
     def write(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
-        encKey, authKey = deriveSecretFileKeys(password, salt)
+        encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
         plaintext = self.private_key + self.pin_break_code + bytearray(8)
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
         macData = IV + ciphertext + \
             self.out_of_chain_key + self.pin_break_code_sha256
         mac = HMAC_SHA256(authKey, macData)        
-        w = Writer(225)
+        w = Writer(229)
         w.add(self.version, 1)
+        w.add(self.iter_count, 4)
         w.add(salt, 16)
         w.add(IV, 16)
         w.add(ciphertext, 64)
@@ -446,9 +466,7 @@ def testStructures():
 
 def testSecretFile():
     f = TACK_SecretFile()
-    f.version = 1
-    f.private_key = bytearray(range(0, 32))
-    f.pin_break_code = bytearray(range(100, 124))
+    f.generate()
     
     b = f.write("abracadabra")
     f2 = TACK_SecretFile()
