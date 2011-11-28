@@ -125,16 +125,16 @@ class Parser:
 ################ CONSTANTS ###
 
 class TACK_Pin_Type:
-    in_chain = 1
-    out_of_chain = 2
-    
-class TACK_Break_Type:
-    none = 0
-    sha256 = 1
+    in_chain_key = 1
+    in_chain_cert = 2    
+    out_of_chain_key = 3
+    all = (in_chain_key, in_chain_cert, out_of_chain_key)
 
-class TACK_Signature_Type:
-    ecdsa_p256_sha256 = 1
-    
+class TACK_Sig_Type:
+    in_chain_key = 1
+    in_chain_cert = 2
+    all = (in_chain_key, in_chain_cert)
+        
 
 ################ STRUCTURES ###
         
@@ -142,80 +142,61 @@ class TACK_Pin:
     def __init__(self):
         self.pin_type = 0
         self.pin_expiration = 0
-        self.spki_sha256 = createByteArrayZeros(32)
-        self.out_of_chain_key_sha256 = createByteArrayZeros(32)
-        self.break_type = 0
-        self.commitment_sha256 = createByteArrayZeros(32)        
+        self.pin_target_sha256 = createByteArrayZeros(32)
+        self.pin_break_code_sha256 = createByteArrayZeros(32)        
     
     def parse(self, b):
         p = Parser(b)
         self.pin_type = p.getInt(1)
-        if self.pin_type not in (TACK_Pin_Type.in_chain, TACK_Pin_Type.out_of_chain):
+        if self.pin_type not in TACK_Pin_Type.all:
             raise SyntaxError()
         self.pin_expiration = p.getInt(4)
-        if self.pin_type == TACK_Pin_Type.in_chain:
-            self.spki_sha256 = p.getBytes(32)
-        elif self.pin_type == TACK_Pin_Type.out_of_chain:
-            self.out_of_chain_key_sha256 = p.getBytes(32)            
-        self.break_type = p.getInt(1)
-        if self.break_type not in (TACK_Break_Type.none, TACK_Break_Type.sha256):
-            raise SyntaxError()
-        if self.break_type == TACK_Break_Type.sha256:
-            self.commitment_sha256 = p.getBytes(32)
+        self.pin_target_sha256 = p.getBytes(32)
+        self.pin_break_code_sha256 = p.getBytes(32)
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):        
-        if self.pin_type not in (TACK_Pin_Type.in_chain, TACK_Pin_Type.out_of_chain):
+        if self.pin_type not in TACK_Pin_Type.all:
             raise SyntaxError()        
-        if self.break_type not in (TACK_Break_Type.none, TACK_Break_Type.sha256):
-            raise SyntaxError()
-        if self.break_type == TACK_Break_Type.sha256:
-            w = Writer(70)
-        else:
-            w = Writer(38)
+        w = Writer(69)
         w.add(self.pin_type, 1)
         w.add(self.pin_expiration, 4)
-        if self.pin_type == TACK_Pin_Type.in_chain:
-            w.add(self.spki_sha256, 32)
-        elif self.pin_type == TACK_Pin_Type.out_of_chain:
-            w.add(self.out_of_chain_key_sha256, 32)  
-        w.add(self.break_type, 1)
-        if self.break_type == TACK_Break_Type.sha256:
-            w.add(self.commitment_sha256, 32)
+        w.add(self.pin_target_sha256, 32)  
+        w.add(self.pin_break_code_sha256, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
         return w.bytes  
      
         
-class TACK_Signature:    
+class TACK_Sig:    
     def __init__(self):
-        self.signature_type = 0
-        self.out_of_chain_key = createByteArrayZeros(64)
-        self.spki_sha256 = createByteArrayZeros(32)
+        self.sig_type = 0
         self.sig_expiration = 0
-        self.sig_generation = 0        
+        self.sig_generation = 0                
+        self.target_sha256 = createByteArrayZeros(32)
+        self.out_of_chain_key = createByteArrayZeros(64)
         self.signature = createByteArrayZeros(64)
     
     def parse(self, b):
         p = Parser(b)
-        self.signature_type = p.getInt(1)
-        if self.signature_type not in (TACK_Signature_Type.ecdsa_p256_sha256, ):
+        self.sig_type = p.getInt(1)
+        if self.sig_type not in TACK_Sig_Type.all:
             raise SyntaxError()
-        self.out_of_chain_key = p.getBytes(64)
-        self.spki_sha256 = p.getBytes(32)
         self.sig_expiration = p.getInt(4)
-        self.sig_generation = p.getInt(4)
+        self.sig_generation = p.getInt(4)            
+        self.sig_target_sha256 = p.getBytes(32)
+        self.out_of_chain_key = p.getBytes(64)
         self.signature = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):
-        if self.signature_type not in (TACK_Signature_Type.ecdsa_p256_sha256, ):
-            raise SyntaxError()        
+        if self.sig_type not in TACK_Sig_Type.all:
+            raise SyntaxError()
         w = Writer(169)
-        w.add(self.signature_type, 1)
-        w.add(self.out_of_chain_key, 64)
-        w.add(self.spki_sha256, 32)
+        w.add(self.sig_type, 1)
         w.add(self.sig_expiration, 4)
         w.add(self.sig_generation, 4)
+        w.add(self.sig_target_sha256, 32)
+        w.add(self.out_of_chain_key, 64)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
         return w.bytes
@@ -227,16 +208,16 @@ class TACK_Pin_Break_Codes:
         
     def parse(self, b):
         p = Parser(b)
-        self.pin_break_codes = p.getVarSeqBytes(16, 2)
-        if len(self.pin_break_codes) < 0:
+        self.pin_break_codes = p.getVarSeqBytes(24, 2)
+        if len(self.pin_break_codes) < 1:
             raise SyntaxError()
-        if len(self.pin_break_codes) > 256:
+        if len(self.pin_break_codes) > 100:
             raise SyntaxError()    
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):
-        w = Writer(2 + 16*len(self.pin_break_codes))
-        w.addVarSeq(self.pin_break_codes, 16, 2)
+        w = Writer(2 + 24*len(self.pin_break_codes))
+        w.addVarSeq(self.pin_break_codes, 24, 2)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
         return w.bytes
 
@@ -394,60 +375,50 @@ class TACK_SecretFile:
 
 def testStructures():
     pin = TACK_Pin()
-    sig = TACK_Signature()
+    sig = TACK_Sig()
     codes = TACK_Pin_Break_Codes()
     
     pin.pin_expiration = 12345;
-    pin.out_of_chain_key_sha256 = createByteArraySequence(range(32))
-    pin.commitment_sha256 = createByteArraySequence(range(32,64))    
-    pin.spki_sha256 = createByteArraySequence(range(64,96))    
+    pin.pin_target_sha256 = createByteArraySequence(range(64,96))    
+    pin.pin_break_code_sha256 = createByteArraySequence(range(32,64))    
 
-    # Test reading/writing OOC pin with pin-break
-    pin.pin_type = TACK_Pin_Type.out_of_chain
-    pin.break_type = TACK_Break_Type.sha256
+    # Test reading/writing OOC pin
+    pin.pin_type = TACK_Pin_Type.out_of_chain_key
     pin2 = TACK_Pin()
     pin2.parse(pin.write())
     assert(pin.write() == pin2.write())
 
-    # Test reading/writing OOC pin with no pin-break    
-    pin.pin_type = TACK_Pin_Type.out_of_chain
-    pin.break_type = TACK_Break_Type.none    
+    # Test reading/writing in-chain-key pin with pin-break        
+    pin.pin_type = TACK_Pin_Type.in_chain_key
     pin2.parse(pin.write())
     assert(pin.write() == pin2.write())
 
-    # Test reading/writing in-chain pin with pin-break        
-    pin.pin_type = TACK_Pin_Type.in_chain
-    pin.break_type = TACK_Break_Type.sha256    
+    # Test reading/writing in-chain-cert pin with pin-break        
+    pin.pin_type = TACK_Pin_Type.in_chain_cert
     pin2.parse(pin.write())
     assert(pin.write() == pin2.write())
 
-    # Test reading/writing in-chain pin with no pin-break    
-    pin.pin_type = TACK_Pin_Type.in_chain
-    pin.break_type = TACK_Break_Type.none    
-    pin2.parse(pin.write())
-    assert(pin.write() == pin2.write())
-    
-    # Test reading/writing TACK_Signature
-    sig.signature_type = TACK_Signature_Type.ecdsa_p256_sha256
-    sig.out_of_chain_key = createByteArraySequence(range(0, 64))
-    sig.spki_sha256 = createByteArraySequence(range(64, 96))
+    # Test reading/writing TACK_Sig
+    sig.sig_type = TACK_Sig_Type.in_chain_cert
     sig.sig_expiration = 121
     sig.sig_generation = 3
+    sig.sig_target_sha256 = createByteArraySequence(range(0, 32))
+    sig.out_of_chain_key = createByteArraySequence(range(32, 96))
     sig.signature = createByteArraySequence(range(96, 160))
-    sig2 = TACK_Signature()
+    sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
 
     # Test reading/writing TACK_Pin_Break_Codes with 1 code
-    codes.pin_break_codes = [createByteArraySequence(range(0,16))]
+    codes.pin_break_codes = [createByteArraySequence(range(0,24))]
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
 
     # Test reading/writing TACK_Pin_Break_Codes with 3 code
-    codes.pin_break_codes = [createByteArraySequence(range(0,16)),
-                            createByteArraySequence(range(30, 46)),
-                            createByteArraySequence(range(60, 76))]
+    codes.pin_break_codes = [createByteArraySequence(range(0,24)),
+                            createByteArraySequence(range(30, 54)),
+                            createByteArraySequence(range(60, 84))]
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
