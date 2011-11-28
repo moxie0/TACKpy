@@ -1,28 +1,9 @@
 #! /usr/bin/env python
 
-################ COMPAT ###
-
-import array
-
-# Add python 3.0 version?
-def createByteArrayZeros(howMany):
-    return array.array('B', [0] * howMany)
-    
-def createByteArraySequence(seq):
-    return array.array('B', seq)    
-    
-def bytesToString(bytes):
-    return bytes.tostring()
-
-def stringToBytes(s):
-    bytes = createByteArrayZeros(0)
-    bytes.fromstring(s)
-    return bytes    
-
 
 ################ CRYPTOMATH ###
 
-import math
+import math, hashlib, hmac
 
 def bytesToNumber(bytes):
     total = 0L
@@ -36,17 +17,15 @@ def bytesToNumber(bytes):
 def numberToBytes(n, howManyBytes=None):
     if not howManyBytes:
         howManyBytes = numBytes(n)
-    bytes = createByteArrayZeros(howManyBytes)
+    bytes = bytearray(howManyBytes)
     for count in range(howManyBytes-1, -1, -1):
         bytes[count] = int(n % 256)
         n >>= 8
     return bytes
     
 def stringToNumber(s):
-    bytes = stringToBytes(s)
-    return bytesToNumber(bytes)
+    return bytesToNumber(bytearray(s))
     
-
 def numBits(n):
     if n==0:
         return 0
@@ -64,13 +43,28 @@ def numBytes(n):
     bits = numBits(n)
     return int(math.ceil(bits / 8.0))
 
+def SHA256(b):
+    return bytearray(hashlib.sha256(b).digest())
+
+def HMAC_SHA256(k, b):
+    return bytearray(hmac.new(k, b, hashlib.sha256).digest())
+
+def constTimeCompare(a, b):
+    if len(a) != len(b):
+        return False
+    result = 0
+    for x in range(len(a)):
+        result |= a[x]^b[x]
+    if result:
+        return False
+    return True
 
 ################ CODEC ###
 
 class Writer:
     def __init__(self, totalLength):
         self.index = 0
-        self.bytes = createByteArrayZeros(totalLength)
+        self.bytes = bytearray(totalLength)
 
     def add(self, x, elementLength):
         """Writes 'elementLength' bytes, input is either an integer
@@ -145,8 +139,8 @@ class TACK_Pin:
     def __init__(self):
         self.pin_type = 0
         self.pin_expiration = 0
-        self.pin_target_sha256 = createByteArrayZeros(32)
-        self.pin_break_code_sha256 = createByteArrayZeros(32)        
+        self.pin_target_sha256 = bytearray(32)
+        self.pin_break_code_sha256 = bytearray(32)        
     
     def parse(self, b):
         p = Parser(b)
@@ -175,9 +169,9 @@ class TACK_Sig:
         self.sig_type = 0
         self.sig_expiration = 0
         self.sig_generation = 0                
-        self.target_sha256 = createByteArrayZeros(32)
-        self.out_of_chain_key = createByteArrayZeros(64)
-        self.signature = createByteArrayZeros(64)
+        self.target_sha256 = bytearray(32)
+        self.out_of_chain_key = bytearray(64)
+        self.signature = bytearray(64)
     
     def parse(self, b):
         p = Parser(b)
@@ -229,58 +223,54 @@ class TACK_Pin_Break_Codes:
 
 ################ SECRET FILE ###
 
-import os, hmac, hashlib, rijndael, ecdsa
-
-def xorstr(s1, s2):
-    return "".join(map(lambda x, y: chr(ord(x) ^ ord(y)), s1, s2))
+import os, rijndael, ecdsa
 
 def xorbytes(s1, s2):
-    return "".join(map(lambda x, y: x ^ y), s1, s2)
-
+    return bytearray([a^b for a,b in zip(s1,s2)])
 
 # Uses PBKDF2-HMAC-SHA256 to produce a 32-byte key
 def pbkdf2_hmac_sha256(password, salt, iterations):
-    m = salt + "\x00\x00\x00\x01"
-    result = bytesToString(createByteArrayZeros(32))
+    m = salt + bytearray([0,0,0,1])
+    result = bytearray(32)
     for c in range(iterations):
-        m = hmac.new(password, m, hashlib.sha256).digest()
-        result = xorstr(m, result)
+        m = HMAC_SHA256(password, m)
+        result = xorbytes(m, result)
     return result
 
 # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
 def deriveSecretFileKeys(password, salt):
     masterKey = pbkdf2_hmac_sha256(password, salt, 8192)
-    encKey = hmac.new(masterKey, "\x01", hashlib.sha256).digest()
-    authKey = hmac.new(masterKey, "\x02", hashlib.sha256).digest()
+    encKey = HMAC_SHA256(masterKey, bytearray([1]))
+    authKey = HMAC_SHA256(masterKey, bytearray([2]))
     return (encKey, authKey)
 
 def aes_cbc_decrypt(key, IV, ciphertext):
-    cipher = rijndael.rijndael(key, 16)
+    cipher = rijndael.rijndael(str(key), 16)
     assert(len(ciphertext) % 16 == 0) # no padding
     chainBlock = IV
     plaintext = "" # not efficient, but doesn't matter here
     for c in range(len(ciphertext)/16):
         cipherBlock = ciphertext[c*16 : (c*16)+16]
-        plaintext += xorstr(cipher.decrypt(cipherBlock), chainBlock)
+        plaintext += xorbytes(bytearray(cipher.decrypt(str(cipherBlock))), chainBlock)
         chainBlock = cipherBlock
     return plaintext
 
 def aes_cbc_encrypt(key, IV, plaintext):
-    cipher = rijndael.rijndael(key, 16)
+    cipher = rijndael.rijndael(str(key), 16)
     assert(len(plaintext) % 16 == 0) # no padding
     chainBlock = IV
     ciphertext = "" # not efficient, but doesn't matter here
     for c in range(len(plaintext)/16):
         plainBlock = plaintext[c*16 : (c*16)+16]
-        chainBlock = cipher.encrypt(xorstr(plainBlock, chainBlock))
+        chainBlock = bytearray(cipher.encrypt(str(xorbytes(plainBlock, chainBlock))))
         ciphertext += chainBlock
     return ciphertext     
     
 class TACK_SecretFile:
     def __init__(self):
         self.version = 0
-        self.private_key = createByteArrayZeros(32)
-        self.pin_break_code = createByteArrayZeros(16)
+        self.private_key = bytearray(32)
+        self.pin_break_code = bytearray(16)
         
     def generate(self, extraRandBytes=None):
         self.version = 1        
@@ -289,20 +279,20 @@ class TACK_SecretFile:
         # Random bytes taken from /dev/urandom as well as any extraRandBytes
         # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
         n = ecdsa.generator_256.order()
-        randStr0_1 = os.urandom(64)
+        randStr0_1 = bytearray(os.urandom(64))
         if extraRandBytes:
-            randStr0_2 = bytesToString(extraRandBytes)
+            randStr0_2 = bytearray(extraRandBytes)
         else:
             randStr0_2 = ""
         randStr0 = randStr0_1 + randStr0_2
-        randStr1 = hmac.new(randStr0, "\x01", hashlib.sha256).digest()
-        randStr2 = hmac.new(randStr0, "\x02", hashlib.sha256).digest()
-        randStr3 = hmac.new(randStr0, "\x03", hashlib.sha256).digest()
+        randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
+        randStr2 = HMAC_SHA256(randStr0, bytearray([2]))
+        randStr3 = HMAC_SHA256(randStr0, bytearray([3]))
         randStr = randStr1 + randStr2    
-        c = stringToNumber(randStr) 
+        c = bytesToNumber(randStr) 
         d = (c % (n-1))+1        
         self.private_key = numberToBytes(d, 32)
-        self.pin_break_code = stringToBytes(randStr3[:16])
+        self.pin_break_code = randStr3[:16]
 
     def sign(self, hash):
         private_key = bytesToNumber(self.private_key)
@@ -314,20 +304,19 @@ class TACK_SecretFile:
         # (except we use 32 extra bytes instead of 8 before reduction)
         # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
         # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
-        randStr0_1 = os.urandom(64)
-        randStr0_2 = hmac.new(bytesToString(self.private_key), 
-                            bytesToString(hash), hashlib.sha256).digest()
+        randStr0_1 = bytearray(os.urandom(64))
+        randStr0_2 = HMAC_SHA256(self.private_key, hash)
         randStr0 = randStr0_1 + randStr0_2                    
-        randStr1 = hmac.new(randStr0, "\x01", hashlib.sha256).digest()
-        randStr2 = hmac.new(randStr0, "\x02", hashlib.sha256).digest()                        
+        randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
+        randStr2 = HMAC_SHA256(randStr0, bytearray([2]))                       
         randStr = randStr1 + randStr2    
-        c = stringToNumber(randStr) 
+        c = bytesToNumber(randStr) 
         k = (c % (n-1))+1                
         hashNum = bytesToNumber(hash)
         sig = privkey.sign(hashNum, k)
         # Double-check before returning
         assert(pubkey.verifies(hashNum, sig))        
-        return numberToBytes(sig.r) + numberToBytes(sig.s)
+        return numberToBytes(sig.r, 32) + numberToBytes(sig.s, 32)
 
     def verify(self, hashVal):
         private_key = bytesToNumber(self.private_key)
@@ -341,35 +330,34 @@ class TACK_SecretFile:
         self.version = p.getInt(1)
         if self.version != 1:
             raise SyntaxError()
-        salt = bytesToString(p.getBytes(16))
-        IV = bytesToString(p.getBytes(16))
-        ciphertext = bytesToString(p.getBytes(48))
-        mac = bytesToString(p.getBytes(32))
+        salt = bytearray(p.getBytes(16))
+        IV = bytearray(p.getBytes(16))
+        ciphertext = bytearray(p.getBytes(48))
+        mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
         encKey, authKey = deriveSecretFileKeys(password, salt)
-        calcMac = hmac.new(authKey, IV+ciphertext, hashlib.sha256).digest()
-        if calcMac != mac:
+        calcMac = HMAC_SHA256(authKey, IV+ciphertext)
+        if not constTimeCompare(calcMac, mac):
             return False        
         plaintext = aes_cbc_decrypt(encKey, IV, ciphertext)
-        self.private_key = stringToBytes(plaintext[:32])
-        self.pin_break_code = stringToBytes(plaintext[32:])
+        self.private_key = plaintext[:32]
+        self.pin_break_code = plaintext[32:]
         return True
     
     def write(self, password):
-        salt = os.urandom(16)
-        IV = os.urandom(16)
+        salt = bytearray(os.urandom(16))
+        IV = bytearray(os.urandom(16))
         encKey, authKey = deriveSecretFileKeys(password, salt)
-        plaintext = bytesToString(self.private_key) + \
-            bytesToString(self.pin_break_code)
+        plaintext = self.private_key + self.pin_break_code
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
-        mac = hmac.new(authKey, IV+ciphertext, hashlib.sha256).digest()        
+        mac = HMAC_SHA256(authKey, IV+ciphertext)        
         w = Writer(113)
         w.add(self.version, 1)
-        w.add(stringToBytes(salt), 16)
-        w.add(stringToBytes(IV), 16)
-        w.add(stringToBytes(ciphertext), 48)
-        w.add(stringToBytes(mac), 32)
+        w.add(salt, 16)
+        w.add(IV, 16)
+        w.add(ciphertext, 48)
+        w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
         return w.bytes
 
@@ -383,8 +371,8 @@ def testStructures():
     codes = TACK_Pin_Break_Codes()
     
     pin.pin_expiration = 12345;
-    pin.pin_target_sha256 = createByteArraySequence(range(64,96))    
-    pin.pin_break_code_sha256 = createByteArraySequence(range(32,64))    
+    pin.pin_target_sha256 = bytearray(range(64,96))    
+    pin.pin_break_code_sha256 = bytearray(range(32,64))    
 
     # Test reading/writing OOC pin
     pin.pin_type = TACK_Pin_Type.out_of_chain_key
@@ -406,23 +394,23 @@ def testStructures():
     sig.sig_type = TACK_Sig_Type.in_chain_cert
     sig.sig_expiration = 121
     sig.sig_generation = 3
-    sig.sig_target_sha256 = createByteArraySequence(range(0, 32))
-    sig.out_of_chain_key = createByteArraySequence(range(32, 96))
-    sig.signature = createByteArraySequence(range(96, 160))
+    sig.sig_target_sha256 = bytearray(range(0, 32))
+    sig.out_of_chain_key = bytearray(range(32, 96))
+    sig.signature = bytearray(range(96, 160))
     sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
 
     # Test reading/writing TACK_Pin_Break_Codes with 1 code
-    codes.pin_break_codes = [createByteArraySequence(range(0,24))]
+    codes.pin_break_codes = [bytearray(range(0,24))]
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
 
     # Test reading/writing TACK_Pin_Break_Codes with 3 code
-    codes.pin_break_codes = [createByteArraySequence(range(0,24)),
-                            createByteArraySequence(range(30, 54)),
-                            createByteArraySequence(range(60, 84))]
+    codes.pin_break_codes = [bytearray(range(0,24)),
+                            bytearray(range(30, 54)),
+                            bytearray(range(60, 84))]
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
@@ -430,16 +418,16 @@ def testStructures():
 def testSecretFile():
     f = TACK_SecretFile()
     f.version = 1
-    f.private_key = createByteArraySequence(range(0, 32))
-    f.pin_break_code = createByteArraySequence(range(100, 116))
+    f.private_key = bytearray(range(0, 32))
+    f.pin_break_code = bytearray(range(100, 116))
     
     b = f.write("abracadabra")
     f2 = TACK_SecretFile()
-    f2.parse(b, "abracadabra")
+    assert(f2.parse(b, "abracadabra"))
     assert(f2.__dict__ == f.__dict__)
 
-    f2.generate(stringToBytes("blablabla"))    
-    h = createByteArraySequence(range(200, 232))
+    f2.generate(bytearray("blablabla"))    
+    h = bytearray(range(200, 232))
     sig = f2.sign(h)
 
 
@@ -514,27 +502,58 @@ def createSecret(argv):
             fname = "TACK_SECRET_FILE.dat"
         
     sf = TACK_SecretFile()
-    sf.generate(stringToBytes(extraRandStr))
+    sf.generate(bytearray(extraRandStr))
     b = sf.write(passwordStr)
     f = open(fname, "wb")
+    f.write(b)
+    f.close()
+
+def doPin(argv):
+    tc_bytes = open("__TACK_cert.dat", "rb").read()
+    sf_bytes = open("__TACK_secret_file.dat", "rb").read()
+    #!!!
+
+    passwordStr = ""
+    while not passwordStr:
+        password1, password2 = "a", "b"
+        while password1 != password2:
+            password1 = getpass.getpass("Enter password for secret file: ")    
+            password2 = getpass.getpass("Re-enter password for secret file: ")  
+            if password1 != password2:
+                print "PASSWORDS DON'T MATCH!\n"      
+            else:
+                passwordStr = password1    
+    sf = TACK_SecretFile()
+    sf.generate()
+    b = sf.write(passwordStr)
+    f = open("__TACK_secret_file.dat", "wb")
     f.write(bytesToString(b))
     f.close()
     
+    pin = TACK_Pin()
+    pin.pin_type = TACK_Pin_Type.out_of_chain_key
+    pin.pin_expiration = 123 
+    pin.pin_target_sha256 = 123
+    pin.pin_break_code_sha256 = 123 
+    
+    sig = TACK_Sig()
+    sig.sig_type = TACK_Sig_type.in_chain_cert
+    sig.sig_expiration = 123
+    sig.sig_generation = 123
+    sig.sig_target_sha256 = 123
+    sig.out_of_chain_key = sf.public_key
+    sig.signature = sf.sign(SHA256())    
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         printUsage()
     if sys.argv[1] == "create_secret":
         createSecret(sys.argv[2:])
-    elif sys.argv[1] == "create_pin":
-        createPin(sys.argv[2:])
-    elif sys.argv[1] == "create_sig":
-        createSig(sys.argv)
-    elif sys.argv[1] == "update_pin":
-        updatePin(sys.argv)
     elif sys.argv[1] == "test":
         testStructures()
         testSecretFile()        
+    elif sys.argv[1] == "pin":
+        doPin(sys.argv[2:])
     else:
         printUsage()
 
