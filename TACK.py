@@ -59,6 +59,15 @@ def constTimeCompare(a, b):
         return False
     return True
 
+################ TIME ###
+
+import time, datetime
+
+def timeUintToStr(u):    
+    t = time.gmtime(60*u)
+    s = time.strftime("%Y-%m-%dT%H:%MZ", t)
+    return s
+
 ################ CODEC ###
 
 class Writer:
@@ -224,6 +233,7 @@ class TACK_Pin_Break_Codes:
 ################ SECRET FILE ###
 
 import os, rijndael, ecdsa
+from ecdsa import ellipticcurve
 
 def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])
@@ -270,7 +280,9 @@ class TACK_SecretFile:
     def __init__(self):
         self.version = 0
         self.private_key = bytearray(32)
-        self.pin_break_code = bytearray(16)
+        self.out_of_chain_key = bytearray(64)
+        self.pin_break_code = bytearray(24)
+        self.pin_break_code_sha256 = bytearray(32)
         
     def generate(self, extraRandBytes=None):
         self.version = 1        
@@ -292,13 +304,19 @@ class TACK_SecretFile:
         c = bytesToNumber(randStr) 
         d = (c % (n-1))+1        
         self.private_key = numberToBytes(d, 32)
-        self.pin_break_code = randStr3[:16]
+        self.pin_break_code = randStr3[:24]
+        public_key = ecdsa.generator_256 * d        
+        self.out_of_chain_key = numberToBytes(public_key.x(), 32) + \
+                                numberToBytes(public_key.y(), 32)
+        self.pin_break_code_sha256 = SHA256(self.pin_break_code)
 
     def sign(self, hash):
         private_key = bytesToNumber(self.private_key)
         g = ecdsa.generator_256
         n = g.order()
-        pubkey = ecdsa.Public_key(g, g * private_key)
+        x = bytesToNumber(self.out_of_chain_key[:32])
+        y = bytesToNumber(self.out_of_chain_key[32:])        
+        pubkey = ecdsa.Public_key(g, ellipticcurve.Point(g.curve(), x,y))
         privkey = ecdsa.Private_key(pubkey, private_key)
         # Generating random nonce k per FIPS 186-3 B.5.1:
         # (except we use 32 extra bytes instead of 8 before reduction)
@@ -322,7 +340,10 @@ class TACK_SecretFile:
         private_key = bytesToNumber(self.private_key)
         g = ecdsa.generator_256
         n = g.order()
-        pubkey = ecdsa.Public_key(g, g * private_key)
+        x = bytesToNumber(self.out_of_chain_key[:32])
+        y = bytesToNumber(self.out_of_chain_key[32:])        
+        pubkey = ecdsa.Public_key(g, ellipticcurve.Point(x,y))
+        #!!! return pubkey.verifies(hashNum, sig))
         ##!!!
 
     def parse(self, b, password):
@@ -330,33 +351,41 @@ class TACK_SecretFile:
         self.version = p.getInt(1)
         if self.version != 1:
             raise SyntaxError()
-        salt = bytearray(p.getBytes(16))
-        IV = bytearray(p.getBytes(16))
-        ciphertext = bytearray(p.getBytes(48))
+        salt = p.getBytes(16)
+        IV = p.getBytes(16)
+        ciphertext = p.getBytes(64)
+        out_of_chain_key = p.getBytes(64)
+        pin_break_code_sha256 = p.getBytes(32)
         mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
         encKey, authKey = deriveSecretFileKeys(password, salt)
-        calcMac = HMAC_SHA256(authKey, IV+ciphertext)
+        macData = IV + ciphertext + \
+            out_of_chain_key + self.pin_break_code_sha256
+        calcMac = HMAC_SHA256(authKey, macData)
         if not constTimeCompare(calcMac, mac):
             return False        
         plaintext = aes_cbc_decrypt(encKey, IV, ciphertext)
         self.private_key = plaintext[:32]
-        self.pin_break_code = plaintext[32:]
+        self.pin_break_code = plaintext[32:56]
         return True
     
     def write(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
         encKey, authKey = deriveSecretFileKeys(password, salt)
-        plaintext = self.private_key + self.pin_break_code
+        plaintext = self.private_key + self.pin_break_code + bytearray(8)
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
-        mac = HMAC_SHA256(authKey, IV+ciphertext)        
-        w = Writer(113)
+        macData = IV + ciphertext + \
+            self.out_of_chain_key + self.pin_break_code_sha256
+        mac = HMAC_SHA256(authKey, macData)        
+        w = Writer(225)
         w.add(self.version, 1)
         w.add(salt, 16)
         w.add(IV, 16)
-        w.add(ciphertext, 48)
+        w.add(ciphertext, 64)
+        w.add(self.out_of_chain_key, 64)
+        w.add(self.pin_break_code_sha256, 32)
         w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
         return w.bytes
@@ -419,7 +448,7 @@ def testSecretFile():
     f = TACK_SecretFile()
     f.version = 1
     f.private_key = bytearray(range(0, 32))
-    f.pin_break_code = bytearray(range(100, 116))
+    f.pin_break_code = bytearray(range(100, 124))
     
     b = f.write("abracadabra")
     f2 = TACK_SecretFile()
@@ -436,124 +465,107 @@ def testSecretFile():
 
 import sys, getpass, getopt
 
-def printUsage():
-    print""
-    print " create_all"
-    print " update_all"
-    print ""
-    print " create_secret [-r <extra_random> -p <password> -o <output_file>]"
-    print ""
-    print " create_pin [-s <secret_file> -c <cert_file> -o <output_file>"
-    print "  --in_chain --no_pin_break --hash_key --no_prompt" 
-    print "  --pin_expiration <datetime>]"
-    print ""
-    print " create_sig [-s <secret_file> -p <password> -c <cert_file> -o <output_file>"
-    print "  --hash_key --inc_generation --no_prompt --sig_expiration <datetime>]"
-    print ""
-    print " update_pin [-t <TACK_cert_file> -o <output_file>"
-    print "  --pin_break_secret_file <secret_file> --pin_break_password <password>"   
-    print "  --no_prompt --pin_expiration <datetime>" 
-    print ""
+def printUsage(s):
+    print s
+    print
+    print"Commands:"
+    print "  test"
+    print "  pin <ssl_cert>"
+    print
     sys.exit(-1)
 
-def createSecret(argv):    
-    passwordStr = ""
-    extraRandStr = ""
-    fname = ""
-    
-    # Parse cmdline opts
-    opts, argv = getopt.getopt(argv, "r:p:o:")
-    for o, a in opts:
-        if o == "-r":
-            if extraRandStr:
-                print"ERROR: duplicate options"
-                printUsage()
-            extraRandStr = a
-        if o == "-p":
-            if passwordStr:
-                print"ERROR: duplicate options"
-                printUsage()                
-            passwordStr = a
-        if o == "-o":
-            if fname:
-                print"ERROR: duplicate options"
-                printUsage()            
-            fname = a            
-    if argv:
-        print "ERROR: unknown options"
-        printUsage()
 
-    # Prompt for opts
-    if not extraRandStr:
-        while len(extraRandStr)<20:
-            extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")
-    while not passwordStr:
-        password1, password2 = "a", "b"
-        while password1 != password2:
-            password1 = getpass.getpass("Enter password for secret file: ")    
-            password2 = getpass.getpass("Re-enter password for secret file: ")  
-            if password1 != password2:
-                print "PASSWORDS DON'T MATCH!\n"      
-            else:
-                passwordStr = password1
-    if not fname:
-        fname = raw_input("Enter filename for secret file [TACK_SECRET_FILE.dat]: ")
-        if not fname:
-            fname = "TACK_SECRET_FILE.dat"
-        
-    sf = TACK_SecretFile()
-    sf.generate(bytearray(extraRandStr))
-    b = sf.write(passwordStr)
-    f = open(fname, "wb")
-    f.write(b)
-    f.close()
-
-def doPin(argv):
-    tc_bytes = open("__TACK_cert.dat", "rb").read()
-    sf_bytes = open("__TACK_secret_file.dat", "rb").read()
-    #!!!
-
+def newSecretFile():
+    print "No secret file found, creating new one."
     passwordStr = ""
     while not passwordStr:
         password1, password2 = "a", "b"
         while password1 != password2:
-            password1 = getpass.getpass("Enter password for secret file: ")    
-            password2 = getpass.getpass("Re-enter password for secret file: ")  
+            password1 = getpass.getpass("  Choose password for secret file: ")    
+            password2 = getpass.getpass("  Re-enter password for secret file: ")  
             if password1 != password2:
-                print "PASSWORDS DON'T MATCH!\n"      
+                print "PASSWORDS DON'T MATCH!"      
             else:
                 passwordStr = password1    
     sf = TACK_SecretFile()
     sf.generate()
     b = sf.write(passwordStr)
     f = open("__TACK_secret_file.dat", "wb")
-    f.write(bytesToString(b))
+    f.write(b)
     f.close()
+    return sf
+
+def openSecretFile(sfBytes):
+    sf = TACK_SecretFile()
+    while 1:
+        password = getpass.getpass("Enter password for secret file: ")
+        if sf.parse(sfBytes, password):
+            break
+        print "PASSWORD INCORRECT!"
+    return sf
     
+def newTACKCert(sf, sslBytes):
+    sigDays = pinDays = 550 # About 1.5 years
+    currentTime = time.time()
+    pinExp = currentTime + 1440 * pinDays
+    sigExp = currentTime + 1440 * sigDays    
+        
     pin = TACK_Pin()
     pin.pin_type = TACK_Pin_Type.out_of_chain_key
-    pin.pin_expiration = 123 
-    pin.pin_target_sha256 = 123
-    pin.pin_break_code_sha256 = 123 
+    pin.pin_expiration = pinExp
+    pin.pin_target_sha256 = SHA256(sf.out_of_chain_key)
+    pin.pin_break_code_sha256 = sf.pin_break_code_sha256
     
     sig = TACK_Sig()
     sig.sig_type = TACK_Sig_type.in_chain_cert
-    sig.sig_expiration = 123
-    sig.sig_generation = 123
-    sig.sig_target_sha256 = 123
-    sig.out_of_chain_key = sf.public_key
-    sig.signature = sf.sign(SHA256())    
+    sig.sig_expiration = sigExp
+    sig.sig_generation = 0
+    sig.sig_target_sha256 = SHA256(sslBytes)
+    sig.out_of_chain_key = sf.out_of_chain_key
+    sig.signature = sf.sign(SHA256())
+    
+def updateTACKCert():
+    pass
+
+def pin(argv):
+    if len(argv) != 1:
+        printUsage("Missing argument!")    
+    try:
+        sslBytes = bytearray(open(argv[0]).read())
+    except IOError:
+        raise SyntaxError("Missing SSL certificate file!")
+    try:
+        tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
+    except IOError:
+        tcBytes = None
+    try:    
+        sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
+    except IOError:
+        sfBytes = None
+
+    if not sfBytes:
+        if not tcBytes:
+            sf = newSecretFile()
+            newTACKCert(sf, sslBytes)
+        else:
+            raise SyntaxError("Missing secret file")
+    else:
+        if not tcBytes:
+            sf = openSecretFile(sfBytes)            
+            newTACKCert(sf, sslBytes)
+        else:
+            sf = openSecretFile(sfBytes)                        
+            updateTACKCert(sf, tcBytes, sslBytes)    
+   
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        printUsage()
-    if sys.argv[1] == "create_secret":
-        createSecret(sys.argv[2:])
+        printUsage("Missing argument!")
     elif sys.argv[1] == "test":
         testStructures()
         testSecretFile()        
     elif sys.argv[1] == "pin":
-        doPin(sys.argv[2:])
+        pin(sys.argv[2:])
     else:
         printUsage()
 
