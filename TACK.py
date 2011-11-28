@@ -73,7 +73,8 @@ class Writer:
         self.bytes = createByteArrayZeros(totalLength)
 
     def add(self, x, elementLength):
-        """Writes 'elementLength' bytes, input is either an integer (written as big-endian) or a sequence of bytes"""
+        """Writes 'elementLength' bytes, input is either an integer
+         (written as big-endian) or a sequence of bytes"""
         if isinstance(x, int):
             assert(x >= 0 and x < 2**(8*elementLength))
             newIndex = self.index + elementLength-1
@@ -88,7 +89,8 @@ class Writer:
         self.index += elementLength
 
     def addVarSeq(self, seq, elementLength, lengthLength):
-        """Writes a sequence of elements prefixed by a total-length field of lengthLength bytes"""
+        """Writes a sequence of elements prefixed by a 
+        total-length field of lengthLength bytes"""
         self.add(len(seq)*elementLength, lengthLength)
         for e in seq:
             self.add(e, elementLength)
@@ -119,7 +121,8 @@ class Parser:
         dataLength = self.getInt(lengthLength)
         if dataLength % elementLength != 0:
             raise SyntaxError()
-        return [self.getBytes(elementLength) for x in range(dataLength/elementLength)]
+        return [self.getBytes(elementLength) for x in \
+                range(dataLength/elementLength)]
 
 
 ################ CONSTANTS ###
@@ -357,7 +360,8 @@ class TACK_SecretFile:
         salt = os.urandom(16)
         IV = os.urandom(16)
         encKey, authKey = deriveSecretFileKeys(password, salt)
-        plaintext = bytesToString(self.private_key) + bytesToString(self.pin_break_code)
+        plaintext = bytesToString(self.private_key) + \
+            bytesToString(self.pin_break_code)
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
         mac = hmac.new(authKey, IV+ciphertext, hashlib.sha256).digest()        
         w = Writer(113)
