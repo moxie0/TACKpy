@@ -135,14 +135,18 @@ class TACK_Pin_Type:
     in_chain_cert = 2    
     out_of_chain_key = 3
     all = (in_chain_key, in_chain_cert, out_of_chain_key)
+    strings = (None, "in_chain_key", "in_chain_cert", "out_of_chain_key")
 
 class TACK_Sig_Type:
     in_chain_key = 1
     in_chain_cert = 2
     all = (in_chain_key, in_chain_cert)
+    strings = (None, "in_chain_key", "in_chain_cert")
         
 
 ################ STRUCTURES ###
+
+import binascii
         
 class TACK_Pin:
     def __init__(self):
@@ -171,6 +175,21 @@ class TACK_Pin:
         w.add(self.pin_break_code_sha256, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
         return w.bytes  
+
+    def writeText(self):
+        if self.pin_type not in TACK_Pin_Type.all:
+            raise SyntaxError()
+        s = \
+"""pin_type               = %s
+pin_expiration         = %s
+pin_target_sha256      = 0x%s
+pin_break_code_sha256  = 0x%s""" % \
+(TACK_Pin_Type.strings[self.pin_type], 
+timeUintToStr(self.pin_expiration),
+binascii.b2a_hex(self.pin_target_sha256),
+binascii.b2a_hex(self.pin_break_code_sha256))
+        return s
+        
      
         
 class TACK_Sig:    
@@ -178,7 +197,7 @@ class TACK_Sig:
         self.sig_type = 0
         self.sig_expiration = 0
         self.sig_generation = 0                
-        self.target_sha256 = bytearray(32)
+        self.sig_target_sha256 = bytearray(32)
         self.out_of_chain_key = bytearray(64)
         self.signature = bytearray(64)
     
@@ -206,6 +225,25 @@ class TACK_Sig:
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
         return w.bytes
+
+    def writeText(self):
+        if self.sig_type not in TACK_Sig_Type.all:
+            raise SyntaxError()
+        s = \
+"""sig_type               = %s
+sig_expiration         = %s
+sig_generation         = %d
+sig_target_sha256      = 0x%s
+out_of_chain_key       = 0x%s
+signature              = 0x%s""" % \
+(TACK_Sig_Type.strings[self.sig_type], 
+timeUintToStr(self.sig_expiration),
+self.sig_generation,
+binascii.b2a_hex(self.sig_target_sha256),
+binascii.b2a_hex(self.out_of_chain_key),
+binascii.b2a_hex(self.signature))
+        return s
+
         
         
 class TACK_Pin_Break_Codes:
@@ -227,7 +265,13 @@ class TACK_Pin_Break_Codes:
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
         return w.bytes
 
-
+    def writeText(self):
+        s = "count                  = %d\n" % len(self.pin_break_codes)
+        enumeration = enumerate(self.pin_break_codes)
+        formatted = [(i, binascii.b2a_hex(c)) for (i,c) in enumeration]
+        codes = ["pin_break_code[%d]      = %s" % (i,c) for (i,c) in formatted]
+        s += "\n".join(codes)
+        return s
 
 
 ################ SECRET FILE ###
@@ -328,7 +372,7 @@ class TACK_SecretFile:
         self.pin_break_code_sha256 = SHA256(self.pin_break_code)
         self.iter_count = 8192
 
-    def sign(self, hash):
+    def sign(self, bytesToHash):
         private_key = bytesToNumber(self.private_key)
         g = ecdsa.generator_256
         n = g.order()
@@ -336,6 +380,7 @@ class TACK_SecretFile:
         y = bytesToNumber(self.out_of_chain_key[32:])        
         pubkey = ecdsa.Public_key(g, ellipticcurve.Point(g.curve(), x,y))
         privkey = ecdsa.Private_key(pubkey, private_key)
+        hash = SHA256(bytesToHash)
         # Generating random nonce k per FIPS 186-3 B.5.1:
         # (except we use 32 extra bytes instead of 8 before reduction)
         # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
@@ -438,6 +483,7 @@ def testStructures():
     pin.pin_type = TACK_Pin_Type.in_chain_cert
     pin2.parse(pin.write())
     assert(pin.write() == pin2.write())
+    print "\nTACK_Pin:\n", pin2.writeText()
 
     # Test reading/writing TACK_Sig
     sig.sig_type = TACK_Sig_Type.in_chain_cert
@@ -449,6 +495,7 @@ def testStructures():
     sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
+    print "\nTACK_Sig:\n", sig2.writeText()
 
     # Test reading/writing TACK_Pin_Break_Codes with 1 code
     codes.pin_break_codes = [bytearray(range(0,24))]
@@ -463,6 +510,8 @@ def testStructures():
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
+    print "\nTACK_Pin_Break_codes:\n", codes2.writeText()
+    
 
 def testSecretFile():
     f = TACK_SecretFile()
@@ -474,7 +523,7 @@ def testSecretFile():
     assert(f2.__dict__ == f.__dict__)
 
     f2.generate(bytearray("blablabla"))    
-    h = bytearray(range(200, 232))
+    h = bytearray(range(100,200))
     sig = f2.sign(h)
 
 
@@ -528,9 +577,9 @@ def openSecretFile(sfBytes):
     
 def newTACKCert(sf, sslBytes):    
     sigDays = pinDays = 550 # About 1.5 years
-    currentTime = time.time()
-    pinExp = currentTime + 1440 * pinDays
-    sigExp = currentTime + 1440 * sigDays    
+    currentTime = int(time.time()/60) # Get time in minutes
+    pinExp = currentTime + (24*60) * pinDays
+    sigExp = currentTime + (24*60) * sigDays    
         
     pin = TACK_Pin()
     pin.pin_type = TACK_Pin_Type.out_of_chain_key
@@ -544,10 +593,44 @@ def newTACKCert(sf, sslBytes):
     sig.sig_generation = 0
     sig.sig_target_sha256 = SHA256(sslBytes)
     sig.out_of_chain_key = sf.out_of_chain_key
-    sig.signature = sf.sign(SHA256())
+    sig.signature = sf.sign(sig.write()[:-64])
     
-def updateTACKCert():
-    pass
+    tc = TACK_Cert()
+    tc.pin = pin
+    tc.sig = sig
+    
+    b = tc.write()
+    f = open("__TACK_cert.dat", "wb")
+    f.write(b)
+    f.close()
+    return tc
+    
+def updateTACKCert(tc, sslBytes):
+    sigDays = pinDays = 550 # About 1.5 years
+    currentTime = int(time.time()/60) # Get time in minutes
+    pinExp = currentTime + (24*60) * pinDays
+    sigExp = currentTime + (24*60) * sigDays    
+    
+    assert(tc.pin.pin_type == TACK_Pin_type.out_of_chain_key)
+    assert(tc.pin.pin_target_sha256 == SHA256(sf.out_of_chain_key))
+    assert(tc.pin.pin_break_code_sha256 == sf.pin_break_code_sha256)    
+    tc.pin.pin_expiration = pinExp
+    
+    sig_generation = tc.sig.sig_generation
+    sig = TACK_Sig()
+    sig.sig_type = TACK_Sig_type.in_chain_cert
+    sig.sig_expiration = sigExp
+    sig.sig_target_sha256 = SHA256(sslBytes)
+    sig.out_of_chain_key = sf.out_of_chain_key
+    sig.signature = sf.sign(sig.write()[:-64])
+    tc.sig = sig
+    
+    b = tc.write()
+    f = open("__TACK_cert.dat", "wb")
+    f.write(b)
+    f.close()
+    return tc
+    
 
 def pin(argv):
     if len(argv) != 1:
@@ -562,28 +645,27 @@ def pin(argv):
         tcBytes = None
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
+        sf = openSecretFile(sfBytes)            
     except IOError:
-        sfBytes = None
+        sf = None
 
-    if not sfBytes:
+    if not sf:
         if not tcBytes:
             # No secret file or TACK cert, so generate new ones
             sf = newSecretFile()
-            newTACKCert(sf, sslBytes)
+            tc = newTACKCert(sf, sslBytes)
         else:
-            raise SyntaxError("Missing secret file")
+            printUsage("Missing secret file")
     else:
         if not tcBytes:
-            sf = openSecretFile(sfBytes)            
             newTACKCert(sf, sslBytes)
         else:
-            sf = openSecretFile(sfBytes)                        
             updateTACKCert(sf, tcBytes, sslBytes)    
    
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        printUsage("Missing argument!")
+        printUsage("Missing command")
     elif sys.argv[1] == "test":
         testStructures()
         testSecretFile()        
