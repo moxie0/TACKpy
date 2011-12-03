@@ -910,7 +910,7 @@ def newTACKCert(sf, sslBytes):
     tc.generate(pin, sig)
     
     b = tc.write()
-    f = open("__TACK_cert.dat", "wb")
+    f = open("__TACK_certificate.dat", "wb")
     f.write(b)
     f.close()
     return tc
@@ -934,7 +934,7 @@ def updateTACKCert(sf, tc, sslBytes):
     tc.sig = sig
     
     b = tc.write()
-    f = open("__TACK_cert.dat", "wb")
+    f = open("__TACK_certificate.dat", "wb")
     f.write(b)
     f.close()
     return tc
@@ -948,16 +948,16 @@ def pin(argv):
     except IOError:
         printUsage("SSL certificate file not found: %s" % argv[0])
     try:
-        tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
+        tcBytes = bytearray(open("__TACK_certificate.dat", "rb").read())
         tc = TACK_Cert()
         tc.parse(tcBytes)
-        print "TACK certificate found, updating..."
+        print "__TACK_certificate.dat found, updating..."
     except IOError:
         tc = None
-        print "No TACK certificate found, creating new one..."
+        print "No __TACK_certificate.dat found, creating new one..."
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
-        print "TACK secret file found, opening..."
+        print "__TACK_secret_file.dat found, opening..."
         sf = openSecretFile(sfBytes)            
     except IOError:
         sf = None
@@ -965,7 +965,7 @@ def pin(argv):
     if not sf:
         if not tc:
             # No secret file or TACK cert, so generate new ones
-            print "No TACK secret file found, creating new one..."            
+            print "No __TACK_secret_file.dat found, creating new one..."            
             sf = newSecretFile()
             tc = newTACKCert(sf, sslBytes)
         else:
