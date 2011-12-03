@@ -131,7 +131,17 @@ class Parser:
 
 
 ################ ASN1 PARSER ###
-
+# Returns bytearray encoding an ASN1 length field
+# Assumes maximum of 2-byte length
+def asn1Length(x):
+    if x < 128:
+        return bytearray([x])
+    if x < 256:
+        return bytearray([0x81,x])  
+    if x < 65536:
+        return bytearray([0x82, int(x/256), x % 256])  
+    assert(False)
+    
 #Takes a byte array which has a DER TLV field at its head
 class ASN1Parser:
     def __init__(self, bytes, offset = 0):
@@ -171,6 +181,9 @@ class ASN1Parser:
 
     def getTotalLength(self):
         return self.headerLength + self.length
+        
+    def getTotalBytes(self):
+        return bytearray([self.type]) + asn1Length(self.length) + self.value
 
     #Decode the ASN.1 DER length field
     def _getASN1Length(self, p):
@@ -354,18 +367,55 @@ class TACK_Pin_Break_Codes:
         return "TACK_Pin_Break_Codes:\n"+s
 
 
-################ TACK CERT ###
+################ SSL CERT ###
 
-# Returns bytearray encoding an ASN1 length field
-# Assumes maximum of 2-byte length
-def asn1Length(x):
-    if x < 128:
-        return bytearray([x])
-    if x < 256:
-        return bytearray([0x81,x])  
-    if x < 65536:
-        return bytearray([0x82, int(x/256), x % 256])  
-    assert(False)
+def dePemCert(s):
+    start = s.find("-----BEGIN CERTIFICATE-----")
+    end = s.find("-----END CERTIFICATE-----")
+    if start == -1:
+        raise SyntaxError("Missing PEM prefix")
+    if end == -1:
+        raise SyntaxError("Missing PEM postfix")
+    s = s[start+len("-----BEGIN CERTIFICATE-----") : end]
+    return bytearray(binascii.a2b_base64(s))
+
+class SSL_Cert:
+    def __init__(self):
+        self.in_chain_key_sha256 = bytearray(32)
+        self.in_chain_cert_sha256 = bytearray(32)
+    
+    def parse(self, b):
+        try:
+            b = dePemCert(b)
+        except SyntaxError:
+            pass
+        p = ASN1Parser(b)
+
+        #Get the tbsCertificate
+        tbsCertificateP = p.getChild(0)
+
+        #Is the optional version field present?
+        #This determines which index the key is at
+        if tbsCertificateP.value[0]==0xA0:
+            subjectPublicKeyInfoIndex = 6
+        else:
+            subjectPublicKeyInfoIndex = 5             
+        #Get the subjectPublicKeyInfo
+        spkiP = tbsCertificateP.getChild(\
+                                    subjectPublicKeyInfoIndex)
+        self.in_chain_cert_sha256 = SHA256(b)
+        self.in_chain_key_sha256 = SHA256(spkiP.getTotalBytes())
+    
+    def writeText(self):
+        s = \
+"""in_chain_key_sha256    = 0x%s
+in_chain_cert_sha256   = 0x%s""" % (\
+        writeBytes(self.in_chain_key_sha256),
+        writeBytes(self.in_chain_cert_sha256))
+        return "SSL Certificate:\n" + s
+        
+
+################ TACK CERT ###
 
 class TACK_Cert:
     oid_pin = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
@@ -397,6 +447,10 @@ class TACK_Cert:
 "300d06092a864886f70d01010505000303003993")
     
     def parse(self, b):
+        try:
+            b = dePemCert(b)
+        except SyntaxError:
+            pass        
         p = ASN1Parser(b)
         self.extBytes = bytearray()
 
@@ -408,7 +462,7 @@ class TACK_Cert:
 
         #Get the tbsCertificate
         tbsCertificateP = p.getChild(0)
-        versionP = tbsCertificateP.getChild(0)
+        versionP = tbsCertificateP.getChild(0)        
         if versionP.type != 0xA0: # i.e. tag of [0], version
             raise SyntaxError("X.509 version field not present")
         versionPP = versionP.getTagged()
@@ -461,6 +515,12 @@ class TACK_Cert:
 
         # Finish copying the tail of the certificate
         self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength() : ]
+        
+        # Check consistency between TACK_Pin and TACK_Sig
+        if self.sig and self.pin and \
+            self.pin.pin_type == TACK_Pin_Type.out_of_chain_key:
+            if self.pin.pin_target_sha256 != SHA256(self.sig.out_of_chain_key):
+                raise SyntaxError("TACK_Pin doesn't match TACK_Sig")
         
     def write(self):        
         b = bytearray(0)
@@ -853,7 +913,7 @@ def printUsage(s=None):
     print"Commands:"
     print "  test"
     print "  pin <ssl_cert>"
-    print "  view [<TACK_cert>|<TACK_secret_file>|<ssl_cert>|<site>]"
+    print "  view <file or site>"
     print
     sys.exit(-1)
 
@@ -915,7 +975,7 @@ def newTACKCert(sf, sslBytes):
     f.close()
     return tc
     
-def updateTACKCert(sf, tc, sslBytes):
+def updateTACKCert(sf, tc, target_sha256):
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = int(time.time()/60) # Get time in minutes
     pinExp = currentTime + (24*60) * pinDays
@@ -929,7 +989,7 @@ def updateTACKCert(sf, tc, sslBytes):
     sig_revocation = currentTime
     sig = TACK_Sig()
     sig.generate(TACK_Sig_Type.in_chain_cert,
-                sigExp, sig_revocation, SHA256(sslBytes), 
+                sigExp, sig_revocation, target_sha256, 
                 sf.out_of_chain_key, lambda b:sf.sign(b))
     tc.sig = sig
     
@@ -945,8 +1005,13 @@ def pin(argv):
         printUsage("Missing argument: SSL certificate file")    
     try:
         sslBytes = bytearray(open(argv[0]).read())
+        sslc = SSL_Cert()
+        sslc.parse(sslBytes)
     except IOError:
         printUsage("SSL certificate file not found: %s" % argv[0])
+    except SyntaxError:
+        printUsage("SSL certificate file malformed: %s" % argv[0])
+
     try:
         tcBytes = bytearray(open("__TACK_certificate.dat", "rb").read())
         tc = TACK_Cert()
@@ -955,41 +1020,61 @@ def pin(argv):
     except IOError:
         tc = None
         print "No __TACK_certificate.dat found, creating new one..."
+    except SyntaxError:
+        printUsage("__TACK_certificate.dat malformed")
+
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
         print "__TACK_secret_file.dat found, opening..."
         sf = openSecretFile(sfBytes)            
     except IOError:
         sf = None
+    except SyntaxError:
+        printUsage("__TACK_secret_file.dat malformed")        
 
     if not sf:
         if not tc:
             # No secret file or TACK cert, so generate new ones
             print "No __TACK_secret_file.dat found, creating new one..."            
             sf = newSecretFile()
-            tc = newTACKCert(sf, sslBytes)
+            tc = newTACKCert(sf, sslc.in_chain_cert_sha256)
         else:
             printUsage("Missing secret file")
     else:
         if not tc:
             # Use existing secret file, generate new TACK cert
-            newTACKCert(sf, sslBytes)
+            newTACKCert(sf, sslc.in_chain_cert_sha256)
         else:
             # Update TACK cert with existing secret file
-            updateTACKCert(sf, tc, sslBytes)    
+            updateTACKCert(sf, tc, sslc.in_chain_cert_sha256)    
  
 def view(argv):
     if len(argv) != 1:
         printUsage("Missing argument: object to view")
     b = bytearray(open(argv[0]).read())
+    # If it's a secret file
     if len(b) == 232 and b[:3] == TACK_SecretFile.magic:
         sfv = TACK_SecretFileViewer()
         sfv.parse(b)
         print "\n"+sfv.writeText()
+    # If not it could be a certificate
     else: 
-        tc = TACK_Cert()
-        tc.parse(b)
-        print "\n"+tc.writeText()      
+        try:
+            written=0            
+            tc = TACK_Cert()
+            tc.parse(b)
+            if tc.pin or tc.sig or tc.codes:
+                print "\n"+tc.writeText()
+                written = 1      
+        except SyntaxError:
+            pass
+        if not written:
+            try:
+                sslc = SSL_Cert()
+                sslc.parse(b)
+                print "\n"+sslc.writeText()      
+            except SyntaxError:
+                printUsage("Unrecognized file type")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
