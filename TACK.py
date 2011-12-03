@@ -859,7 +859,6 @@ def printUsage(s=None):
 
 
 def newSecretFile(extraRandStr=""):
-    print "No secret file found, creating new one..."
     if not extraRandStr:
         while len(extraRandStr)<20:
             extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")    
@@ -952,10 +951,13 @@ def pin(argv):
         tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
         tc = TACK_Cert()
         tc.parse(tcBytes)
+        print "TACK certificate found, updating..."
     except IOError:
         tc = None
+        print "No TACK certificate found, creating new one..."
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
+        print "TACK secret file found, opening..."
         sf = openSecretFile(sfBytes)            
     except IOError:
         sf = None
@@ -963,6 +965,7 @@ def pin(argv):
     if not sf:
         if not tc:
             # No secret file or TACK cert, so generate new ones
+            print "No TACK secret file found, creating new one..."            
             sf = newSecretFile()
             tc = newTACKCert(sf, sslBytes)
         else:
