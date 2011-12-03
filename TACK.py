@@ -210,6 +210,13 @@ class TACK_Pin:
         self.pin_target_sha256 = bytearray(32)
         self.pin_break_code_sha256 = bytearray(32)        
     
+    def generate(self, pin_type, pin_expiration, 
+                pin_target_sha256, pin_break_code_sha256):
+        self.pin_type = pin_type
+        self.pin_expiration = pin_expiration
+        self.pin_target_sha256 = pin_target_sha256
+        self.pin_break_code_sha256 = pin_break_code_sha256        
+            
     def parse(self, b):
         p = Parser(b)
         self.pin_type = p.getInt(1)
@@ -245,8 +252,7 @@ binascii.b2a_hex(self.pin_target_sha256),
 binascii.b2a_hex(self.pin_break_code_sha256))
         return s
         
-     
-        
+           
 class TACK_Sig:    
     def __init__(self):
         self.sig_type = 0
@@ -255,6 +261,15 @@ class TACK_Sig:
         self.sig_target_sha256 = bytearray(32)
         self.out_of_chain_key = bytearray(64)
         self.signature = bytearray(64)
+        
+    def generate(self, sig_type, sig_expiration, sig_generation,
+                sig_target_sha256, out_of_chain_key, sigFunc):
+        self.sig_type = sig_type
+        self.sig_expiration = sig_expiration
+        self.sig_generation = sig_generation                
+        self.sig_target_sha256 = sig_target_sha256
+        self.out_of_chain_key = out_of_chain_key
+        self.signature = sigFunc(self.write()[:-64])
     
     def parse(self, b):
         p = Parser(b)
@@ -795,19 +810,16 @@ def newTACKCert(sf, sslBytes):
     sigExp = currentTime + (24*60) * sigDays    
         
     pin = TACK_Pin()
-    pin.pin_type = TACK_Pin_Type.out_of_chain_key
-    pin.pin_expiration = pinExp
-    pin.pin_target_sha256 = SHA256(sf.out_of_chain_key)
-    pin.pin_break_code_sha256 = sf.pin_break_code_sha256
-    
+    pin.generate(TACK_Pin_Type.out_of_chain_key, 
+                 pinExp,
+                 SHA256(sf.out_of_chain_key),
+                 sf.pin_break_code_sha256)
+        
     sig = TACK_Sig()
-    sig.sig_type = TACK_Sig_Type.in_chain_cert
-    sig.sig_expiration = sigExp
-    sig.sig_generation = 0
-    sig.sig_target_sha256 = SHA256(sslBytes)
-    sig.out_of_chain_key = sf.out_of_chain_key
-    sig.signature = sf.sign(sig.write()[:-64])
-    
+    sig.generate(TACK_Sig_Type.in_chain_cert,
+                 sigExp, 0, SHA256(sslBytes),
+                 sf.out_of_chain_key, lambda b:sf.sign(b))
+                     
     tc = TACK_Cert()
     tc.generate(pin, sig)
     
@@ -830,14 +842,12 @@ def updateTACKCert(sf, tc, sslBytes):
     
     sig_generation = tc.sig.sig_generation
     sig = TACK_Sig()
-    sig.sig_type = TACK_Sig_type.in_chain_cert
-    sig.sig_expiration = sigExp
-    sig.sig_target_sha256 = SHA256(sslBytes)
-    sig.out_of_chain_key = sf.out_of_chain_key
-    sig.signature = sf.sign(sig.write()[:-64])
+    sig.generate(TACK_Sig_Type.in_chain_cert,
+                sigExp, 0, SHA256(sslBytes), 
+                sf.out_of_chain_key, lambda b:sf.sign(b))
     tc.sig = sig
     
-    b = tc.writeText()
+    b = tc.write()
     f = open("__TACK_cert.dat", "wb")
     f.write(b)
     f.close()
