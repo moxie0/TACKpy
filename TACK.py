@@ -59,6 +59,7 @@ def constTimeCompare(a, b):
         return False
     return True
 
+
 ################ TIME ###
 
 import time, datetime
@@ -67,6 +68,7 @@ def timeUintToStr(u):
     t = time.gmtime(60*u)
     s = time.strftime("%Y-%m-%dT%H:%MZ", t)
     return s
+
 
 ################ CODEC ###
 
@@ -127,6 +129,59 @@ class Parser:
         return [self.getBytes(elementLength) for x in \
                 range(dataLength/elementLength)]
 
+
+################ ASN1 PARSER ###
+
+#Takes a byte array which has a DER TLV field at its head
+class ASN1Parser:
+    def __init__(self, bytes, offset = 0):
+        p = Parser(bytes)
+        self.type = p.getInt(1) #skip Type
+
+        #Get Length
+        self.length = self._getASN1Length(p)
+        
+        # Header length is however many bytes read so far
+        self.headerLength = p.index        
+
+        #Get Value
+        self.value = p.getBytes(self.length)
+        
+        # This value tracks the offset of this TLV field
+        # in some enclosing structure (ie an X.509 cert) 
+        self.offset = offset
+        
+
+    #Assuming this is a sequence...
+    def getChild(self, which):
+        p = Parser(self.value)
+        for x in range(which+1):
+            if p.index == len(p.bytes):
+                return None
+            markIndex = p.index
+            p.getInt(1) #skip Type
+            length = self._getASN1Length(p)
+            p.getBytes(length)
+        return ASN1Parser(p.bytes[markIndex : p.index], \
+                            self.offset + self.headerLength + markIndex)
+
+    #Assuming this is a tagged element...
+    def getTagged(self):
+        return ASN1Parser(self.value, self.offset + self.headerLength)
+
+    def getTotalLength(self):
+        return self.headerLength + self.length
+
+    #Decode the ASN.1 DER length field
+    def _getASN1Length(self, p):
+        firstLength = p.getInt(1)
+        if firstLength<=127:
+            lengthLength = 1
+            return firstLength
+        else:
+            lengthLength = firstLength & 0x7F
+            return p.getInt(lengthLength)
+        
 
 ################ CONSTANTS ###
 
@@ -272,6 +327,158 @@ class TACK_Pin_Break_Codes:
         codes = ["pin_break_code[%d]      = %s" % (i,c) for (i,c) in formatted]
         s += "\n".join(codes)
         return s
+
+
+################ TACK CERT ###
+
+# Returns bytearray encoding an ASN1 length field
+# Assumes maximum of 2-byte length
+def asn1Length(x):
+    if x < 128:
+        return bytearray([x])
+    if x < 256:
+        return bytearray([0x81,x])  
+    if x < 65536:
+        return bytearray([0x82, int(x/256), x % 256])  
+    assert(False)
+
+class TACK_Cert:
+    oid_pin = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
+    oid_sig = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
+    oid_codes = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x03")
+    oid_all = (oid_pin, oid_sig, oid_codes)
+    
+    def __init__(self):
+        self.pin = None # TACK_Pin
+        self.sig = None # TACK_Sig
+        self.codes = None # TACK_Pin_Break_Codes
+        self.preExtBytes = None 
+        self.extBytes = None
+        self.postExtBytes = None
+    
+    def generate(self, pin=None, sig=None, codes=None):
+        self.pin = pin
+        self.sig = sig
+        self.codes = codes
+        self.preExtBytes = binascii.a2b_hex(\
+"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
+"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
+"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
+"10500030e00300b0204010203040203010001")
+        #self.extBytes = binascii.a2b_hex(\
+#"300c0603551d13040530030101ff")
+        self.extBytes = bytearray()
+        self.postExtBytes = binascii.a2b_hex(\
+"300d06092a864886f70d01010505000303003993")
+    
+    def parse(self, b):
+        p = ASN1Parser(b)
+        self.extBytes = bytearray()
+
+        # We are going to copy the non-TACK chunks of cert into here
+        # Thus, when we go to write it out, we just have to inject
+        # the TACK chunks and adjust a few length fields
+        self.bytes = bytearray(0)
+        copyFromOffset = 0
+
+        #Get the tbsCertificate
+        tbsCertificateP = p.getChild(0)
+        versionP = tbsCertificateP.getChild(0)
+        if versionP.type != 0xA0: # i.e. tag of [0], version
+            raise SyntaxError("X.509 version field not present")
+        versionPP = versionP.getTagged()
+        if versionPP.value != bytearray([0x02]):
+            raise SyntaxError("X.509 version field does not equal v3")
+
+        # Find extensions element
+        x = 0
+        while 1:
+            certFieldP = tbsCertificateP.getChild(x)
+            if not certFieldP:
+                raise SyntaxError("X.509 extensions not present")
+            if certFieldP.type == 0xA3: # i.e. tag of [3], extensions
+                break
+            x += 1
+
+        self.preExtBytes = b[versionP.offset : certFieldP.offset]
+        self.extBytes = bytearray()
+
+        # Iterate through extensions
+        x = 0
+        certFieldPP = certFieldP.getTagged()
+        while 1:
+            extFieldP = certFieldPP.getChild(x)
+            if not extFieldP:
+                break
+                    
+            # Check the extnID and parse out TACK structures if present
+            extnIDP = extFieldP.getChild(0)            
+            if extnIDP.value == TACK_Cert.oid_pin:
+                if self.pin:
+                    raise SyntaxError("More than one TACK_Pin extension")
+                self.pin = TACK_Pin()
+                self.pin.parse(extFieldP.getChild(1).value)
+            elif extnIDP.value == TACK_Cert.oid_sig:
+                if self.sig:
+                    raise SyntaxError("More than one TACK_Sig extension")                
+                self.sig = TACK_Sig()
+                self.sig.parse(extFieldP.getChild(1).value)                
+            elif extnIDP.value == TACK_Cert.oid_codes:
+                if self.codes:
+                    raise SyntaxError("More than one TACK_Pin_Break_Codes extension")                
+                self.codes = TACK_Pin_Break_Codes()
+                self.codes.parse(extFieldP.getChild(1).value)
+            else:  
+                # Collect all non-TACK extensions:
+                self.extBytes += b[extFieldP.offset : \
+                                    extFieldP.offset + extFieldP.getTotalLength()]
+            x += 1                
+
+        # Finish copying the tail of the certificate
+        self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength() : ]
+        
+    def write(self):        
+        b = bytearray(0)
+        if self.pin: 
+            # type=SEQ,len=82(for whole ext),type=6,len=9(for OID),
+            # OID,type=4,len=69,TACK_Pin 
+            b += bytearray([0x30,0x52,6,9]) + self.oid_pin + \
+                         bytearray([4,0x45]) + self.pin.write()
+        if self.sig:
+            # type=SEQ,len=173(for whole ext),type=6,len=9(for OID),
+            # type=4,len=169,TACK_Sig
+            b += bytearray([0x30,0x81,0xB7,6,9]) + self.oid_sig + \
+                         bytearray([4,0x81,0xA9]) + self.sig.write()
+        if self.codes:
+            # type=SEQ,len=?,type=6,len=9(for OID),
+            # type=4,len=?,TACK_Pin_Break_Codes
+            codesBytes = self.codes.write()
+            b2 = bytearray([4]) + asn1Length(len(codesBytes)) + codesBytes
+            b2 = bytearray([6,9]) + self.oid_codes + b2
+            b2 = bytearray([0x30]) + asn1Length(b2) + b2
+        
+        b = b + self.extBytes # add non-TACK extensions after TACK
+        # Add length fields for extensions and its enclosing tag
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        b = bytearray([0xA3]) + asn1Length(len(b)) + b
+        # Add prefix of tbsCertificate, then its type/length fields
+        b = self.preExtBytes + b
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        # Add postfix of Certificate (ie SignatureAlgorithm, SignatureValue)
+        # then its prefix'd type/length fields
+        b = b + self.postExtBytes
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        return b
+
+    def writeText(self):
+        pinStr = sigStr = codeStr = ""
+        if self.pin:
+            pinStr = "TACK_Pin:\n" + self.pin.writeText()
+        if self.sig:
+            sigStr = "TACK_Sig:\n" + self.sig.writeText()
+        if self.codes:
+            codeStr = "TACK_Pin_Break_Codes:\n" + self.codes.writeText()
+        return "TACK_Cert:\n" + "\n\n".join([pinStr, sigStr, codeStr])
 
 
 ################ SECRET FILE ###
@@ -510,7 +717,7 @@ def testStructures():
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
-    print "\nTACK_Pin_Break_codes:\n", codes2.writeText()
+    print "\nTACK_Pin_Break_Codes:\n", codes2.writeText()
     
 
 def testSecretFile():
@@ -526,7 +733,12 @@ def testSecretFile():
     h = bytearray(range(100,200))
     sig = f2.sign(h)
 
-
+def testCert():
+    b = bytearray(open("testcert.der", "rb").read())
+    c = TACK_Cert()
+    c.parse(b)
+    b2 = c.write()
+    open("testcert2.der", "wb").write(b2)
 
 ################ MAIN ###
 
@@ -539,6 +751,7 @@ def printUsage(s):
     print"Commands:"
     print "  test"
     print "  pin <ssl_cert>"
+    print "  view [<TACK_cert>|<TACK_secret_file>|<ssl_cert>|<site>]"
     print
     sys.exit(-1)
 
@@ -596,8 +809,7 @@ def newTACKCert(sf, sslBytes):
     sig.signature = sf.sign(sig.write()[:-64])
     
     tc = TACK_Cert()
-    tc.pin = pin
-    tc.sig = sig
+    tc.generate(pin, sig)
     
     b = tc.write()
     f = open("__TACK_cert.dat", "wb")
@@ -605,13 +817,13 @@ def newTACKCert(sf, sslBytes):
     f.close()
     return tc
     
-def updateTACKCert(tc, sslBytes):
+def updateTACKCert(sf, tc, sslBytes):
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = int(time.time()/60) # Get time in minutes
     pinExp = currentTime + (24*60) * pinDays
     sigExp = currentTime + (24*60) * sigDays    
     
-    assert(tc.pin.pin_type == TACK_Pin_type.out_of_chain_key)
+    assert(tc.pin.pin_type == TACK_Pin_Type.out_of_chain_key)
     assert(tc.pin.pin_target_sha256 == SHA256(sf.out_of_chain_key))
     assert(tc.pin.pin_break_code_sha256 == sf.pin_break_code_sha256)    
     tc.pin.pin_expiration = pinExp
@@ -625,7 +837,7 @@ def updateTACKCert(tc, sslBytes):
     sig.signature = sf.sign(sig.write()[:-64])
     tc.sig = sig
     
-    b = tc.write()
+    b = tc.writeText()
     f = open("__TACK_cert.dat", "wb")
     f.write(b)
     f.close()
@@ -641,8 +853,10 @@ def pin(argv):
         printUsage("SSL certificate file not found: %s" % argv[0])
     try:
         tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
+        tc = TACK_Cert()
+        tc.parse(tcBytes)
     except IOError:
-        tcBytes = None
+        tc = None
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
         sf = openSecretFile(sfBytes)            
@@ -650,27 +864,40 @@ def pin(argv):
         sf = None
 
     if not sf:
-        if not tcBytes:
+        if not tc:
             # No secret file or TACK cert, so generate new ones
             sf = newSecretFile()
             tc = newTACKCert(sf, sslBytes)
         else:
             printUsage("Missing secret file")
     else:
-        if not tcBytes:
+        if not tc:
+            # Use existing secret file, generate new TACK cert
             newTACKCert(sf, sslBytes)
         else:
-            updateTACKCert(sf, tcBytes, sslBytes)    
-   
+            # Update TACK cert with existing secret file
+            updateTACKCert(sf, tc, sslBytes)    
+ 
+def view(argv):
+    if len(argv) != 1:
+        printUsage("Missing argument: object to view")
+    tcBytes  = bytearray(open(argv[0]).read())
+    tc = TACK_Cert()
+    tc.parse(tcBytes)
+    print "\n"+tc.writeText()
+      
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         printUsage("Missing command")
     elif sys.argv[1] == "test":
+        testCert()
         testStructures()
         testSecretFile()        
     elif sys.argv[1] == "pin":
         pin(sys.argv[2:])
+    elif sys.argv[1] == "view":
+        view(sys.argv[2:])
     else:
         printUsage()
 
