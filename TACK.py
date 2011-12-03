@@ -202,6 +202,16 @@ class TACK_Sig_Type:
 ################ STRUCTURES ###
 
 import binascii
+
+def writeBytes(b):
+    s = binascii.b2a_hex(b)
+    retVal = ""
+    while s:
+        retVal += s[:32]
+        s = s[32:]
+        if len(s):
+            retVal += "\n                           "
+    return retVal
         
 class TACK_Pin:
     def __init__(self):
@@ -248,9 +258,9 @@ pin_target_sha256      = 0x%s
 pin_break_code_sha256  = 0x%s""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
 timeUintToStr(self.pin_expiration),
-binascii.b2a_hex(self.pin_target_sha256),
-binascii.b2a_hex(self.pin_break_code_sha256))
-        return s
+writeBytes(self.pin_target_sha256),
+writeBytes(self.pin_break_code_sha256))
+        return "TACK_Pin:\n"+s
         
            
 class TACK_Sig:    
@@ -309,10 +319,10 @@ signature              = 0x%s""" % \
 (TACK_Sig_Type.strings[self.sig_type], 
 timeUintToStr(self.sig_expiration),
 self.sig_generation,
-binascii.b2a_hex(self.sig_target_sha256),
-binascii.b2a_hex(self.out_of_chain_key),
-binascii.b2a_hex(self.signature))
-        return s
+writeBytes(self.sig_target_sha256),
+writeBytes(self.out_of_chain_key),
+writeBytes(self.signature))
+        return "TACK_Sig:\n"+s
 
         
         
@@ -341,7 +351,7 @@ class TACK_Pin_Break_Codes:
         formatted = [(i, binascii.b2a_hex(c)) for (i,c) in enumeration]
         codes = ["pin_break_code[%d]      = %s" % (i,c) for (i,c) in formatted]
         s += "\n".join(codes)
-        return s
+        return "TACK_Pin_Break_Codes:\n"+s
 
 
 ################ TACK CERT ###
@@ -488,11 +498,11 @@ class TACK_Cert:
     def writeText(self):
         pinStr = sigStr = codeStr = ""
         if self.pin:
-            pinStr = "TACK_Pin:\n" + self.pin.writeText()
+            pinStr = self.pin.writeText()
         if self.sig:
-            sigStr = "TACK_Sig:\n" + self.sig.writeText()
+            sigStr = self.sig.writeText()
         if self.codes:
-            codeStr = "TACK_Pin_Break_Codes:\n" + self.codes.writeText()
+            codeStr = self.codes.writeText()
         return "TACK_Cert:\n" + "\n\n".join([pinStr, sigStr, codeStr])
 
 
@@ -557,13 +567,65 @@ def aes_cbc_encrypt(key, IV, plaintext):
         chainBlock = bytearray(cipher.encrypt(str(xorbytes(plainBlock, chainBlock))))
         ciphertext += chainBlock
     return ciphertext     
+
+class TACK_SecretFileViewer:
+    def __init__(self):
+        self.version = 0
+        self.iter_count = 0
+        self.salt = bytearray(16)
+        self.IV = bytearray(16)
+        self.ciphertext = bytearray(64)
+        self.out_of_chain_key = bytearray(64)
+        self.pin_break_code_sha256 = bytearray(32)
+        self.mac = bytearray(32)
+        
+    def parse(self, b):
+        p = Parser(b)
+        magic = p.getBytes(3)
+        if magic != TACK_SecretFile.magic:
+            raise SyntaxError("Bad magic number in Secret File")
+        self.version = p.getInt(1)
+        if self.version != 1:
+            raise SyntaxError("Bad version in Secret File")
+        self.iter_count = p.getInt(4)
+        self.salt = p.getBytes(16)
+        self.IV = p.getBytes(16)
+        self.ciphertext = p.getBytes(64)
+        self.out_of_chain_key = p.getBytes(64)
+        self.pin_break_code_sha256 = p.getBytes(32)
+        self.mac = bytearray(p.getBytes(32))
+        assert(p.index == len(b)) # did we fully consume byte-array?
+
+    def writeText(self):
+        s = \
+"""version                = %d
+iter_count             = %d
+salt                   = 0x%s
+IV                     = 0x%s
+ciphertext             = 0x%s
+out_of_chain_key       = 0x%s
+pin_break_code_sha256  = 0x%s
+mac                    = 0x%s""" % \
+        (self.version, 
+        self.iter_count,
+        writeBytes(self.salt),
+        writeBytes(self.IV),
+        writeBytes(self.ciphertext),
+        writeBytes(self.out_of_chain_key),
+        writeBytes(self.pin_break_code_sha256),
+        writeBytes(self.mac))
+        return "TACK_SecretFile (encrypted):\n"+s        
+        
     
 class TACK_SecretFile:
+    magic = bytearray([0x9A,0x61,0x27])
+
     def __init__(self):
         self.version = 0
         self.private_key = bytearray(32)
         self.out_of_chain_key = bytearray(64)
         self.pin_break_code = bytearray(24)
+        self.out_of_chain_key = bytearray(64)
         self.pin_break_code_sha256 = bytearray(32)
         self.iter_count = 0
         
@@ -633,9 +695,12 @@ class TACK_SecretFile:
 
     def parse(self, b, password):
         p = Parser(b)
+        magic = p.getBytes(3)
+        if magic != TACK_SecretFile.magic:
+            raise SyntaxError("Bad magic number in Secret File")
         self.version = p.getInt(1)
         if self.version != 1:
-            raise SyntaxError()
+            raise SyntaxError("Bad version in Secret File")
         self.iter_count = p.getInt(4)
         salt = p.getBytes(16)
         IV = p.getBytes(16)
@@ -665,7 +730,8 @@ class TACK_SecretFile:
         macData = IV + ciphertext + \
             self.out_of_chain_key + self.pin_break_code_sha256
         mac = HMAC_SHA256(authKey, macData)        
-        w = Writer(229)
+        w = Writer(232)
+        w.add(TACK_SecretFile.magic, 3)
         w.add(self.version, 1)
         w.add(self.iter_count, 4)
         w.add(salt, 16)
@@ -912,11 +978,15 @@ def pin(argv):
 def view(argv):
     if len(argv) != 1:
         printUsage("Missing argument: object to view")
-    tcBytes  = bytearray(open(argv[0]).read())
-    tc = TACK_Cert()
-    tc.parse(tcBytes)
-    print "\n"+tc.writeText()
-      
+    b = bytearray(open(argv[0]).read())
+    if len(b) == 232 and b[:3] == TACK_SecretFile.magic:
+        sfv = TACK_SecretFileViewer()
+        sfv.parse(b)
+        print "\n"+sfv.writeText()
+    else: 
+        tc = TACK_Cert()
+        tc.parse(b)
+        print "\n"+tc.writeText()      
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
