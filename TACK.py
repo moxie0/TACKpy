@@ -705,7 +705,7 @@ def testStructures():
     pin.pin_type = TACK_Pin_Type.in_chain_cert
     pin2.parse(pin.write())
     assert(pin.write() == pin2.write())
-    print "\nTACK_Pin:\n", pin2.writeText()
+    #print "\nTACK_Pin:\n", pin2.writeText()
 
     # Test reading/writing TACK_Sig
     sig.sig_type = TACK_Sig_Type.in_chain_cert
@@ -717,7 +717,7 @@ def testStructures():
     sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
-    print "\nTACK_Sig:\n", sig2.writeText()
+    #print "\nTACK_Sig:\n", sig2.writeText()
 
     # Test reading/writing TACK_Pin_Break_Codes with 1 code
     codes.pin_break_codes = [bytearray(range(0,24))]
@@ -732,7 +732,7 @@ def testStructures():
     codes2 = TACK_Pin_Break_Codes()
     codes2.parse(codes.write())
     assert(codes.write() == codes2.write())
-    print "\nTACK_Pin_Break_Codes:\n", codes2.writeText()
+    #print "\nTACK_Pin_Break_Codes:\n", codes2.writeText()
     
 
 def testSecretFile():
@@ -749,17 +749,38 @@ def testSecretFile():
     sig = f2.sign(h)
 
 def testCert():
-    b = bytearray(open("testcert.der", "rb").read())
-    c = TACK_Cert()
-    c.parse(b)
-    b2 = c.write()
-    open("testcert2.der", "wb").write(b2)
+    sigDays = pinDays = 550 # About 1.5 years
+    currentTime = int(time.time()/60) # Get time in minutes
+    pinExp = currentTime + (24*60) * pinDays
+    sigExp = currentTime + (24*60) * sigDays    
+    
+    sslBytes = bytearray(range(1,200))
+    sf = TACK_SecretFile()
+    sf.generate()    
+        
+    pin = TACK_Pin()
+    pin.generate(TACK_Pin_Type.out_of_chain_key, 
+                 pinExp,
+                 SHA256(sf.out_of_chain_key),
+                 sf.pin_break_code_sha256)
+        
+    sig = TACK_Sig()
+    sig.generate(TACK_Sig_Type.in_chain_cert,
+                 sigExp, 0, SHA256(sslBytes),
+                 sf.out_of_chain_key, lambda b:sf.sign(b))
+                     
+    tc = TACK_Cert()
+    tc.generate(pin, sig)
+
+    tc2 = TACK_Cert()
+    tc2.parse(tc.write())
+    assert(tc.write() == tc2.write())
 
 ################ MAIN ###
 
 import sys, getpass, getopt
 
-def printUsage(s):
+def printUsage(s=None):
     if s:
         print "ERROR: %s" % s
     print
