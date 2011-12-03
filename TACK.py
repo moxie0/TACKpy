@@ -267,16 +267,16 @@ class TACK_Sig:
     def __init__(self):
         self.sig_type = 0
         self.sig_expiration = 0
-        self.sig_generation = 0                
+        self.sig_revocation = 0                
         self.sig_target_sha256 = bytearray(32)
         self.out_of_chain_key = bytearray(64)
         self.signature = bytearray(64)
         
-    def generate(self, sig_type, sig_expiration, sig_generation,
+    def generate(self, sig_type, sig_expiration, sig_revocation,
                 sig_target_sha256, out_of_chain_key, sigFunc):
         self.sig_type = sig_type
         self.sig_expiration = sig_expiration
-        self.sig_generation = sig_generation                
+        self.sig_revocation = sig_revocation                
         self.sig_target_sha256 = sig_target_sha256
         self.out_of_chain_key = out_of_chain_key
         self.signature = sigFunc(self.write()[:-64])
@@ -287,7 +287,7 @@ class TACK_Sig:
         if self.sig_type not in TACK_Sig_Type.all:
             raise SyntaxError()
         self.sig_expiration = p.getInt(4)
-        self.sig_generation = p.getInt(4)            
+        self.sig_revocation = p.getInt(4)            
         self.sig_target_sha256 = p.getBytes(32)
         self.out_of_chain_key = p.getBytes(64)
         self.signature = p.getBytes(64)
@@ -299,7 +299,7 @@ class TACK_Sig:
         w = Writer(169)
         w.add(self.sig_type, 1)
         w.add(self.sig_expiration, 4)
-        w.add(self.sig_generation, 4)
+        w.add(self.sig_revocation, 4)
         w.add(self.sig_target_sha256, 32)
         w.add(self.out_of_chain_key, 64)
         w.add(self.signature, 64)
@@ -312,13 +312,13 @@ class TACK_Sig:
         s = \
 """sig_type               = %s
 sig_expiration         = %s
-sig_generation         = %d
+sig_revocation         = %s
 sig_target_sha256      = 0x%s
 out_of_chain_key       = 0x%s
 signature              = 0x%s""" % \
 (TACK_Sig_Type.strings[self.sig_type], 
 timeUintToStr(self.sig_expiration),
-self.sig_generation,
+timeUintToStr(self.sig_revocation),
 writeBytes(self.sig_target_sha256),
 writeBytes(self.out_of_chain_key),
 writeBytes(self.signature))
@@ -775,8 +775,8 @@ def testStructures():
 
     # Test reading/writing TACK_Sig
     sig.sig_type = TACK_Sig_Type.in_chain_cert
-    sig.sig_expiration = 121
-    sig.sig_generation = 3
+    sig.sig_expiration = 1000000000
+    sig.sig_revocation = 1000000000
     sig.sig_target_sha256 = bytearray(range(0, 32))
     sig.out_of_chain_key = bytearray(range(32, 96))
     sig.signature = bytearray(range(96, 160))
@@ -904,7 +904,7 @@ def newTACKCert(sf, sslBytes):
         
     sig = TACK_Sig()
     sig.generate(TACK_Sig_Type.in_chain_cert,
-                 sigExp, 0, SHA256(sslBytes),
+                 sigExp, currentTime, SHA256(sslBytes),
                  sf.out_of_chain_key, lambda b:sf.sign(b))
                      
     tc = TACK_Cert()
@@ -920,17 +920,17 @@ def updateTACKCert(sf, tc, sslBytes):
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = int(time.time()/60) # Get time in minutes
     pinExp = currentTime + (24*60) * pinDays
-    sigExp = currentTime + (24*60) * sigDays    
+    sigExp = currentTime + (24*60) * sigDays
     
     assert(tc.pin.pin_type == TACK_Pin_Type.out_of_chain_key)
     assert(tc.pin.pin_target_sha256 == SHA256(sf.out_of_chain_key))
     assert(tc.pin.pin_break_code_sha256 == sf.pin_break_code_sha256)    
     tc.pin.pin_expiration = pinExp
     
-    sig_generation = tc.sig.sig_generation
+    sig_revocation = currentTime
     sig = TACK_Sig()
     sig.generate(TACK_Sig_Type.in_chain_cert,
-                sigExp, 0, SHA256(sslBytes), 
+                sigExp, sig_revocation, SHA256(sslBytes), 
                 sf.out_of_chain_key, lambda b:sf.sign(b))
     tc.sig = sig
     
