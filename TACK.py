@@ -379,6 +379,15 @@ def dePemCert(s):
     s = s[start+len("-----BEGIN CERTIFICATE-----") : end]
     return bytearray(binascii.a2b_base64(s))
 
+def pemCert(b):
+    s1 = binascii.b2a_base64(b)[:-1] # remove terminating \n
+    s2 = ""
+    while s1:
+        s2 += s1[:64] + "\n"
+        s1 = s1[64:]
+    return "-----BEGIN CERTIFICATE-----\n" + s2 + \
+            "-----END CERTIFICATE-----"     
+        
 class SSL_Cert:
     def __init__(self):
         self.in_chain_key_sha256 = bytearray(32)
@@ -949,17 +958,23 @@ def openSecretFile(sfBytes):
         print "PASSWORD INCORRECT!"
     return sf
     
-def newTACKCert(sf, sslBytes):    
+def newTACKCert(sf, sslBytes, noPinBreak):    
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = int(time.time()/60) # Get time in minutes
     pinExp = currentTime + (24*60) * pinDays
     sigExp = currentTime + (24*60) * sigDays    
+
+    if noPinBreak:
+        # A malicious os.urandom can't control the code:
+        pin_break_code_sha256 = SHA256(os.urandom(64))
+    else:
+        pin_break_code_sha256 = sf.pin_break_code_sha256
         
     pin = TACK_Pin()
     pin.generate(TACK_Pin_Type.out_of_chain_key, 
                  pinExp,
                  SHA256(sf.out_of_chain_key),
-                 sf.pin_break_code_sha256)
+                 pin_break_code_sha256)
         
     sig = TACK_Sig()
     sig.generate(TACK_Sig_Type.in_chain_cert,
@@ -968,11 +983,6 @@ def newTACKCert(sf, sslBytes):
                      
     tc = TACK_Cert()
     tc.generate(pin, sig)
-    
-    b = tc.write()
-    f = open("__TACK_certificate.dat", "wb")
-    f.write(b)
-    f.close()
     return tc
     
 def updateTACKCert(sf, tc, target_sha256):
@@ -983,7 +993,6 @@ def updateTACKCert(sf, tc, target_sha256):
     
     assert(tc.pin.pin_type == TACK_Pin_Type.out_of_chain_key)
     assert(tc.pin.pin_target_sha256 == SHA256(sf.out_of_chain_key))
-    assert(tc.pin.pin_break_code_sha256 == sf.pin_break_code_sha256)    
     tc.pin.pin_expiration = pinExp
     
     sig_revocation = currentTime
@@ -992,19 +1001,65 @@ def updateTACKCert(sf, tc, target_sha256):
                 sigExp, sig_revocation, target_sha256, 
                 sf.out_of_chain_key, lambda b:sf.sign(b))
     tc.sig = sig
-    
-    b = tc.write()
-    f = open("__TACK_certificate.dat", "wb")
-    f.write(b)
-    f.close()
     return tc
-    
 
 def pin(argv):
-    if len(argv) != 1:
+    # First, argument parsing
+    if len(argv) < 1:
         printUsage("Missing argument: SSL certificate file")    
+    noArgArgs = ("--no_pem", "--no_pin_break")
+    oneArgArgs= ("--pin_type", "--sig_type", 
+                "--pin_expiration", "--sig_expiration", 
+                "--sig_revocation")
+
+    sslName = argv[0]
+    argsDict = {}    
+    for arg in argv[1:]:
+        parts = arg.split("=")
+        if parts[0] in argsDict:
+            printUsage("Duplicate argument: %s" % parts[0])
+        if len(parts)==2:
+            if not parts[0] in oneArgArgs:
+                printUsage("Malformed argument: %s" % parts[0])
+            argsDict[parts[0]] = parts[1]
+        elif len(parts)==1:
+            if not parts[0] in noArgArgs:
+                printUsage("Malformed argument: %s" % parts[0])            
+            argsDict[parts[0]] = None
+        else:
+            printUsage("Malformed argument: %s" % parts[0])
+
+    noPem = False
+    noPinBreak = False
+    pinType = TACK_Pin_Type.out_of_chain_key
+    sigType = TACK_Sig_Type.in_chain_cert
+
+    if "--no_pem" in argsDict:
+        noPem = True   
+    if "--no_pin_break" in argsDict:
+        noPinBreak = True   
+    if "--pin_type" in argsDict:    
+        val = argsDict["--pin_type"]
+        if val == "in_chain_key":
+            pinType = TACK_Pin_Type.in_chain_key
+        elif val == "in_chain_cert":
+            pinType = TACK_Pin_Type.in_chain_cert
+        elif val == "out_of_chain_key":
+            pinType = TACK_Pin_Type.out_of_chain_key
+        else:
+            printUsage("Unrecognized pin_type")
+    if "--sig_type" in argsDict:    
+        val = argsDict["--sig_type"]
+        if val == "in_chain_key":
+            pinType = TACK_Pin_Type.in_chain_key
+        elif val == "in_chain_cert":
+            pinType = TACK_Pin_Type.in_chain_cert
+        else:
+            printUsage("Unrecognized sig_type")
+    
+    # Open the files
     try:
-        sslBytes = bytearray(open(argv[0]).read())
+        sslBytes = bytearray(open(sslName).read())
         sslc = SSL_Cert()
         sslc.parse(sslBytes)
     except IOError:
@@ -1032,21 +1087,31 @@ def pin(argv):
     except SyntaxError:
         printUsage("__TACK_secret_file.dat malformed")        
 
+    # Now the files are open, get to it
     if not sf:
         if not tc:
             # No secret file or TACK cert, so generate new ones
             print "No __TACK_secret_file.dat found, creating new one..."            
             sf = newSecretFile()
-            tc = newTACKCert(sf, sslc.in_chain_cert_sha256)
+            tc = newTACKCert(sf, sslc.in_chain_cert_sha256, noPinBreak)
         else:
             printUsage("Missing secret file")
     else:
         if not tc:
             # Use existing secret file, generate new TACK cert
-            newTACKCert(sf, sslc.in_chain_cert_sha256)
+            tc = newTACKCert(sf, sslc.in_chain_cert_sha256, noPinBreak)
         else:
             # Update TACK cert with existing secret file
-            updateTACKCert(sf, tc, sslc.in_chain_cert_sha256)    
+            if noPinBreak:
+                printUsage("--no_pin_break not relevant")
+            tc = updateTACKCert(sf, tc, sslc.in_chain_cert_sha256)    
+    b = tc.write()
+    if not noPem:
+        b = pemCert(b)
+    f = open("__TACK_certificate.dat", "wb")
+    f.write(b)
+    f.close()
+    return tc
  
 def view(argv):
     if len(argv) != 1:
