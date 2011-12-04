@@ -231,7 +231,10 @@ class TACK_Pin:
         self.pin_type = 0
         self.pin_expiration = 0
         self.pin_target_sha256 = bytearray(32)
-        self.pin_break_code_sha256 = bytearray(32)        
+        self.pin_break_code_sha256 = bytearray(32)
+        
+    def isExpired(self):
+        return self.pin_expiration*60 < time.time()         
     
     def generate(self, pin_type, pin_expiration, 
                 pin_target_sha256, pin_break_code_sha256):
@@ -1070,11 +1073,15 @@ def pin(argv, update=False):
     # Check existing TACK_Pin and TACK_Sig
     if update:
         if not tc.pin:
-            printUsage("__TACK_certificate.dat has no pin")
+            printError("__TACK_certificate.dat has no pin")
+        if tc.pin.isExpired():
+            printError("The pin is expired")
         tc.sig = None
     elif not update and tc.pin:
-        # !!! check expiration status of pin
-        query = raw_input('__TACK_certificate.dat has existing pin, choose "y" to replace: ')
+        if tc.pin.isExpired():
+            print "The existing pin is expired"
+            query = raw_input('There is an existing (expired) pin, choose "y" to replace: ')
+        query = raw_input('There is an existing pin, choose "y" to replace: ')
         if query != "y":
             printError("Cancelled")
         tc.pin = None
