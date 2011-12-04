@@ -1129,7 +1129,7 @@ def pin(argv, update=False):
                      sf.out_of_chain_key, lambda b:sf.sign(b))
     
     b = tc.write()
-    if noPem:
+    if not noPem:
         b = pemCert(b)
     f = open("__TACK_certificate.dat", "wb")
     f.write(b)
