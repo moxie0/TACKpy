@@ -449,6 +449,7 @@ class TACK_Cert:
 "3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
 "34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
 "10500030e00300b0204010203040203010001")
+        # Below is BasicConstraints, saving space by omitting
         #self.extBytes = binascii.a2b_hex(\
 #"300c0603551d13040530030101ff")
         self.extBytes = bytearray()
@@ -920,12 +921,15 @@ def printUsage(s=None):
         print "ERROR: %s" % s
     print
     print"Commands:"
-    print "  test"
-    print "  pin <ssl_cert>"
-    print "  view <file or site>"
+    print "  new    <ssl_cert>"
+    print "  update <ssl_cert>"
+    print "  view   <file or site>"
     print
     sys.exit(-1)
 
+def printError(s):
+    print "ERROR: %s" % s
+    sys.exit(-1)
 
 def newSecretFile(extraRandStr=""):
     if not extraRandStr:
@@ -957,60 +961,18 @@ def openSecretFile(sfBytes):
             break
         print "PASSWORD INCORRECT!"
     return sf
-    
-def newTACKCert(sf, sslBytes, noPinBreak):    
-    sigDays = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()/60) # Get time in minutes
-    pinExp = currentTime + (24*60) * pinDays
-    sigExp = currentTime + (24*60) * sigDays    
 
-    if noPinBreak:
-        # A malicious os.urandom can't control the code:
-        pin_break_code_sha256 = SHA256(os.urandom(64))
-    else:
-        pin_break_code_sha256 = sf.pin_break_code_sha256
-        
-    pin = TACK_Pin()
-    pin.generate(TACK_Pin_Type.out_of_chain_key, 
-                 pinExp,
-                 SHA256(sf.out_of_chain_key),
-                 pin_break_code_sha256)
-        
-    sig = TACK_Sig()
-    sig.generate(TACK_Sig_Type.in_chain_cert,
-                 sigExp, currentTime, SHA256(sslBytes),
-                 sf.out_of_chain_key, lambda b:sf.sign(b))
-                     
-    tc = TACK_Cert()
-    tc.generate(pin, sig)
-    return tc
-    
-def updateTACKCert(sf, tc, target_sha256):
-    sigDays = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()/60) # Get time in minutes
-    pinExp = currentTime + (24*60) * pinDays
-    sigExp = currentTime + (24*60) * sigDays
-    
-    assert(tc.pin.pin_type == TACK_Pin_Type.out_of_chain_key)
-    assert(tc.pin.pin_target_sha256 == SHA256(sf.out_of_chain_key))
-    tc.pin.pin_expiration = pinExp
-    
-    sig_revocation = currentTime
-    sig = TACK_Sig()
-    sig.generate(TACK_Sig_Type.in_chain_cert,
-                sigExp, sig_revocation, target_sha256, 
-                sf.out_of_chain_key, lambda b:sf.sign(b))
-    tc.sig = sig
-    return tc
-
-def pin(argv):
+def pin(argv, update=False):
     # First, argument parsing
     if len(argv) < 1:
         printUsage("Missing argument: SSL certificate file")    
-    noArgArgs = ("--no_pem", "--no_pin_break")
-    oneArgArgs= ("--pin_type", "--sig_type", 
+    noArgArgs = ["--no_pem"]
+    oneArgArgs= ["--sig_type", 
                 "--pin_expiration", "--sig_expiration", 
-                "--sig_revocation")
+                "--sig_revocation"]
+    if not update:
+        noArgArgs += ["--no_pin_break"]
+        oneArgArgs += ["--pin_type"]
 
     sslName = argv[0]
     argsDict = {}    
@@ -1036,9 +998,9 @@ def pin(argv):
 
     if "--no_pem" in argsDict:
         noPem = True   
-    if "--no_pin_break" in argsDict:
+    if not update and "--no_pin_break" in argsDict:
         noPinBreak = True   
-    if "--pin_type" in argsDict:    
+    if not update and "--pin_type" in argsDict:    
         val = argsDict["--pin_type"]
         if val == "in_chain_key":
             pinType = TACK_Pin_Type.in_chain_key
@@ -1060,51 +1022,85 @@ def pin(argv):
     # Open the files
     try:
         sslBytes = bytearray(open(sslName).read())
-        sslc = SSL_Cert()
-        sslc.parse(sslBytes)
     except IOError:
         printUsage("SSL certificate file not found: %s" % argv[0])
-    except SyntaxError:
-        printUsage("SSL certificate file malformed: %s" % argv[0])
 
     try:
         tcBytes = bytearray(open("__TACK_certificate.dat", "rb").read())
-        tc = TACK_Cert()
-        tc.parse(tcBytes)
-        print "__TACK_certificate.dat found, updating..."
     except IOError:
-        tc = None
-        print "No __TACK_certificate.dat found, creating new one..."
-    except SyntaxError:
-        printUsage("__TACK_certificate.dat malformed")
+        if update:
+            printUsage("__TACK_certificate.dat not found")
+        tcBytes = None
 
     try:    
         sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
-        print "__TACK_secret_file.dat found, opening..."
-        sf = openSecretFile(sfBytes)            
     except IOError:
-        sf = None
-    except SyntaxError:
-        printUsage("__TACK_secret_file.dat malformed")        
+        if update:
+            printUsage("__TACK_secret_file.dat not found")
+        sfBytes = None
 
-    # Now the files are open, get to it
-    if not sf:
-        if not tc:
-            # No secret file or TACK cert, so generate new ones
-            print "No __TACK_secret_file.dat found, creating new one..."            
-            sf = newSecretFile()
-            tc = newTACKCert(sf, sslc.in_chain_cert_sha256, noPinBreak)
-        else:
-            printUsage("Missing secret file")
+    # Parse file contents
+    sslc = SSL_Cert()
+    try:
+        sslc.parse(sslBytes)        
+    except SyntaxError:
+        printUsage("SSL certificate file malformed: %s" % argv[0])
+
+    tc = TACK_Cert()
+    if tcBytes:
+        print "__TACK_certificate.dat found, updating..."
+        try:
+            tc.parse(tcBytes)
+        except SyntaxError:
+            printUsage("__TACK_certificate.dat malformed")
     else:
-        if not tc:
-            # Use existing secret file, generate new TACK cert
-            tc = newTACKCert(sf, sslc.in_chain_cert_sha256, noPinBreak)
-        else:
-            # Update TACK cert with existing secret file
-            if noPinBreak:
-                printUsage("--no_pin_break not relevant")
-            tc = updateTACKCert(sf, tc, sslc.in_chain_cert_sha256)    
+        tc.generate()
+        print "No __TACK_certificate.dat found, creating new one..."
+
+    if sfBytes:
+        print "__TACK_secret_file.dat found, opening..."        
+        try:
+            sf = openSecretFile(sfBytes)        
+        except SyntaxError:
+            printUsage("__TACK_secret_file.dat malformed")        
+    else:
+        print "No __TACK_secret_file.dat, creating new one..."
+        sf = newSecretFile()
+
+    # Erase existing TACK_Pin and TACK_Sig
+    if update and not tc.pin:
+        printUsage("__TACK_certificate.dat has no pin")
+    elif not update and tc.pin:
+        # !!! check expiration status of pin
+        query = raw_input('__TACK_certificate.dat has existing pin, choose "y" to replace: ')
+        if query != "y":
+            printError("Cancelled")
+        tc.pin = None
+        tc.sig = None
+
+    sigDays = pinDays = 550 # About 1.5 years
+    currentTime = int(time.time()/60) # Get time in minutes
+    pinExp = currentTime + (24*60) * pinDays
+    sigExp = currentTime + (24*60) * sigDays    
+
+    if noPinBreak:
+        # A malicious os.urandom can't control the code:
+        pin_break_code_sha256 = SHA256(os.urandom(64))
+    else:
+        pin_break_code_sha256 = sf.pin_break_code_sha256
+
+    if not update:
+        tc.pin = TACK_Pin()
+        tc.pin.generate(TACK_Pin_Type.out_of_chain_key, 
+                     pinExp,
+                     SHA256(sf.out_of_chain_key),
+                     pin_break_code_sha256)
+
+    tc.sig = TACK_Sig()
+    tc.sig.generate(TACK_Sig_Type.in_chain_cert,
+                 sigExp, currentTime, SHA256(sslBytes),
+                 sf.out_of_chain_key, lambda b:sf.sign(b))
+    
     b = tc.write()
     if not noPem:
         b = pemCert(b)
@@ -1148,12 +1144,14 @@ if __name__ == '__main__':
         testCert()
         testStructures()
         testSecretFile()        
-    elif sys.argv[1] == "pin":
-        pin(sys.argv[2:])
+    elif sys.argv[1] == "new":
+        pin(sys.argv[2:], False)
+    elif sys.argv[1] == "update":
+        pin(sys.argv[2:], True)
     elif sys.argv[1] == "view":
         view(sys.argv[2:])
     else:
-        printUsage()
+        printUsage("Unknown command: %s" % sys.argv[1])
 
 
 
