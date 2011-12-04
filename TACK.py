@@ -569,14 +569,14 @@ class TACK_Cert:
         return b
 
     def writeText(self):
-        pinStr = sigStr = codeStr = ""
+        strList = []
         if self.pin:
-            pinStr = self.pin.writeText()
+            strList.append(self.pin.writeText())
         if self.sig:
-            sigStr = self.sig.writeText()
+            strList.append(self.sig.writeText())
         if self.codes:
-            codeStr = self.codes.writeText()
-        return "TACK_Cert:\n" + "\n\n".join([pinStr, sigStr, codeStr])
+            strList.append(self.codes.writeText())
+        return "TACK_Cert:\n\n" + "\n\n".join(strList)+"\n"
 
 
 ################ SECRET FILE ###
@@ -997,7 +997,7 @@ def pin(argv, update=False):
     noPem = False
     noPinBreak = False
     pin_type = TACK_Pin_Type.out_of_chain_key
-    sig_type = TACK_Sig_Type.in_chain_cert
+    sig_type = -1       # [default=in_chain_cert, see below]
 
     if "--no_pem" in argsDict:
         noPem = True   
@@ -1021,6 +1021,13 @@ def pin(argv, update=False):
             sig_type = TACK_Sig_Type.in_chain_cert
         else:
             printUsage("Unrecognized sig_type")
+
+    if pin_type == TACK_Pin_Type.out_of_chain_key:
+        if sig_type == -1:
+            sig_type = TACK_Sig_Type.in_chain_cert        
+    if pin_type != TACK_Pin_Type.out_of_chain_key:
+        if sig_type != -1:
+            printError("--sig_type can only be used with out_of_chain_key pin")
     
     # Open the files
     try:
@@ -1122,7 +1129,7 @@ def pin(argv, update=False):
                      sf.out_of_chain_key, lambda b:sf.sign(b))
     
     b = tc.write()
-    if not noPem:
+    if noPem:
         b = pemCert(b)
     f = open("__TACK_certificate.dat", "wb")
     f.write(b)
