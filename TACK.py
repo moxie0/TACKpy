@@ -982,19 +982,19 @@ def pin(argv, update=False):
             printUsage("Duplicate argument: %s" % parts[0])
         if len(parts)==2:
             if not parts[0] in oneArgArgs:
-                printUsage("Malformed argument: %s" % parts[0])
+                printUsage("Unknown or malformed argument: %s" % parts[0])
             argsDict[parts[0]] = parts[1]
         elif len(parts)==1:
             if not parts[0] in noArgArgs:
-                printUsage("Malformed argument: %s" % parts[0])            
+                printUsage("Unknown or malformed argument: %s" % parts[0])            
             argsDict[parts[0]] = None
         else:
-            printUsage("Malformed argument: %s" % parts[0])
+            printUsage("Unknown or malformed argument: %s" % parts[0])
 
     noPem = False
     noPinBreak = False
-    pinType = TACK_Pin_Type.out_of_chain_key
-    sigType = TACK_Sig_Type.in_chain_cert
+    pin_type = TACK_Pin_Type.out_of_chain_key
+    sig_type = TACK_Sig_Type.in_chain_cert
 
     if "--no_pem" in argsDict:
         noPem = True   
@@ -1003,19 +1003,19 @@ def pin(argv, update=False):
     if not update and "--pin_type" in argsDict:    
         val = argsDict["--pin_type"]
         if val == "in_chain_key":
-            pinType = TACK_Pin_Type.in_chain_key
+            pin_type = TACK_Pin_Type.in_chain_key
         elif val == "in_chain_cert":
-            pinType = TACK_Pin_Type.in_chain_cert
+            pin_type = TACK_Pin_Type.in_chain_cert
         elif val == "out_of_chain_key":
-            pinType = TACK_Pin_Type.out_of_chain_key
+            pin_type = TACK_Pin_Type.out_of_chain_key
         else:
             printUsage("Unrecognized pin_type")
     if "--sig_type" in argsDict:    
         val = argsDict["--sig_type"]
         if val == "in_chain_key":
-            pinType = TACK_Pin_Type.in_chain_key
+            sig_type = TACK_Sig_Type.in_chain_key
         elif val == "in_chain_cert":
-            pinType = TACK_Pin_Type.in_chain_cert
+            sig_type = TACK_Sig_Type.in_chain_cert
         else:
             printUsage("Unrecognized sig_type")
     
@@ -1067,9 +1067,11 @@ def pin(argv, update=False):
         print "No __TACK_secret_file.dat, creating new one..."
         sf = newSecretFile()
 
-    # Erase existing TACK_Pin and TACK_Sig
-    if update and not tc.pin:
-        printUsage("__TACK_certificate.dat has no pin")
+    # Check existing TACK_Pin and TACK_Sig
+    if update:
+        if not tc.pin:
+            printUsage("__TACK_certificate.dat has no pin")
+        tc.sig = None
     elif not update and tc.pin:
         # !!! check expiration status of pin
         query = raw_input('__TACK_certificate.dat has existing pin, choose "y" to replace: ')
@@ -1078,28 +1080,39 @@ def pin(argv, update=False):
         tc.pin = None
         tc.sig = None
 
+    # Create new TACK_Sig and/or TACK_Pin
     sigDays = pinDays = 550 # About 1.5 years
     currentTime = int(time.time()/60) # Get time in minutes
     pinExp = currentTime + (24*60) * pinDays
     sigExp = currentTime + (24*60) * sigDays    
 
-    if noPinBreak:
-        # A malicious os.urandom can't control the code:
-        pin_break_code_sha256 = SHA256(os.urandom(64))
-    else:
-        pin_break_code_sha256 = sf.pin_break_code_sha256
-
     if not update:
-        tc.pin = TACK_Pin()
-        tc.pin.generate(TACK_Pin_Type.out_of_chain_key, 
+        if pin_type == TACK_Pin_Type.out_of_chain_key:
+            pin_target_sha256 = SHA256(sf.out_of_chain_key)
+        elif pin_type == TACK_Pin_Type.in_chain_key:
+            pin_target_sha256 = sslc.in_chain_key_sha256
+        elif pin_type == TACK_Pin_Type.in_chain_cert:
+            pin_target_sha256 = sslc.in_chain_cert_sha256
+        if noPinBreak:
+            # A malicious os.urandom can't control the code:
+            pin_break_code_sha256 = SHA256(os.urandom(64))
+        else:
+            pin_break_code_sha256 = sf.pin_break_code_sha256
+        tc.pin = TACK_Pin()            
+        tc.pin.generate(pin_type, 
                      pinExp,
-                     SHA256(sf.out_of_chain_key),
+                     pin_target_sha256,
                      pin_break_code_sha256)
 
-    tc.sig = TACK_Sig()
-    tc.sig.generate(TACK_Sig_Type.in_chain_cert,
-                 sigExp, currentTime, SHA256(sslBytes),
-                 sf.out_of_chain_key, lambda b:sf.sign(b))
+    if pin_type == TACK_Pin_Type.out_of_chain_key:
+        if sig_type == TACK_Sig_Type.in_chain_key:
+            sig_target_sha256 = sslc.in_chain_key_sha256
+        elif sig_type == TACK_Sig_Type.in_chain_cert:
+            sig_target_sha256 = sslc.in_chain_cert_sha256
+        tc.sig = TACK_Sig()
+        tc.sig.generate(sig_type,
+                     sigExp, currentTime, sig_target_sha256,
+                     sf.out_of_chain_key, lambda b:sf.sign(b))
     
     b = tc.write()
     if not noPem:
