@@ -62,13 +62,24 @@ def constTimeCompare(a, b):
 
 ################ TIME ###
 
-import time, datetime
+import time, calendar
 
 def timeUintToStr(u):    
     t = time.gmtime(60*u)
     s = time.strftime("%Y-%m-%dT%H:%MZ", t)
     return s
+    
+def getDefaultExpiration():
+    days = pinDays = 550 # About 1.5 years
+    currentTime = int(time.time()/60) # Get time in minutes
+    exp = currentTime + (24*60) * days
+    return exp
 
+def parseTimeArg(arg):
+    t = time.strptime(arg, "%Y-%m-%dT%H:%MZ")
+    u = int(calendar.timegm(t)/60)
+    return u
+    
 
 ################ CODEC ###
 
@@ -994,10 +1005,14 @@ def pin(argv, update=False):
         else:
             printUsage("Unknown or malformed argument: %s" % parts[0])
 
+    # -1 args are for distinguishing between set/unset on cmdline, see below
     noPem = False
     noPinBreak = False
     pin_type = TACK_Pin_Type.out_of_chain_key
     sig_type = -1       # [default=in_chain_cert, see below]
+    pin_expiration = -1
+    sig_expiration = -1
+    sig_revocation = -1
 
     if "--no_pem" in argsDict:
         noPem = True   
@@ -1021,13 +1036,32 @@ def pin(argv, update=False):
             sig_type = TACK_Sig_Type.in_chain_cert
         else:
             printUsage("Unrecognized sig_type")
+    if "--pin_expiration" in argsDict:
+        pin_expiration = parseTimeArg(argsDict["--pin_expiration"])
+    if "--sig_expiration" in argsDict:
+        sig_expiration = parseTimeArg(argsDict["--sig_expiration"])
+    if "--sig_revocation" in argsDict:
+        sig_revocation = parseTimeArg(argsDict["--sig_revocation"])
 
+    defaultExpiration = getDefaultExpiration()
+    if pin_expiration == -1:
+        pin_expiration = defaultExpiration
+    
+    # Check the sig-relevant args, depending on whether there is a sig
     if pin_type == TACK_Pin_Type.out_of_chain_key:
         if sig_type == -1:
-            sig_type = TACK_Sig_Type.in_chain_cert        
+            sig_type = TACK_Sig_Type.in_chain_cert
+        if sig_expiration == -1:
+            sig_expiration = pin_expiration
+        if sig_revocation == -1:
+            sig_revocation = 0        
     if pin_type != TACK_Pin_Type.out_of_chain_key:
         if sig_type != -1:
             printError("--sig_type can only be used with out_of_chain_key pin")
+        if sig_expiration != -1:
+            printError("--sig_expiration can only be used with out_of_chain_key pin")
+        if sig_revocation != -1:
+            printError("--sig_revocation can only be used with out_of_chain_key pin")            
     
     # Open the files
     try:
@@ -1094,12 +1128,7 @@ def pin(argv, update=False):
         tc.pin = None
         tc.sig = None
 
-    # Create new TACK_Sig and/or TACK_Pin
-    sigDays = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()/60) # Get time in minutes
-    pinExp = currentTime + (24*60) * pinDays
-    sigExp = currentTime + (24*60) * sigDays    
-
+    # Produce the TACK_Pin (if "new")
     if not update:
         if pin_type == TACK_Pin_Type.out_of_chain_key:
             pin_target_sha256 = SHA256(sf.out_of_chain_key)
@@ -1113,20 +1142,20 @@ def pin(argv, update=False):
         else:
             pin_break_code_sha256 = sf.pin_break_code_sha256
         tc.pin = TACK_Pin()            
-        tc.pin.generate(pin_type, 
-                     pinExp,
+        tc.pin.generate(pin_type, pin_expiration, 
                      pin_target_sha256,
                      pin_break_code_sha256)
 
+    # Produce the TACK_Sig (if "new" or "update" and out_of_chain_key)
     if pin_type == TACK_Pin_Type.out_of_chain_key:
         if sig_type == TACK_Sig_Type.in_chain_key:
             sig_target_sha256 = sslc.in_chain_key_sha256
         elif sig_type == TACK_Sig_Type.in_chain_cert:
             sig_target_sha256 = sslc.in_chain_cert_sha256
         tc.sig = TACK_Sig()
-        tc.sig.generate(sig_type,
-                     sigExp, currentTime, sig_target_sha256,
-                     sf.out_of_chain_key, lambda b:sf.sign(b))
+        tc.sig.generate(sig_type, sig_expiration, sig_revocation, 
+                        sig_target_sha256, sf.out_of_chain_key, 
+                        lambda b:sf.sign(b))
     
     b = tc.write()
     if not noPem:
