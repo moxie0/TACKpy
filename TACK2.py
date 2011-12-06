@@ -49,6 +49,69 @@ def SHA256(b):
 def HMAC_SHA256(k, b):
     return bytearray(hmac.new(k, b, hashlib.sha256).digest())
 
+
+################ ECDSA ###
+
+import ecdsa
+from ecdsa import ellipticcurve
+
+def ec256Generate(extraRandBytes=None):
+    # ECDSA key generation per FIPS 186-3 B.4.1
+    # (except we use 32 extra random bytes instead of 8 before reduction)
+    # Random bytes taken from /dev/urandom as well as any extraRandBytes
+    # REVIEW THIS CAREFULLY!  CHANGE AT YOUR PERIL!
+    randStr0 = bytearray(os.urandom(64))
+    if extraRandBytes:
+        randStr0 += bytearray(extraRandBytes)
+    randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
+    randStr2 = HMAC_SHA256(randStr0, bytearray([2]))
+    randStr = randStr1 + randStr2    
+    c = bytesToNumber(randStr) 
+    n = ecdsa.generator_256.order()
+    d = (c % (n-1))+1        
+    privateKey = numberToBytes(d, 32)
+    publicKeyPoint = ecdsa.generator_256 * d        
+    publicKey = numberToBytes(publicKeyPoint.x(), 32) + \
+                numberToBytes(publicKeyPoint.y(), 32)
+    return (privateKey, publicKey)
+
+def ecdsa256Sign(privateKey, publicKey, dataToSign):
+    privateKeyNum = bytesToNumber(privateKey)
+    hash = SHA256(dataToSign)
+    g = ecdsa.generator_256
+    n = g.order()
+    x = bytesToNumber(publicKey[:32])
+    y = bytesToNumber(publicKey[32:])        
+    pubkey = ecdsa.Public_key(g, ellipticcurve.Point(g.curve(), x,y))    
+    privkey = ecdsa.Private_key(pubkey, privateKeyNum)    
+
+    # Generating random nonce k per FIPS 186-3 B.5.1:
+    # (except we use 32 extra bytes instead of 8 before reduction)
+    # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
+    # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
+    randStr0_1 = bytearray(os.urandom(64))
+    randStr0_2 = HMAC_SHA256(privateKey, hash)
+    randStr0 = randStr0_1 + randStr0_2                    
+    randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
+    randStr2 = HMAC_SHA256(randStr0, bytearray([2]))                       
+    randStr = randStr1 + randStr2    
+    c = bytesToNumber(randStr) 
+    k = (c % (n-1))+1                
+    hashNum = bytesToNumber(hash)
+    sig = privkey.sign(hashNum, k)
+    assert(pubkey.verifies(hashNum, sig))
+    return numberToBytes(sig.r, 32) + numberToBytes(sig.s, 32)
+
+def ecdsa256Verify(publicKey, dataToVerify, signature):
+    hashNum = bytesToNumber(SHA256(dataToVerify))
+    g = ecdsa.generator_256  
+    x = bytesToNumber(publicKey[:32])
+    y = bytesToNumber(publicKey[32:])        
+    pubkey = ecdsa.Public_key(g, ellipticcurve.Point(g.curve(), x,y))
+    sig = ecdsa.Signature(bytesToNumber(signature[:32]), 
+                            bytesToNumber(signature[32:]))
+    return pubkey.verifies(hashNum, sig)
+    
 def constTimeCompare(a, b):
     if len(a) != len(b):
         return False
@@ -290,12 +353,12 @@ class TACK_Sig:
         self.signature = bytearray(64)
         
     def generate(self, sig_type, sig_expiration, sig_revocation,
-                sig_target_sha256, sigFunc):
+                sig_target_sha256, pin, signFunc):
         self.sig_type = sig_type
         self.sig_expiration = sig_expiration
         self.sig_revocation = sig_revocation                
         self.sig_target_sha256 = sig_target_sha256
-        self.signature = sigFunc(self.write()[:-64])
+        self.signature = signFunc(pin.write() + self.write()[:-64])
     
     def parse(self, b):
         p = Parser(b)
@@ -579,23 +642,19 @@ class TACK_Cert:
 
 ################ SECRET FILE ###
 
-import os, rijndael, ecdsa
-from ecdsa import ellipticcurve
-
+import os, rijndael
 #  File format:
 #
+#  magic number   3 bytes = 0x9a6127
 #  version        1  byte
 #  iter_count     4 bytes
 #  salt          16 bytes
 #  IV            16 bytes         } auth
 #    EC privkey  32 bytes  } enc  } auth
-#    pin_break   24 bytes  } enc  } auth
-#    zero_pad     8 bytes  } enc  } auth
 #  EC pubkey     64 bytes         } auth
-#  pin_break_sha256	32 bytes      } auth
 #  HMAC          32 bytes	
 # 
-#  total		229
+#  total		168
 
 def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])
@@ -646,8 +705,7 @@ class TACK_SecretFileViewer:
         self.salt = bytearray(16)
         self.IV = bytearray(16)
         self.ciphertext = bytearray(64)
-        self.out_of_chain_key = bytearray(64)
-        self.pin_break_code_sha256 = bytearray(32)
+        self.public_key = bytearray(64)
         self.mac = bytearray(32)
         
     def parse(self, b):
@@ -661,9 +719,8 @@ class TACK_SecretFileViewer:
         self.iter_count = p.getInt(4)
         self.salt = p.getBytes(16)
         self.IV = p.getBytes(16)
-        self.ciphertext = p.getBytes(64)
-        self.out_of_chain_key = p.getBytes(64)
-        self.pin_break_code_sha256 = p.getBytes(32)
+        self.ciphertext = p.getBytes(32)
+        self.public_key = p.getBytes(64)
         self.mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
@@ -674,16 +731,14 @@ iter_count             = %d
 salt                   = 0x%s
 IV                     = 0x%s
 ciphertext             = 0x%s
-out_of_chain_key       = 0x%s
-pin_break_code_sha256  = 0x%s
+public_key             = 0x%s
 mac                    = 0x%s""" % \
         (self.version, 
         self.iter_count,
         writeBytes(self.salt),
         writeBytes(self.IV),
         writeBytes(self.ciphertext),
-        writeBytes(self.out_of_chain_key),
-        writeBytes(self.pin_break_code_sha256),
+        writeBytes(self.public_key),
         writeBytes(self.mac))
         return "TACK_SecretFile (encrypted):\n"+s        
         
@@ -694,75 +749,19 @@ class TACK_SecretFile:
     def __init__(self):
         self.version = 0
         self.private_key = bytearray(32)
-        self.out_of_chain_key = bytearray(64)
-        self.pin_break_code = bytearray(24)
-        self.out_of_chain_key = bytearray(64)
-        self.pin_break_code_sha256 = bytearray(32)
+        self.public_key = bytearray(64)
         self.iter_count = 0
         
     def generate(self, extraRandBytes=None):
-        self.version = 1        
-        # ECDSA key generation per FIPS 186-3 B.4.1
-        # (except we use 32 extra random bytes instead of 8 before reduction)
-        # Random bytes taken from /dev/urandom as well as any extraRandBytes
-        # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
-        n = ecdsa.generator_256.order()
-        randStr0_1 = bytearray(os.urandom(64))
-        if extraRandBytes:
-            randStr0_2 = bytearray(extraRandBytes)
-        else:
-            randStr0_2 = ""
-        randStr0 = randStr0_1 + randStr0_2
-        randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
-        randStr2 = HMAC_SHA256(randStr0, bytearray([2]))
-        randStr3 = HMAC_SHA256(randStr0, bytearray([3]))
-        randStr = randStr1 + randStr2    
-        c = bytesToNumber(randStr) 
-        d = (c % (n-1))+1        
-        self.private_key = numberToBytes(d, 32)
-        self.pin_break_code = randStr3[:24]
-        public_key = ecdsa.generator_256 * d        
-        self.out_of_chain_key = numberToBytes(public_key.x(), 32) + \
-                                numberToBytes(public_key.y(), 32)
-        self.pin_break_code_sha256 = SHA256(self.pin_break_code)
+        self.version = 1
+        self.private_key, self.public_key = ec256Generate(extraRandBytes)
         self.iter_count = 8192
 
-    def sign(self, bytesToHash):
-        private_key = bytesToNumber(self.private_key)
-        g = ecdsa.generator_256
-        n = g.order()
-        x = bytesToNumber(self.out_of_chain_key[:32])
-        y = bytesToNumber(self.out_of_chain_key[32:])        
-        pubkey = ecdsa.Public_key(g, ellipticcurve.Point(g.curve(), x,y))
-        privkey = ecdsa.Private_key(pubkey, private_key)
-        hash = SHA256(bytesToHash)
-        # Generating random nonce k per FIPS 186-3 B.5.1:
-        # (except we use 32 extra bytes instead of 8 before reduction)
-        # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
-        # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
-        randStr0_1 = bytearray(os.urandom(64))
-        randStr0_2 = HMAC_SHA256(self.private_key, hash)
-        randStr0 = randStr0_1 + randStr0_2                    
-        randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
-        randStr2 = HMAC_SHA256(randStr0, bytearray([2]))                       
-        randStr = randStr1 + randStr2    
-        c = bytesToNumber(randStr) 
-        k = (c % (n-1))+1                
-        hashNum = bytesToNumber(hash)
-        sig = privkey.sign(hashNum, k)
-        # Double-check before returning
-        assert(pubkey.verifies(hashNum, sig))        
-        return numberToBytes(sig.r, 32) + numberToBytes(sig.s, 32)
-
-    def verify(self, hashVal):
-        private_key = bytesToNumber(self.private_key)
-        g = ecdsa.generator_256
-        n = g.order()
-        x = bytesToNumber(self.out_of_chain_key[:32])
-        y = bytesToNumber(self.out_of_chain_key[32:])        
-        pubkey = ecdsa.Public_key(g, ellipticcurve.Point(x,y))
-        #!!! return pubkey.verifies(hashNum, sig))
-        ##!!!
+    def sign(self, bytesToSign):
+        signature = ecdsa256Sign(self.private_key, self.public_key, bytesToSign)
+        # Double-check value before returning
+        assert(ecdsa256Verify(self.public_key, bytesToSign, signature))
+        return signature
 
     def parse(self, b, password):
         p = Parser(b)
@@ -775,41 +774,36 @@ class TACK_SecretFile:
         self.iter_count = p.getInt(4)
         salt = p.getBytes(16)
         IV = p.getBytes(16)
-        ciphertext = p.getBytes(64)
-        self.out_of_chain_key = p.getBytes(64)
-        self.pin_break_code_sha256 = p.getBytes(32)
+        ciphertext = p.getBytes(32)
+        self.public_key = p.getBytes(64)
         mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
         encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
-        macData = IV + ciphertext + \
-            self.out_of_chain_key + self.pin_break_code_sha256
+        macData = IV + ciphertext + self.public_key
         calcMac = HMAC_SHA256(authKey, macData)
         if not constTimeCompare(calcMac, mac):
             return False        
         plaintext = aes_cbc_decrypt(encKey, IV, ciphertext)
-        self.private_key = plaintext[:32]
-        self.pin_break_code = plaintext[32:56]
+        self.private_key = plaintext
         return True
     
     def write(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
         encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
-        plaintext = self.private_key + self.pin_break_code + bytearray(8)
+        plaintext = self.private_key
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
-        macData = IV + ciphertext + \
-            self.out_of_chain_key + self.pin_break_code_sha256
+        macData = IV + ciphertext + self.public_key
         mac = HMAC_SHA256(authKey, macData)        
-        w = Writer(232)
+        w = Writer(168)
         w.add(TACK_SecretFile.magic, 3)
         w.add(self.version, 1)
         w.add(self.iter_count, 4)
         w.add(salt, 16)
         w.add(IV, 16)
-        w.add(ciphertext, 64)
-        w.add(self.out_of_chain_key, 64)
-        w.add(self.pin_break_code_sha256, 32)
+        w.add(ciphertext, 32)
+        w.add(self.public_key, 64)
         w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
         return w.bytes
@@ -831,12 +825,10 @@ def testStructures():
 
 
     # Test reading/writing TACK_Sig
-    sig.sig_type = TACK_Sig_Type.v1_cert
-    sig.sig_expiration = 1000000000
-    sig.sig_revocation = 1000000000
-    sig.sig_target_sha256 = bytearray(range(0, 32))
-    sig.out_of_chain_key = bytearray(range(32, 96))
-    sig.signature = bytearray(range(96, 160))
+    privKey, pubKey = ec256Generate()
+    sig.generate(TACK_Sig_Type.v1_cert,
+                 100000, 200000, os.urandom(32), pin,
+                 lambda(b):ecdsa256Sign(privKey, pubKey, b))
     sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
@@ -874,12 +866,14 @@ def testCert():
     sf.generate()    
         
     pin = TACK_Pin()
-    pin.generate(TACK_Pin_Type.v1, sf.out_of_chain_key, os.urandom(8))
+    pin.generate(TACK_Pin_Type.v1, os.urandom(8), sf.public_key)
         
+    privKey, pubKey = ec256Generate()
     sig = TACK_Sig()
     sig.generate(TACK_Sig_Type.v1_cert,
-                 sigExp, 0, SHA256(sslBytes),
-                 lambda b:sf.sign(b))
+                 sigExp, sigExp+100, 
+                 SHA256(sslBytes), pin,
+                 lambda(b):ecdsa256Sign(privKey,pubKey,b))
                      
     tc = TACK_Cert()
     tc.generate(pin, sig)
@@ -1047,7 +1041,7 @@ def pin(argv, update=False):
         tc.struct = TACK_Struct()
         tc.struct.pin = TACK_Pin()            
         label = bytearray(os.urandom(8))
-        tc.struct.pin.generate(TACK_Pin_Type.v1, label, sf.out_of_chain_key)
+        tc.struct.pin.generate(TACK_Pin_Type.v1, label, sf.public_key)
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
@@ -1056,7 +1050,7 @@ def pin(argv, update=False):
         sig_target_sha256 = sslc.in_chain_cert_sha256
     tc.struct.sig = TACK_Sig()
     tc.struct.sig.generate(sig_type, sig_expiration, sig_revocation, 
-                    sig_target_sha256, lambda b:sf.sign(b))
+                    sig_target_sha256, tc.struct.pin, sf.sign)
     
     b = tc.write()
     if not noPem:
@@ -1073,7 +1067,7 @@ def view(argv):
         printUsage("Can only view one object")
     b = bytearray(open(argv[0]).read())
     # If it's a secret file
-    if len(b) == 232 and b[:3] == TACK_SecretFile.magic:
+    if len(b) == 168 and b[:3] == TACK_SecretFile.magic:
         sfv = TACK_SecretFileViewer()
         sfv.parse(b)
         print "\n"+sfv.writeText()
