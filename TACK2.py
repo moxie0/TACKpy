@@ -865,11 +865,11 @@ def testCert():
     sigExp = currentTime + (24*60) * sigDays    
     
     sslBytes = bytearray(range(1,200))
-    sf = TACK_KeyFile()
-    sf.generate()    
+    kf = TACK_KeyFile()
+    kf.generate()    
         
     pin = TACK_Pin()
-    pin.generate(TACK_Pin_Type.v1, os.urandom(8), sf.public_key)
+    pin.generate(TACK_Pin_Type.v1, os.urandom(8), kf.public_key)
         
     privKey, pubKey = ec256Generate()
     sig = TACK_Sig()
@@ -887,7 +887,7 @@ def testCert():
 
 ################ MAIN ###
 
-import sys, getpass, getopt
+import sys, getpass, getopt, glob
 
 def printUsage(s=None):
     if s:
@@ -908,63 +908,75 @@ def newKeyFile(extraRandStr=""):
     if not extraRandStr:
         while len(extraRandStr)<20:
             extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")    
-    passwordStr = ""
-    while not passwordStr:
-        password1, password2 = "a", "b"
-        while password1 != password2:
-            password1 = getpass.getpass("Choose password for secret file: ")    
-            password2 = getpass.getpass("Re-enter password for secret file: ")  
-            if password1 != password2:
-                print "PASSWORDS DON'T MATCH!"      
-            else:
-                passwordStr = password1    
-    sf = TACK_KeyFile()
-    sf.generate(extraRandStr)
-    b = sf.write(passwordStr)
-    f = open("__TACK_key.dat", "wb")
-    f.write(b)
-    f.close()
-    return sf
+    kf = TACK_KeyFile()
+    kf.generate(extraRandStr)
+    return kf
 
-def openKeyFile(sfBytes):
-    sf = TACK_KeyFile()
+def openKeyFile(kfBytes):
+    kf = TACK_KeyFile()
     while 1:
-        password = getpass.getpass("Enter password for secret file: ")
-        if sf.parse(sfBytes, password):
+        password = getpass.getpass("Enter password for key file: ")
+        if kf.parse(kfBytes, password):
             break
         print "PASSWORD INCORRECT!"
-    return sf
+    return kf
 
 def createFileRaiseOSExIfExists(name):
     fd = os.open(name, os.O_EXCL | os.O_CREAT | os.O_WRONLY)
     f = os.fdopen(fd, "wb")
     return f    
 
-def writeTACKCert(tc, noPem=False, noBackup=False):    
+def writeKeyFile(kf, suffix):
+    passwordStr = ""
+    while not passwordStr:
+        password1, password2 = "a", "b"
+        while password1 != password2:
+            password1 = getpass.getpass("Choose password for key file: ")    
+            password2 = getpass.getpass("Re-enter password for key file: ")  
+            if password1 != password2:
+                print "PASSWORDS DON'T MATCH!"      
+            else:
+                passwordStr = password1    
+    b = kf.write(passwordStr)
+    f = open("__TACK_key_%s.dat" % suffix, "wb")
+    f.write(b)
+    f.close()
+    return kf    
+
+def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):    
     b = tc.write()
     if not noPem:
         b = pemCert(b)        
-    name = "__TACK_cert.dat"
-    try:
-        oldBytes = open(name, "rb").read()
-    except IOError:
-        pass
-    else:
-        baseBakName = "__OLD_TACK_cert_%s" % \
-            posixTimeToStr(time.time(), True)
-        bakName = baseBakName+".dat"
-        x = 0
-        while 1:
-            f = None
-            try:
-                f = createFileRaiseOSExIfExists(bakName)
-            except OSError:
-                bakName = baseBakName + ("_%d.dat" % x)
-                x += 1
-            if f:
-                break    
-        f.write(oldBytes)
-    open(name, "wb").write(b)    
+        
+    # Backup old TACK cert (if there is one)
+    if oldName:
+        oldf = open(oldName, "rb")
+        oldBytes = oldf.read()
+        oldf.close()
+        bakName = "__OLD" + oldName[1:] # chopp off first underscore
+        try:
+            bakf = createFileRaiseOSExIfExists(bakName)
+        except OSError:
+            printError(
+"Can't back up %s as its backup already exists?!" % bakName) 
+        bakf.write(oldBytes)
+        bakf.close()
+        os.remove(oldName)
+    
+    # Create the new filename, ensure it get a name later than
+    # the file it is replacing.  Sleeping is a little hokey, maybe
+    # it would be better to append something to the filenames?
+    while 1: 
+        newName = "__TACK_cert_%s_%s.dat" % \
+            (suffix, posixTimeToStr(time.time(), True))
+        if newName == oldName:
+            time.sleep(0.5)
+        else:
+            break
+
+    newf = open(newName, "wb")
+    newf.write(b)
+    newf.close()
     
 def pin(argv, update=False):
     # First, argument parsing
@@ -1017,52 +1029,67 @@ def pin(argv, update=False):
     except IOError:
         printUsage("SSL certificate file not found: %s" % argv[0])
 
-    try:
-        tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
-    except IOError:
+    tcGlob = glob.glob("__TACK_cert_*_*.dat")
+    if len(tcGlob) == 0:
         if update:
-            printUsage("__TACK_cert.dat not found")
+            printError("No TACK cert found")
         tcBytes = None
+        tcName = None
+        suffix = None
+    elif len(tcGlob) > 1:
+        printError("More than one TACK cert found")
+    else:
+        tcName = tcGlob[0]
+        lIndex = len("__TACK_cert_")
+        rIndex = tcName.find("_", lIndex)        
+        suffix = tcName[lIndex : rIndex]
+        tcBytes = bytearray(open(tcName, "rb").read())
 
-    try:    
-        sfBytes = bytearray(open("__TACK_key.dat", "rb").read())
-    except IOError:
+    kfGlob = glob.glob("__TACK_key_*.dat")
+    if len(kfGlob) == 0:
         if update:
-            printUsage("__TACK_key.dat not found")
-        sfBytes = None
+            printError("No TACK key found")
+        kfBytes = None
+    elif len(kfGlob) > 1:
+        printError("More than one TACK key found")
+    else:
+        kfName = kfGlob[0]
+        kfBytes = bytearray(open(kfName, "rb").read())
 
     # Parse file contents
     sslc = SSL_Cert()
     try:
         sslc.parse(sslBytes)        
     except SyntaxError:
-        prinError("SSL certificate file malformed: %s" % argv[0])
+        prinError("SSL certificate malformed: %s" % argv[0])
 
     tc = TACK_Cert()
     if tcBytes:
-        print "__TACK_cert.dat found, updating..."
+        print "Updating %s..." % tcName
         try:
             tc.parse(tcBytes)
         except SyntaxError:
-            printError("__TACK_cert.dat malformed")
+            printError("TACK certificate malformed: %s" % tcName)
     else:
         tc.generate()
-        print "No __TACK_cert.dat found, creating new one..."
+        print "No TACK certificate found, creating new one..."
 
-    if sfBytes:
-        print "__TACK_key.dat found, opening..."        
+    if kfBytes:
+        print "Opening %s..." % kfName        
         try:
-            sf = openKeyFile(sfBytes)        
+            kf = openKeyFile(kfBytes)   
+            mustWriteKeyFile = False     
         except SyntaxError:
-            printError("__TACK_key.dat malformed")        
+            printError("%s malformed" % kfName)        
     else:
-        print "No __TACK_key.dat, creating new one..."
-        sf = newKeyFile()
+        print "No TACK key, creating new one..."
+        kf = newKeyFile()
+        mustWriteKeyFile = True
 
     # Check existing TACK_Pin and TACK_Sig
     if update:
         if not tc.struct:
-            printError("__TACK_cert.dat has no TACK")
+            printError("TACK certificate has no TACK extension")
         tc.struct.sig = None
     elif not update and tc.struct:
         query = raw_input('There is an existing TACK, choose "y" to replace: ')
@@ -1070,12 +1097,21 @@ def pin(argv, update=False):
             printError("Cancelled")
         tc.struct = None
 
+    # Prompt for suffix
+    if not update:
+        if mustWriteKeyFile:
+            suffix = raw_input(
+"Enter a short suffix for your TACK key and cert files: ")
+        else:
+            suffix = raw_input(
+"Enter a short suffix for your TACK cert file: ")
+
     # Produce the TACK_Pin (if "new")
     if not update:
         tc.struct = TACK_Struct()
         tc.struct.pin = TACK_Pin()            
         label = bytearray(os.urandom(8))
-        tc.struct.pin.generate(TACK_Pin_Type.v1, label, sf.public_key)
+        tc.struct.pin.generate(TACK_Pin_Type.v1, label, kf.public_key)
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
@@ -1084,9 +1120,11 @@ def pin(argv, update=False):
         sig_target_sha256 = sslc.in_chain_cert_sha256
     tc.struct.sig = TACK_Sig()
     tc.struct.sig.generate(sig_type, sig_expiration, sig_revocation, 
-                    sig_target_sha256, tc.struct.pin, sf.sign)
+                    sig_target_sha256, tc.struct.pin, kf.sign)
 
-    writeTACKCert(tc, noPem)
+    writeTACKCert(tc, tcName, suffix, noPem)
+    if mustWriteKeyFile:
+        writeKeyFile(kf, suffix)
  
 def view(argv):
     if len(argv) < 1:
@@ -1097,11 +1135,11 @@ def view(argv):
         b = bytearray(open(argv[0]).read())
     except IOError:
         printError("File not found: %s" % argv[0])
-    # If it's a secret file
+    # If it's a key file
     if len(b) == 168 and b[:3] == TACK_KeyFile.magic:
-        sfv = TACK_KeyFileViewer()
-        sfv.parse(b)
-        print "\n"+sfv.writeText()
+        kfv = TACK_KeyFileViewer()
+        kfv.parse(b)
+        print "\n"+kfv.writeText()
     # If not it could be a certificate
     else: 
         try:
