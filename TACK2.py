@@ -127,9 +127,12 @@ def constTimeCompare(a, b):
 
 import time, calendar
 
-def timeUintToStr(u):    
-    t = time.gmtime(60*u)
-    s = time.strftime("%Y-%m-%dT%H:%MZ", t)
+def posixTimeToStr(u, includeSeconds=False):    
+    t = time.gmtime(u)
+    if includeSeconds:
+        s = time.strftime("%Y-%m-%dT%H:%M:%SZ", t)        
+    else:
+        s = time.strftime("%Y-%m-%dT%H:%MZ", t)
     return s
     
 def getDefaultExpiration():
@@ -393,8 +396,8 @@ sig_revocation         = %s
 sig_target_sha256      = 0x%s
 signature              = 0x%s""" % \
 (TACK_Sig_Type.strings[self.sig_type], 
-timeUintToStr(self.sig_expiration),
-timeUintToStr(self.sig_revocation),
+posixTimeToStr(self.sig_expiration*60),
+posixTimeToStr(self.sig_revocation*60),
 writeBytes(self.sig_target_sha256),
 writeBytes(self.signature))
         return "TACK_Sig:\n"+s
@@ -669,7 +672,7 @@ def pbkdf2_hmac_sha256(password, salt, iterations):
     return result
 
 # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
-def deriveSecretFileKeys(password, salt, iter_count):
+def deriveKeyFileKeys(password, salt, iter_count):
     assert(iter_count>0)
     masterKey = pbkdf2_hmac_sha256(password, salt, iter_count)
     encKey = HMAC_SHA256(masterKey, bytearray([1]))
@@ -698,7 +701,7 @@ def aes_cbc_encrypt(key, IV, plaintext):
         ciphertext += chainBlock
     return ciphertext     
 
-class TACK_SecretFileViewer:
+class TACK_KeyFileViewer:
     def __init__(self):
         self.version = 0
         self.iter_count = 0
@@ -711,7 +714,7 @@ class TACK_SecretFileViewer:
     def parse(self, b):
         p = Parser(b)
         magic = p.getBytes(3)
-        if magic != TACK_SecretFile.magic:
+        if magic != TACK_KeyFile.magic:
             raise SyntaxError("Bad magic number in Secret File")
         self.version = p.getInt(1)
         if self.version != 1:
@@ -740,10 +743,10 @@ mac                    = 0x%s""" % \
         writeBytes(self.ciphertext),
         writeBytes(self.public_key),
         writeBytes(self.mac))
-        return "TACK_SecretFile (encrypted):\n"+s        
+        return "TACK_KeyFile (encrypted):\n"+s        
         
     
-class TACK_SecretFile:
+class TACK_KeyFile:
     magic = bytearray([0x9A,0x61,0x27])
 
     def __init__(self):
@@ -766,7 +769,7 @@ class TACK_SecretFile:
     def parse(self, b, password):
         p = Parser(b)
         magic = p.getBytes(3)
-        if magic != TACK_SecretFile.magic:
+        if magic != TACK_KeyFile.magic:
             raise SyntaxError("Bad magic number in Secret File")
         self.version = p.getInt(1)
         if self.version != 1:
@@ -779,7 +782,7 @@ class TACK_SecretFile:
         mac = bytearray(p.getBytes(32))
         assert(p.index == len(b)) # did we fully consume byte-array?
 
-        encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
+        encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
         macData = IV + ciphertext + self.public_key
         calcMac = HMAC_SHA256(authKey, macData)
         if not constTimeCompare(calcMac, mac):
@@ -791,13 +794,13 @@ class TACK_SecretFile:
     def write(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
-        encKey, authKey = deriveSecretFileKeys(password, salt, self.iter_count)
+        encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
         plaintext = self.private_key
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
         macData = IV + ciphertext + self.public_key
         mac = HMAC_SHA256(authKey, macData)        
         w = Writer(168)
-        w.add(TACK_SecretFile.magic, 3)
+        w.add(TACK_KeyFile.magic, 3)
         w.add(self.version, 1)
         w.add(self.iter_count, 4)
         w.add(salt, 16)
@@ -843,12 +846,12 @@ def testStructures():
     assert(break_sig.write() == break_sig2.write())
         
 
-def testSecretFile():
-    f = TACK_SecretFile()
+def testKeyFile():
+    f = TACK_KeyFile()
     f.generate()
     
     b = f.write("abracadabra")
-    f2 = TACK_SecretFile()
+    f2 = TACK_KeyFile()
     assert(f2.parse(b, "abracadabra"))
     assert(f2.__dict__ == f.__dict__)
 
@@ -862,7 +865,7 @@ def testCert():
     sigExp = currentTime + (24*60) * sigDays    
     
     sslBytes = bytearray(range(1,200))
-    sf = TACK_SecretFile()
+    sf = TACK_KeyFile()
     sf.generate()    
         
     pin = TACK_Pin()
@@ -898,10 +901,10 @@ def printUsage(s=None):
     sys.exit(-1)
 
 def printError(s):
-    print "ERROR: %s" % s
+    print "ERROR: %s\n" % s
     sys.exit(-1)
 
-def newSecretFile(extraRandStr=""):
+def newKeyFile(extraRandStr=""):
     if not extraRandStr:
         while len(extraRandStr)<20:
             extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")    
@@ -915,16 +918,16 @@ def newSecretFile(extraRandStr=""):
                 print "PASSWORDS DON'T MATCH!"      
             else:
                 passwordStr = password1    
-    sf = TACK_SecretFile()
+    sf = TACK_KeyFile()
     sf.generate(extraRandStr)
     b = sf.write(passwordStr)
-    f = open("__TACK_secret_file.dat", "wb")
+    f = open("__TACK_key.dat", "wb")
     f.write(b)
     f.close()
     return sf
 
-def openSecretFile(sfBytes):
-    sf = TACK_SecretFile()
+def openKeyFile(sfBytes):
+    sf = TACK_KeyFile()
     while 1:
         password = getpass.getpass("Enter password for secret file: ")
         if sf.parse(sfBytes, password):
@@ -932,6 +935,37 @@ def openSecretFile(sfBytes):
         print "PASSWORD INCORRECT!"
     return sf
 
+def createFileRaiseOSExIfExists(name):
+    fd = os.open(name, os.O_EXCL | os.O_CREAT | os.O_WRONLY)
+    f = os.fdopen(fd, "wb")
+    return f    
+
+def writeTACKCert(tc, noPem=False, noBackup=False):    
+    b = tc.write()
+    if not noPem:
+        b = pemCert(b)        
+    name = "__TACK_cert.dat"
+    try:
+        oldBytes = open(name, "rb").read()
+    except IOError:
+        pass
+    else:
+        baseBakName = "__OLD_TACK_cert_%s" % \
+            posixTimeToStr(time.time(), True)
+        bakName = baseBakName+".dat"
+        x = 0
+        while 1:
+            f = None
+            try:
+                f = createFileRaiseOSExIfExists(bakName)
+            except OSError:
+                bakName = baseBakName + ("_%d.dat" % x)
+                x += 1
+            if f:
+                break    
+        f.write(oldBytes)
+    open(name, "wb").write(b)    
+    
 def pin(argv, update=False):
     # First, argument parsing
     if len(argv) < 1:
@@ -984,17 +1018,17 @@ def pin(argv, update=False):
         printUsage("SSL certificate file not found: %s" % argv[0])
 
     try:
-        tcBytes = bytearray(open("__TACK_certificate.dat", "rb").read())
+        tcBytes = bytearray(open("__TACK_cert.dat", "rb").read())
     except IOError:
         if update:
-            printUsage("__TACK_certificate.dat not found")
+            printUsage("__TACK_cert.dat not found")
         tcBytes = None
 
     try:    
-        sfBytes = bytearray(open("__TACK_secret_file.dat", "rb").read())
+        sfBytes = bytearray(open("__TACK_key.dat", "rb").read())
     except IOError:
         if update:
-            printUsage("__TACK_secret_file.dat not found")
+            printUsage("__TACK_key.dat not found")
         sfBytes = None
 
     # Parse file contents
@@ -1002,33 +1036,33 @@ def pin(argv, update=False):
     try:
         sslc.parse(sslBytes)        
     except SyntaxError:
-        printUsage("SSL certificate file malformed: %s" % argv[0])
+        prinError("SSL certificate file malformed: %s" % argv[0])
 
     tc = TACK_Cert()
     if tcBytes:
-        print "__TACK_certificate.dat found, updating..."
+        print "__TACK_cert.dat found, updating..."
         try:
             tc.parse(tcBytes)
         except SyntaxError:
-            printUsage("__TACK_certificate.dat malformed")
+            printError("__TACK_cert.dat malformed")
     else:
         tc.generate()
-        print "No __TACK_certificate.dat found, creating new one..."
+        print "No __TACK_cert.dat found, creating new one..."
 
     if sfBytes:
-        print "__TACK_secret_file.dat found, opening..."        
+        print "__TACK_key.dat found, opening..."        
         try:
-            sf = openSecretFile(sfBytes)        
+            sf = openKeyFile(sfBytes)        
         except SyntaxError:
-            printUsage("__TACK_secret_file.dat malformed")        
+            printError("__TACK_key.dat malformed")        
     else:
-        print "No __TACK_secret_file.dat, creating new one..."
-        sf = newSecretFile()
+        print "No __TACK_key.dat, creating new one..."
+        sf = newKeyFile()
 
     # Check existing TACK_Pin and TACK_Sig
     if update:
         if not tc.struct:
-            printError("__TACK_certificate.dat has no TACK")
+            printError("__TACK_cert.dat has no TACK")
         tc.struct.sig = None
     elif not update and tc.struct:
         query = raw_input('There is an existing TACK, choose "y" to replace: ')
@@ -1051,24 +1085,21 @@ def pin(argv, update=False):
     tc.struct.sig = TACK_Sig()
     tc.struct.sig.generate(sig_type, sig_expiration, sig_revocation, 
                     sig_target_sha256, tc.struct.pin, sf.sign)
-    
-    b = tc.write()
-    if not noPem:
-        b = pemCert(b)
-    f = open("__TACK_certificate.dat", "wb")
-    f.write(b)
-    f.close()
-    return tc
+
+    writeTACKCert(tc, noPem)
  
 def view(argv):
     if len(argv) < 1:
         printUsage("Missing argument: object to view")
     if len(argv) > 1:
         printUsage("Can only view one object")
-    b = bytearray(open(argv[0]).read())
+    try:
+        b = bytearray(open(argv[0]).read())
+    except IOError:
+        printError("File not found: %s" % argv[0])
     # If it's a secret file
-    if len(b) == 168 and b[:3] == TACK_SecretFile.magic:
-        sfv = TACK_SecretFileViewer()
+    if len(b) == 168 and b[:3] == TACK_KeyFile.magic:
+        sfv = TACK_KeyFileViewer()
         sfv.parse(b)
         print "\n"+sfv.writeText()
     # If not it could be a certificate
@@ -1096,7 +1127,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == "test":
         testCert()
         testStructures()
-        testSecretFile()        
+        testKeyFile()        
     elif sys.argv[1] == "new":
         pin(sys.argv[2:], False)
     elif sys.argv[1] == "update":
