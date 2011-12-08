@@ -468,7 +468,7 @@ class TACK_Break_Sigs:
         return "".join(b.writeText() for b in self.break_sigs)
 
 
-class TACK_Struct:
+class TACK:
     def __init__(self):
         self.pin = None
         self.sig = None
@@ -551,18 +551,18 @@ cert_sha256            = 0x%s\n""" % (\
 ################ TACK CERT ###
 
 class TACK_Cert:
-    oid_TACK_Struct = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
+    oid_TACK = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
     oid_TACK_Break_Sigs = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
     
     def __init__(self):
-        self.struct = None
+        self.TACK = None
         self.break_sigs = None
         self.preExtBytes = None 
         self.extBytes = None
         self.postExtBytes = None
     
     def generate(self, pin=None, sig=None, break_sigs=None):
-        self.struct = None
+        self.TACK = None
         self.break_sigs = None
         self.preExtBytes = binascii.a2b_hex(\
 "a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
@@ -622,11 +622,11 @@ class TACK_Cert:
                     
             # Check the extnID and parse out TACK structure if present
             extnIDP = extFieldP.getChild(0)            
-            if extnIDP.value == TACK_Cert.oid_TACK_Struct:
-                if self.struct:
+            if extnIDP.value == TACK_Cert.oid_TACK:
+                if self.TACK:
                     raise SyntaxError("More than one TACK structure")                
-                self.struct = TACK_Struct()
-                self.struct.parse(extFieldP.getChild(1).value)                    
+                self.TACK = TACK()
+                self.TACK.parse(extFieldP.getChild(1).value)                    
             elif extnIDP.value == TACK_Cert.oid_TACK_Break_Sigs:
                 if self.break_sigs:
                     raise SyntaxError("More than one TACK_Break_Sigs")                
@@ -643,12 +643,12 @@ class TACK_Cert:
         
     def write(self):        
         b = bytearray(0)
-        if self.struct:
+        if self.TACK:
             # type=SEQ,len=?,type=6,len=9(for OID),
-            # type=4,len=?,TACK_Struct
-            structBytes = self.struct.write()            
-            b = bytearray([4]) + asn1Length(len(structBytes)) + structBytes
-            b = bytearray([6,9]) + self.oid_TACK_Struct + b
+            # type=4,len=?,TACK
+            TACKBytes = self.TACK.write()            
+            b = bytearray([4]) + asn1Length(len(TACKBytes)) + TACKBytes
+            b = bytearray([6,9]) + self.oid_TACK + b
             b = bytearray([0x30]) + asn1Length(len(b)) + b
         if self.break_sigs:
             breakBytes = self.break_sigs.write()
@@ -672,8 +672,8 @@ class TACK_Cert:
 
     def writeText(self):
         s = ""
-        if self.struct:
-            s += self.struct.writeText()
+        if self.TACK:
+            s += self.TACK.writeText()
         if self.break_sigs:
             s += self.break_sigs.writeText()
         if not s:
@@ -935,6 +935,7 @@ def printUsage(s=None):
     print"Commands:"
     print "  new    <ssl_cert>"
     print "  update <ssl_cert>"
+    print "  break"
     print "  view   <file or site>"
     print
     sys.exit(-1)
@@ -1074,7 +1075,7 @@ def confirmY(s):
 def pin(argv, update=False):
     # Collect cmdline args into a dictionary
     if len(argv) < 1:
-        printUsage("Missing argument: SSL certificate file")    
+        printError("Missing argument: SSL certificate file")    
     noArgArgs = ["--no_pem"]
     oneArgArgs= ["--sig_type", "--sig_expiration", "--sig_revocation"]
 
@@ -1083,17 +1084,17 @@ def pin(argv, update=False):
     for arg in argv[1:]:
         parts = arg.split("=")
         if parts[0] in argsDict:
-            printUsage("Duplicate argument: %s" % parts[0])
+            printError("Duplicate argument: %s" % parts[0])
         if len(parts)==2:
             if not parts[0] in oneArgArgs:
-                printUsage("Unknown or malformed argument: %s" % parts[0])
+                printError("Unknown or malformed argument: %s" % parts[0])
             argsDict[parts[0]] = parts[1]
         elif len(parts)==1:
             if not parts[0] in noArgArgs:
-                printUsage("Unknown or malformed argument: %s" % parts[0])            
+                printError("Unknown or malformed argument: %s" % parts[0])            
             argsDict[parts[0]] = None
         else:
-            printUsage("Unknown or malformed argument: %s" % parts[0])
+            printError("Unknown or malformed argument: %s" % parts[0])
 
     # Process the cmdline dictionary
     noPem = False
@@ -1111,7 +1112,7 @@ def pin(argv, update=False):
         elif val == "v1_cert":
             sig_type = TACK_Sig_Type.v1_cert
         else:
-            printUsage("Unrecognized sig_type")
+            printError("Unrecognized sig_type")
     if "--sig_expiration" in argsDict:
         sig_expiration = parseTimeArg(argsDict["--sig_expiration"])
     if "--sig_revocation" in argsDict:
@@ -1121,7 +1122,7 @@ def pin(argv, update=False):
     try:
         sslBytes = bytearray(open(sslName).read())
     except IOError:
-        printUsage("SSL certificate file not found: %s" % argv[0])
+        printError("SSL certificate file not found: %s" % argv[0])
     sslc = SSL_Cert()
     try:
         sslc.parse(sslBytes)        
@@ -1139,12 +1140,12 @@ def pin(argv, update=False):
 
     # Check existing TACK_Pin and TACK_Sig
     if update:
-        if not tc.struct:
+        if not tc.TACK:
             printError("TACK certificate has no TACK extension")
-        tc.struct.sig = None
-    elif not update and tc.struct:
+        tc.TACK.sig = None
+    elif not update and tc.TACK:
         confirmY('There is an existing TACK, choose "y" to replace: ')        
-        tc.struct = None
+        tc.TACK = None
 
     # Prompt for suffix
     if not update:
@@ -1157,19 +1158,19 @@ def pin(argv, update=False):
 
     # Produce the TACK_Pin (if "new")
     if not update:
-        tc.struct = TACK_Struct()
-        tc.struct.pin = TACK_Pin()            
+        tc.TACK = TACK()
+        tc.TACK.pin = TACK_Pin()            
         label = bytearray(os.urandom(8))
-        tc.struct.pin.generate(TACK_Pin_Type.v1, label, kf.public_key)
+        tc.TACK.pin.generate(TACK_Pin_Type.v1, label, kf.public_key)
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
         sig_target_sha256 = sslc.key_sha256
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
-    tc.struct.sig = TACK_Sig()
-    tc.struct.sig.generate(sig_type, sig_expiration, sig_revocation, 
-                    sig_target_sha256, tc.struct.pin, kf.sign)
+    tc.TACK.sig = TACK_Sig()
+    tc.TACK.sig.generate(sig_type, sig_expiration, sig_revocation, 
+                    sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
     writeTACKCert(tc, tcName, suffix, noPem)
@@ -1196,16 +1197,16 @@ def breakPin(argv):
     break_sig = TACK_Break_Sig()
     
 
-    if not tc.struct:
+    if not tc.TACK:
         print "WARNING: There is no existing TACK..."
         pin_label = promptForPinLabel()
         print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
-    elif tc.struct.pin.pin_key != kf.public_key:
+    elif tc.TACK.pin.pin_key != kf.public_key:
         print "WARNING: This key DOES NOT MATCH the existing TACK..."
         pin_label = promptForPinLabel()
         print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
     else:
-        pin_label = tc.struct.pin.pin_label
+        pin_label = tc.TACK.pin.pin_label
         print "Breaking existing TACK, pin_label = 0x%s" % binascii.b2a_hex(pin_label)
     confirmY('Is this correct? ("y" to continue): ')            
     
@@ -1213,17 +1214,17 @@ def breakPin(argv):
     tc.break_sigs.add(break_sig)
     
     # If we broke the existing TACK pin, remove it
-    if tc.struct and pin_label == tc.struct.pin.pin_label and \
-            kf.public_key == tc.struct.pin.pin_key:
-        tc.struct = None
+    if tc.TACK and pin_label == tc.TACK.pin.pin_label and \
+            kf.public_key == tc.TACK.pin.pin_key:
+        tc.TACK = None
     
     writeTACKCert(tc, tcName, suffix, noPem)
      
 def view(argv):
     if len(argv) < 1:
-        printUsage("Missing argument: object to view")
+        printError("Missing argument: object to view")
     if len(argv) > 1:
-        printUsage("Can only view one object")
+        printError("Can only view one object")
     try:
         b = bytearray(open(argv[0]).read())
     except IOError:
@@ -1239,7 +1240,7 @@ def view(argv):
             written=0            
             tc = TACK_Cert()
             tc.parse(b)
-            if tc.struct or tc.break_sigs:
+            if tc.TACK or tc.break_sigs:
                 print tc.writeText()
                 written = 1      
         except SyntaxError:
@@ -1250,7 +1251,7 @@ def view(argv):
                 sslc.parse(b)
                 print sslc.writeText()      
             except SyntaxError:
-                printUsage("Unrecognized file type")
+                printError("Unrecognized file type")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
