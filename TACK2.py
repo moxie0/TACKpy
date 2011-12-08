@@ -986,7 +986,10 @@ def writeKeyFile(kf, suffix):
 def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):    
     b = tc.write()
     if not noPem:
-        b = pemCert(b)        
+        newExt = "pem"
+        b = pemCert(b)
+    else:
+        newExt = "der"       
         
     # Backup old TACK cert (if there is one)
     if oldName:
@@ -1007,9 +1010,9 @@ def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):
     # the file it is replacing.  Sleeping is a little hokey, maybe
     # it would be better to append something to the filenames?
     while 1: 
-        newName = "__TACK_cert_%s_%s.dat" % \
-            (suffix, posixTimeToStr(time.time(), True))
-        if newName == oldName:
+        newName = "__TACK_cert_%s_%s.%s" % \
+            (suffix, posixTimeToStr(time.time(), True), newExt)
+        if oldName and newName[:-3] == oldName[:-3]: #compare except extensions
             time.sleep(0.5)
         else:
             break
@@ -1019,7 +1022,9 @@ def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):
     newf.close()
 
 def openTACKFiles(errorNoCertOrKey=False):       
-    tcGlob = glob.glob("__TACK_cert_*_*.dat")
+    tcGlobPem = glob.glob("__TACK_cert_*_*.pem")
+    tcGlobDer = glob.glob("__TACK_cert_*_*.der")
+    tcGlob = tcGlobPem + tcGlobDer
     if len(tcGlob) == 0:
         if errorNoCertOrKey:
             printError("No TACK cert found")
