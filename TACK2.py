@@ -933,13 +933,13 @@ import sys, getpass, getopt, glob
 
 def printUsage(s=None):
     if s:
-        print "ERROR: %s" % s
-    print
+        print "ERROR: %s\n" % s
     print"Commands:"
     print "  new    <ssl_cert>"
     print "  update <ssl_cert>"
     print "  break"
     print "  view   <file or site>"
+    print "  help   <command>"
     print
     sys.exit(-1)
 
@@ -987,9 +987,9 @@ def writeKeyFile(kf, suffix):
     return kf    
 
 def writeTACKCert(tc, oldName, suffix, tcNameCounter, 
-                    noPem=False, noBackup=False):    
+                    der=False, noBackup=False):    
     b = tc.write()
-    if not noPem:
+    if not der:
         newExt = ".pem"
         b = pemCert(b)
     else:
@@ -1009,20 +1009,65 @@ def writeTACKCert(tc, oldName, suffix, tcNameCounter,
         bakf.write(oldBytes)
         bakf.close()
     
-    # Create the new filename, ensure it gets a name after the
+    # Create the new filename, giving it a name after the 
     # file it is replacing.
     newNameNoExt = "TACK_cert_%s_%s" % (suffix, getDateStr())
+    newNameCounter = 0
     if oldName and oldName.startswith(newNameNoExt):
         newNameCounter = tcNameCounter + 1
-        newNameNoExt += "_%03d" % newNameCounter
+    
+    # Now look at the backup directory to see if there is
+    # a name collison that will appear when we later try to
+    # backup this file.  This could occur if the user reuses
+    # a suffix that already has some backed-up files, but 
+    # which does not match the current old file.
+    for name in glob.glob("OLD_" + newNameNoExt + "*"):
+        suffix, counter = parseTACKCertName(name, True)
+        newNameCounter = max(newNameCounter, counter+1)
+
+    # Prepare the new name, with counter and extension
+    if newNameCounter > 0:    
+        newNameNoExt += "_%03d" % newNameCounter    
     newName = newNameNoExt + newExt    
+    
     # Write to the new file, remove the old file
     newf = open(newName, "wb")
     newf.write(b)
     newf.close()
     if oldName:
         os.remove(oldName)
-        
+
+def parseTACKCertName(tcName, old=False):
+    if old:
+        lIndex = len("OLD_TACK_cert_")
+    else:
+        lIndex = len("TACK_cert_")
+    rIndex = tcName.find("_", lIndex)        
+    tcSuffix = tcName[lIndex : rIndex]
+
+    lIndex = rIndex+1
+    rIndex = tcName.find("_", lIndex)
+    if rIndex == -1:
+        rIndex = tcName.find(".", lIndex)
+    if rIndex == -1: # should be impossible, due to glob, but...
+        printError("Malformed TACK certificate name, before date: %s" % tcName)
+    dateStamp = tcName[lIndex : rIndex]
+    try:
+        time.strptime(dateStamp, "%Y-%m-%d")
+    except ValueError:
+        printError("Malformed TACK certificate name, bad date: %s" % tcName)
+
+    if tcName[rIndex] == ".":
+        tcNameCounter = 0
+    else:
+        if tcName[rIndex] != "_":
+            printError("Malformed TACK certificate name, after date: %s" % tcName)
+        try:
+            tcNameCounter = int(tcName[rIndex+1 : -4])
+        except ValueError:
+            printError("Malformed TACK certificate name, counter: %s" % tcName)
+    return tcSuffix, tcNameCounter
+            
 def openTACKFiles(errorNoCertOrKey=False):       
     tcGlobPem = glob.glob("TACK_cert_*_*.pem")
     tcGlobDer = glob.glob("TACK_cert_*_*.der")
@@ -1038,31 +1083,7 @@ def openTACKFiles(errorNoCertOrKey=False):
         printError("More than one TACK cert found")
     else:
         tcName = tcGlob[0]
-        lIndex = len("TACK_cert_")
-        rIndex = tcName.find("_", lIndex)        
-        tcSuffix = tcName[lIndex : rIndex]
-
-        lIndex = rIndex+1
-        rIndex = tcName.find("_", lIndex)
-        if rIndex == -1:
-            rIndex = tcName.find(".", lIndex)
-        if rIndex == -1: # should be impossible, due to glob, but...
-            printError("Malformed TACK certificate name, before date: %s" % tcName)
-        dateStamp = tcName[lIndex : rIndex]
-        try:
-            time.strptime(dateStamp, "%Y-%m-%d")
-        except ValueError:
-            printError("Malformed TACK certificate name, bad date: %s" % tcName)
-
-        if tcName[rIndex] == ".":
-            tcNameCounter = 0
-        else:
-            if tcName[rIndex] != "_":
-                printError("Malformed TACK certificate name, after date: %s" % tcName)
-            try:
-                tcNameCounter = int(tcName[rIndex+1 : -4])
-            except ValueError:
-                printError("Malformed TACK certificate name, counter: %s" % tcName)
+        tcSuffix, tcNameCounter = parseTACKCertName(tcName)
         tcBytes = bytearray(open(tcName, "rb").read())
 
     kfGlob = glob.glob("TACK_key_*.dat")
@@ -1106,7 +1127,7 @@ def pin(argv, update=False):
     # Collect cmdline args into a dictionary
     if len(argv) < 1:
         printError("Missing argument: SSL certificate file")    
-    noArgArgs = ["--no_pem"]
+    noArgArgs = ["--der", "--no_backup", "--replace"]
     oneArgArgs= ["--sig_type", "--sig_expiration", "--sig_revocation"]
 
     sslName = argv[0]
@@ -1127,14 +1148,20 @@ def pin(argv, update=False):
             printError("Unknown or malformed argument: %s" % parts[0])
 
     # Process the cmdline dictionary
-    noPem = False
+    der = False
+    noBackup = False
+    forceReplace = False
     sig_type = TACK_Sig_Type.v1_cert
     defaultExpiration = getDefaultExpiration()
     sig_expiration = defaultExpiration
     sig_revocation = defaultExpiration
 
-    if "--no_pem" in argsDict:
-        noPem = True   
+    if "--der" in argsDict:
+        der = True   
+    if "--no_backup" in argsDict:
+        noBackup = True   
+    if "--replace" in argsDict:
+        forceReplace = True   
     if "--sig_type" in argsDict:    
         val = argsDict["--sig_type"]
         if val == "v1_key":
@@ -1174,7 +1201,8 @@ def pin(argv, update=False):
             printError("TACK certificate has no TACK extension")
         tc.TACK.sig = None
     elif not update and tc.TACK:
-        confirmY('There is an existing TACK, choose "y" to replace: ')        
+        if not forceReplace:
+            confirmY('There is an existing TACK, choose "y" to replace: ')        
         tc.TACK = None
 
     # Prompt for suffix
@@ -1203,7 +1231,7 @@ def pin(argv, update=False):
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
-    writeTACKCert(tc, tcName, suffix, tcNameCounter, noPem)
+    writeTACKCert(tc, tcName, suffix, tcNameCounter, der, noBackup)
     if mustWriteKeyFile:
         writeKeyFile(kf, suffix)
 
@@ -1220,7 +1248,7 @@ def promptForPinLabel():
     return pin_label
 
 def breakPin(argv):
-    noPem = True
+    der = True
     tc, kf, tcName, suffix, nameCounter = openTACKFiles(True)
     if not tc.break_sigs:
         tc.break_sigs = TACK_Break_Sigs()
@@ -1247,7 +1275,7 @@ def breakPin(argv):
             kf.public_key == tc.TACK.pin.pin_key:
         tc.TACK = None
     
-    writeTACKCert(tc, tcName, suffix, nameCounter, noPem)
+    writeTACKCert(tc, tcName, suffix, nameCounter, der)
      
 def view(argv):
     if len(argv) < 1:
@@ -1282,6 +1310,26 @@ def view(argv):
             except SyntaxError:
                 printError("Unrecognized file type")
 
+def help(argv):
+    if len(argv) == 0:
+        printUsage()
+    cmd = argv[0]
+    if cmd == "new":
+        print("""Creates a new TACK.
+        
+  new <ssl_cert>     : create a new TACK, pinning the specified certificate. 
+
+Optional arguments:
+  --der              : write output as .der instead of .pem
+  --no_backup        : don't backup the TACK certificate
+  --replace          : replace existing TACK without prompting
+  --pass=            : use this TACK key password
+  --suffix=          : use this TACK file suffix
+  --sig_type=        : pin to "v1_key" or "v1_cert"
+  --sig_expiration=  : use this time for sig_expiration
+  --sig_revocation=  : use this time for sig_revocation
+""")
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         printUsage("Missing command")
@@ -1297,6 +1345,8 @@ if __name__ == '__main__':
         breakPin(sys.argv[2:])
     elif sys.argv[1] == "view":
         view(sys.argv[2:])
+    elif sys.argv[1] == "help":
+        help(sys.argv[2:])
     else:
         printUsage("Unknown command: %s" % sys.argv[1])
 
