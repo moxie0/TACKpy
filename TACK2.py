@@ -125,7 +125,7 @@ def constTimeCompare(a, b):
 
 ################ TIME ###
 
-import time, calendar
+import time, calendar, datetime
 
 def posixTimeToStr(u, includeSeconds=False):    
     t = time.gmtime(u)
@@ -145,7 +145,10 @@ def parseTimeArg(arg):
     t = time.strptime(arg, "%Y-%m-%dT%H:%MZ")
     u = int(calendar.timegm(t)/60)
     return u
-    
+
+def getDateStr():
+    now = datetime.datetime.now()
+    return now.strftime("%Y-%m-%d") 
 
 ################ CODEC ###
 
@@ -983,44 +986,43 @@ def writeKeyFile(kf, suffix):
     f.close()
     return kf    
 
-def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):    
+def writeTACKCert(tc, oldName, suffix, tcNameCounter, 
+                    noPem=False, noBackup=False):    
     b = tc.write()
     if not noPem:
-        newExt = "pem"
+        newExt = ".pem"
         b = pemCert(b)
     else:
-        newExt = "der"       
+        newExt = ".der"       
         
     # Backup old TACK cert (if there is one)
-    if oldName:
+    if oldName and not noBackup:
         oldf = open(oldName, "rb")
         oldBytes = oldf.read()
         oldf.close()
-        bakName = "OLD" + oldName[1:] # chopp off first underscore
+        bakName = "OLD_" + oldName
         try:
             bakf = createFileRaiseOSExIfExists(bakName)
         except OSError:
-            printError(
-"Can't back up %s as its backup already exists?!" % bakName) 
+            # If the backup already exists:
+            printError("Can't back up %s" % oldName) 
         bakf.write(oldBytes)
         bakf.close()
-        os.remove(oldName)
     
-    # Create the new filename, ensure it get a name later than
-    # the file it is replacing.  Sleeping is a little hokey, maybe
-    # it would be better to append something to the filenames?
-    while 1: 
-        newName = "TACK_cert_%s_%s.%s" % \
-            (suffix, posixTimeToStr(time.time(), True), newExt)
-        if oldName and newName[:-3] == oldName[:-3]: #compare except extensions
-            time.sleep(0.5)
-        else:
-            break
-
+    # Create the new filename, ensure it gets a name after the
+    # file it is replacing.
+    newNameNoExt = "TACK_cert_%s_%s" % (suffix, getDateStr())
+    if oldName and oldName.startswith(newNameNoExt):
+        newNameCounter = tcNameCounter + 1
+        newNameNoExt += "_%03d" % newNameCounter
+    newName = newNameNoExt + newExt    
+    # Write to the new file, remove the old file
     newf = open(newName, "wb")
     newf.write(b)
     newf.close()
-
+    if oldName:
+        os.remove(oldName)
+        
 def openTACKFiles(errorNoCertOrKey=False):       
     tcGlobPem = glob.glob("TACK_cert_*_*.pem")
     tcGlobDer = glob.glob("TACK_cert_*_*.der")
@@ -1030,14 +1032,37 @@ def openTACKFiles(errorNoCertOrKey=False):
             printError("No TACK cert found")
         tcBytes = None
         tcName = None
-        suffix = None
+        tcNameCounter = None
+        tcSuffix = None
     elif len(tcGlob) > 1:
         printError("More than one TACK cert found")
     else:
         tcName = tcGlob[0]
         lIndex = len("TACK_cert_")
         rIndex = tcName.find("_", lIndex)        
-        suffix = tcName[lIndex : rIndex]
+        tcSuffix = tcName[lIndex : rIndex]
+
+        lIndex = rIndex+1
+        rIndex = tcName.find("_", lIndex)
+        if rIndex == -1:
+            rIndex = tcName.find(".", lIndex)
+        if rIndex == -1: # should be impossible, due to glob, but...
+            printError("Malformed TACK certificate name, before date: %s" % tcName)
+        dateStamp = tcName[lIndex : rIndex]
+        try:
+            time.strptime(dateStamp, "%Y-%m-%d")
+        except ValueError:
+            printError("Malformed TACK certificate name, bad date: %s" % tcName)
+
+        if tcName[rIndex] == ".":
+            tcNameCounter = 0
+        else:
+            if tcName[rIndex] != "_":
+                printError("Malformed TACK certificate name, after date: %s" % tcName)
+            try:
+                tcNameCounter = int(tcName[rIndex+1 : -4])
+            except ValueError:
+                printError("Malformed TACK certificate name, counter: %s" % tcName)
         tcBytes = bytearray(open(tcName, "rb").read())
 
     kfGlob = glob.glob("TACK_key_*.dat")
@@ -1070,7 +1095,7 @@ def openTACKFiles(errorNoCertOrKey=False):
             printError("%s malformed" % kfName)        
     else:
         kf = None
-    return (tc, kf, suffix, tcName)
+    return (tc, kf, tcName, tcSuffix, tcNameCounter)
 
 def confirmY(s):
     query = raw_input(s)
@@ -1135,7 +1160,7 @@ def pin(argv, update=False):
         prinError("SSL certificate malformed: %s" % argv[0])
     
     # Open the TACK_cert and TACK_key files, creating latter if needed
-    tc, kf, suffix, tcName = openTACKFiles(update)
+    tc, kf, tcName, suffix, tcNameCounter = openTACKFiles(update)
     if not kf:
         print "No TACK key found, creating new one..."
         kf = newKeyFile()
@@ -1178,7 +1203,7 @@ def pin(argv, update=False):
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
-    writeTACKCert(tc, tcName, suffix, noPem)
+    writeTACKCert(tc, tcName, suffix, tcNameCounter, noPem)
     if mustWriteKeyFile:
         writeKeyFile(kf, suffix)
 
