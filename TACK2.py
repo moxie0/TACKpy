@@ -1221,7 +1221,7 @@ def promptForPinLabel():
 
 def breakPin(argv):
     noPem = True
-    tc, kf, suffix, tcName = openTACKFiles(True)
+    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True)
     if not tc.break_sigs:
         tc.break_sigs = TACK_Break_Sigs()
     break_sig = TACK_Break_Sig()   
@@ -1247,7 +1247,7 @@ def breakPin(argv):
             kf.public_key == tc.TACK.pin.pin_key:
         tc.TACK = None
     
-    writeTACKCert(tc, tcName, suffix, noPem)
+    writeTACKCert(tc, tcName, suffix, nameCounter, noPem)
      
 def view(argv):
     if len(argv) < 1:
