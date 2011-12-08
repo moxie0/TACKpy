@@ -620,11 +620,11 @@ class TACK_Cert:
             if not extFieldP:
                 break
                     
-            # Check the extnID and parse out TACK structure if present
+            # Check the extnID and parse out TACK if present
             extnIDP = extFieldP.getChild(0)            
             if extnIDP.value == TACK_Cert.oid_TACK:
                 if self.TACK:
-                    raise SyntaxError("More than one TACK structure")                
+                    raise SyntaxError("More than one TACK")                
                 self.TACK = TACK()
                 self.TACK.parse(extFieldP.getChild(1).value)                    
             elif extnIDP.value == TACK_Cert.oid_TACK_Break_Sigs:
@@ -978,7 +978,7 @@ def writeKeyFile(kf, suffix):
             else:
                 passwordStr = password1    
     b = kf.write(passwordStr)
-    f = open("__TACK_key_%s.dat" % suffix, "wb")
+    f = open("TACK_key_%s.dat" % suffix, "wb")
     f.write(b)
     f.close()
     return kf    
@@ -996,7 +996,7 @@ def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):
         oldf = open(oldName, "rb")
         oldBytes = oldf.read()
         oldf.close()
-        bakName = "__OLD" + oldName[1:] # chopp off first underscore
+        bakName = "OLD" + oldName[1:] # chopp off first underscore
         try:
             bakf = createFileRaiseOSExIfExists(bakName)
         except OSError:
@@ -1010,7 +1010,7 @@ def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):
     # the file it is replacing.  Sleeping is a little hokey, maybe
     # it would be better to append something to the filenames?
     while 1: 
-        newName = "__TACK_cert_%s_%s.%s" % \
+        newName = "TACK_cert_%s_%s.%s" % \
             (suffix, posixTimeToStr(time.time(), True), newExt)
         if oldName and newName[:-3] == oldName[:-3]: #compare except extensions
             time.sleep(0.5)
@@ -1022,8 +1022,8 @@ def writeTACKCert(tc, oldName, suffix, noPem=False, noBackup=False):
     newf.close()
 
 def openTACKFiles(errorNoCertOrKey=False):       
-    tcGlobPem = glob.glob("__TACK_cert_*_*.pem")
-    tcGlobDer = glob.glob("__TACK_cert_*_*.der")
+    tcGlobPem = glob.glob("TACK_cert_*_*.pem")
+    tcGlobDer = glob.glob("TACK_cert_*_*.der")
     tcGlob = tcGlobPem + tcGlobDer
     if len(tcGlob) == 0:
         if errorNoCertOrKey:
@@ -1035,12 +1035,12 @@ def openTACKFiles(errorNoCertOrKey=False):
         printError("More than one TACK cert found")
     else:
         tcName = tcGlob[0]
-        lIndex = len("__TACK_cert_")
+        lIndex = len("TACK_cert_")
         rIndex = tcName.find("_", lIndex)        
         suffix = tcName[lIndex : rIndex]
         tcBytes = bytearray(open(tcName, "rb").read())
 
-    kfGlob = glob.glob("__TACK_key_*.dat")
+    kfGlob = glob.glob("TACK_key_*.dat")
     if len(kfGlob) == 0:
         if errorNoCertOrKey:
             printError("No TACK key found")
@@ -1134,7 +1134,7 @@ def pin(argv, update=False):
     except SyntaxError:
         prinError("SSL certificate malformed: %s" % argv[0])
     
-    # Open the __TACK_cert and __TACK_key files, creating latter if needed
+    # Open the TACK_cert and TACK_key files, creating latter if needed
     tc, kf, suffix, tcName = openTACKFiles(update)
     if not kf:
         print "No TACK key found, creating new one..."
@@ -1199,8 +1199,7 @@ def breakPin(argv):
     tc, kf, suffix, tcName = openTACKFiles(True)
     if not tc.break_sigs:
         tc.break_sigs = TACK_Break_Sigs()
-    break_sig = TACK_Break_Sig()
-    
+    break_sig = TACK_Break_Sig()   
 
     if not tc.TACK:
         print "WARNING: There is no existing TACK..."
