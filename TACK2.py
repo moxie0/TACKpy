@@ -935,10 +935,10 @@ def printUsage(s=None):
     if s:
         print "ERROR: %s\n" % s
     print"Commands:"
-    print "  new    <ssl_cert>"
-    print "  update <ssl_cert>"
+    print "  new    <cert>"
+    print "  update <cert>"
     print "  break"
-    print "  view   <file or site>"
+    print "  view   <file>"
     print "  help   <command>"
     print
     sys.exit(-1)
@@ -955,8 +955,13 @@ def newKeyFile(extraRandStr=""):
     kf.generate(extraRandStr)
     return kf
 
-def openKeyFile(kfBytes):
+def openKeyFile(kfBytes, password=None):
     kf = TACK_KeyFile()
+    if password:
+        if not kf.parse(kfBytes, password):
+            printError("Bad password")
+        else:
+            return kf
     while 1:
         password = getpass.getpass("Enter password for key file: ")
         if kf.parse(kfBytes, password):
@@ -1068,7 +1073,7 @@ def parseTACKCertName(tcName, old=False):
             printError("Malformed TACK certificate name, counter: %s" % tcName)
     return tcSuffix, tcNameCounter
             
-def openTACKFiles(errorNoCertOrKey=False):       
+def openTACKFiles(errorNoCertOrKey=False, password=None):       
     tcGlobPem = glob.glob("TACK_cert_*_*.pem")
     tcGlobDer = glob.glob("TACK_cert_*_*.der")
     tcGlob = tcGlobPem + tcGlobDer
@@ -1111,7 +1116,7 @@ def openTACKFiles(errorNoCertOrKey=False):
     if kfBytes:
         print "Opening %s..." % kfName        
         try:
-            kf = openKeyFile(kfBytes)   
+            kf = openKeyFile(kfBytes, password)   
         except SyntaxError:
             printError("%s malformed" % kfName)        
     else:
@@ -1127,8 +1132,11 @@ def pin(argv, update=False):
     # Collect cmdline args into a dictionary
     if len(argv) < 1:
         printError("Missing argument: SSL certificate file")    
-    noArgArgs = ["--der", "--no_backup", "--replace"]
-    oneArgArgs= ["--sig_type", "--sig_expiration", "--sig_revocation"]
+    noArgArgs = ["--der", "--no_backup"]
+    oneArgArgs= ["--sig_type", "--sig_expiration", "--sig_revocation",
+                "--suffix", "--password"]
+    if not update:
+        noArgArgs += ["--replace"]
 
     sslName = argv[0]
     argsDict = {}    
@@ -1155,6 +1163,8 @@ def pin(argv, update=False):
     defaultExpiration = getDefaultExpiration()
     sig_expiration = defaultExpiration
     sig_revocation = defaultExpiration
+    cmdlineSuffix = None
+    password = None
 
     if "--der" in argsDict:
         der = True   
@@ -1174,6 +1184,10 @@ def pin(argv, update=False):
         sig_expiration = parseTimeArg(argsDict["--sig_expiration"])
     if "--sig_revocation" in argsDict:
         sig_revocation = parseTimeArg(argsDict["--sig_revocation"])
+    if "--suffix" in argsDict:
+        cmdlineSuffix = argsDict["--suffix"]
+    if "--password" in argsDict:
+        password = argsDict["--password"]
     
     # Open the SSL cert
     try:
@@ -1187,7 +1201,7 @@ def pin(argv, update=False):
         prinError("SSL certificate malformed: %s" % argv[0])
     
     # Open the TACK_cert and TACK_key files, creating latter if needed
-    tc, kf, tcName, suffix, tcNameCounter = openTACKFiles(update)
+    tc, kf, tcName, parsedSuffix, tcNameCounter = openTACKFiles(update, password)
     if not kf:
         print "No TACK key found, creating new one..."
         kf = newKeyFile()
@@ -1205,14 +1219,20 @@ def pin(argv, update=False):
             confirmY('There is an existing TACK, choose "y" to replace: ')        
         tc.TACK = None
 
-    # Prompt for suffix
-    if not update:
-        if mustWriteKeyFile:
-            suffix = raw_input(
+    # Set suffix for output (new=cmdline or prompt, update=parsed)
+    suffix = None
+    if cmdlineSuffix:
+        suffix = cmdlineSuffix
+    else:
+        if not update:
+            if mustWriteKeyFile:
+                suffix = raw_input(
 "Enter a short suffix for your TACK key and cert files: ")
-        else:
-            suffix = raw_input(
+            else:
+                suffix = raw_input(
 "Enter a short suffix for your TACK cert file: ")
+        else:
+            suffix = parsedSuffix
 
     # Produce the TACK_Pin (if "new")
     if not update:
@@ -1315,15 +1335,15 @@ def help(argv):
         printUsage()
     cmd = argv[0]
     if cmd == "new":
-        print("""Creates a new TACK.
+        print("""Creates a new TACK for the target SSL certificate.
         
-  new <ssl_cert>     : create a new TACK, pinning the specified certificate. 
+  new <cert> <args>
 
 Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
   --replace          : replace existing TACK without prompting
-  --pass=            : use this TACK key password
+  --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : pin to "v1_key" or "v1_cert"
   --sig_expiration=  : use this time for sig_expiration
