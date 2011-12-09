@@ -156,12 +156,15 @@ def parseTimeArg(arg):
         except ValueError:
             pass
     if not t:
+        print "CCC"
         s = posixTimeToStr(time.time())
         printError(
 '''Invalid time format, use e.g. "%s" (current time)
 or some prefix, such as: "%s", "%s", or "%s"''' % 
             (s, s[:13], s[:10], s[:4]))    
     u = int(calendar.timegm(t)/60)
+    if u < 0:
+        printError("Time too early, epoch starts at 1970.")
     return u
 
 def getDateStr():
@@ -1189,9 +1192,11 @@ def pin(argv, update=False):
     der = "der" in d
     noBackup = "no_backup" in d
     forceReplace = "replace" in d
-    defaultExp = getDefaultExpirationStr()    
+    sig_revocation = d.get("sig_revocation")
+    if sig_revocation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
+        sig_revocation = parseTimeArg(sig_revocation)
+    defaultExp = getDefaultExpirationStr()  
     sig_expiration = parseTimeArg(d.get("sig_expiration", defaultExp))
-    sig_revocation = parseTimeArg(d.get("sig_revocation", defaultExp))
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
     try:
@@ -1225,6 +1230,14 @@ def pin(argv, update=False):
     if update:
         if not tc.TACK:
             printError("TACK certificate has no TACK extension")
+        # Maintain old sig_revocation on updates, unless overridden on cmdline
+        if sig_revocation == None: # i.e. not set on cmdline, DIFFERENT FROM 0
+            sig_revocation = tc.TACK.sig.sig_revocation
+        else:
+            if sig_revocation < tc.TACK.sig.sig_revocation:
+                confirmY(
+'''WARNING: Requested sig_expiration is EARLIER than existing!
+Do you know what you are doing? ("y" to continue): ''')
         tc.TACK.sig = None
     elif not update and tc.TACK:
         if not forceReplace:
@@ -1259,6 +1272,9 @@ def pin(argv, update=False):
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
+    # If not sig_expiration was set or carried-over, set to 1970
+    if sig_revocation == None:
+        sig_revocation = 0
     tc.TACK.sig.generate(sig_type, sig_expiration, sig_revocation, 
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
