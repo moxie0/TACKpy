@@ -1312,14 +1312,16 @@ def breakPin(argv):
             printError("Unrecognized sig_type")
     
     tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password)
-    if tc.break_sigs.isFull():
-        printError("Maximum number of break signatures (%d) already present" %
-            TACK_Break_Sigs.maxLen)
     
     if cmdlineSuffix:
         suffix = cmdlineSuffix
     if not tc.break_sigs:
         tc.break_sigs = TACK_Break_Sigs()
+
+    if tc.break_sigs.isFull():
+        printError("Maximum number of break signatures (%d) already present" %
+            TACK_Break_Sigs.maxLen)
+        
     break_sig = TACK_Break_Sig()   
 
     if cmdlineLabel:
