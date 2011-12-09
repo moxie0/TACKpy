@@ -135,11 +135,11 @@ def posixTimeToStr(u, includeSeconds=False):
         s = time.strftime("%Y-%m-%dT%H:%MZ", t)
     return s
     
-def getDefaultExpiration():
+def getDefaultExpirationStr():
     days = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()/60) # Get time in minutes
-    exp = currentTime + (24*60) * days
-    return exp
+    currentTime = int(time.time()) # Get time in minutes
+    exp = currentTime + (24*60*60) * days
+    return posixTimeToStr(exp)
 
 def parseTimeArg(arg):
     t = time.strptime(arg, "%Y-%m-%dT%H:%MZ")
@@ -430,28 +430,33 @@ class TACK_Break_Sig:
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
         return w.bytes
 
-    def writeText(self):
+    def writeText(self, i):
         s = \
-"""break_label            = 0x%s
-break_signature        = 0x%s\n""" % \
-(writeBytes(self.pin_label), 
- writeBytes(self.signature))
+"""break_label[%02d]        = 0x%s
+break_signature[%02d]    = 0x%s\n""" % \
+(i, writeBytes(self.pin_label), 
+ i, writeBytes(self.signature))
         return s
 
 
 class TACK_Break_Sigs:
+    maxLen = 20
+    
     def __init__(self):
         self.break_sigs = []
     
+    def isFull(self):
+        return len(self.break_sigs) == TACK_Break_Sigs.maxLen
+    
     def add(self, break_sig):
-        assert(len(self.break_sigs) < 20)
+        assert(len(self.break_sigs) < TACK_Break_Sigs.maxLen)
         assert(isinstance(break_sig, TACK_Break_Sig))
         self.break_sigs.append(break_sig)
     
     def parse(self, b):
         p = Parser(b)
         numBreakSigs = int(p.getInt(2) / TACK_Break_Sig.length)
-        if numBreakSigs>20:
+        if numBreakSigs > TACK_Break_Sigs.maxLen:
             raise SyntaxError("Too many break_sigs")
         self.break_sigs = []
         for x in range(numBreakSigs):
@@ -468,7 +473,7 @@ class TACK_Break_Sigs:
         return w.bytes
 
     def writeText(self):
-        return "".join(b.writeText() for b in self.break_sigs)
+        return "".join(b.writeText(i) for i,b in enumerate(self.break_sigs))
 
 
 class TACK:
@@ -1127,20 +1132,13 @@ def confirmY(s):
     query = raw_input(s)
     if query != "y":
         printError("Cancelled")    
-    
-def pin(argv, update=False):
-    # Collect cmdline args into a dictionary
-    if len(argv) < 1:
-        printError("Missing argument: SSL certificate file")    
-    noArgArgs = ["--der", "--no_backup"]
-    oneArgArgs= ["--sig_type", "--sig_expiration", "--sig_revocation",
-                "--suffix", "--password"]
-    if not update:
-        noArgArgs += ["--replace"]
 
-    sslName = argv[0]
+def parseArgsIntoDict(argv, noArgArgs, oneArgArgs):
     argsDict = {}    
-    for arg in argv[1:]:
+    for arg in argv:
+        if not arg.startswith("--"):
+            printError("Malformed argument: %s" % arg)
+        arg = arg[2:]
         parts = arg.split("=")
         if parts[0] in argsDict:
             printError("Duplicate argument: %s" % parts[0])
@@ -1154,41 +1152,37 @@ def pin(argv, update=False):
             argsDict[parts[0]] = None
         else:
             printError("Unknown or malformed argument: %s" % parts[0])
+    return argsDict
 
-    # Process the cmdline dictionary
-    der = False
-    noBackup = False
-    forceReplace = False
-    sig_type = TACK_Sig_Type.v1_cert
-    defaultExpiration = getDefaultExpiration()
-    sig_expiration = defaultExpiration
-    sig_revocation = defaultExpiration
-    cmdlineSuffix = None
-    password = None
-
-    if "--der" in argsDict:
-        der = True   
-    if "--no_backup" in argsDict:
-        noBackup = True   
-    if "--replace" in argsDict:
-        forceReplace = True   
-    if "--sig_type" in argsDict:    
-        val = argsDict["--sig_type"]
-        if val == "v1_key":
-            sig_type = TACK_Sig_Type.v1_key
-        elif val == "v1_cert":
-            sig_type = TACK_Sig_Type.v1_cert
-        else:
-            printError("Unrecognized sig_type")
-    if "--sig_expiration" in argsDict:
-        sig_expiration = parseTimeArg(argsDict["--sig_expiration"])
-    if "--sig_revocation" in argsDict:
-        sig_revocation = parseTimeArg(argsDict["--sig_revocation"])
-    if "--suffix" in argsDict:
-        cmdlineSuffix = argsDict["--suffix"]
-    if "--password" in argsDict:
-        password = argsDict["--password"]
+def pin(argv, update=False):
+    if len(argv) < 1:
+        printError("Missing argument: SSL certificate file")    
+    sslName = argv[0]
+        
+    # Collect cmdline args into a dictionary        
+    noArgArgs = ["der", "no_backup"]
+    oneArgArgs= ["sig_type", "sig_expiration", "sig_revocation",
+                "suffix", "password"]
+    if not update:
+        noArgArgs += ["replace"]
+    d = parseArgsIntoDict(argv[1:], noArgArgs, oneArgArgs)
     
+    # Set vars from cmdline dict
+    der = "der" in d
+    noBackup = "no_backup" in d
+    forceReplace = "replace" in d
+    defaultExp = getDefaultExpirationStr()    
+    sig_expiration = parseTimeArg(d.get("sig_expiration", defaultExp))
+    sig_revocation = parseTimeArg(d.get("sig_revocation", defaultExp))
+    cmdlineSuffix = d.get("suffix")
+    password = d.get("password")
+    try:
+        sig_type = {"v1_key" : TACK_Sig_Type.v1_key, 
+                    "v1_cert" : TACK_Sig_Type.v1_cert}\
+                    [d.get("sig_type", "v1_cert")]
+    except KeyError:
+            printError("Unrecognized sig_type")
+                
     # Open the SSL cert
     try:
         sslBytes = bytearray(open(sslName).read())
@@ -1262,30 +1256,69 @@ def promptForPinLabel():
             labelStr = labelStr[2:]
         try:
             pin_label = binascii.a2b_hex(labelStr)
+            if len(pin_label) != 8:
+                pass            
             break
         except TypeError:
             pass
     return pin_label
 
 def breakPin(argv):
-    der = True
-    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True)
+    # Collect cmdline args into a dictionary        
+    noArgArgs = ["der", "no_backup"]
+    oneArgArgs= ["suffix", "password", "label"]
+    d = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
+    
+    # Set vars from cmdline dict
+    der = "der" in d
+    noBackup = "no_backup" in d
+    cmdlineSuffix = d.get("suffix")
+    password = d.get("password")
+    cmdlineLabel = d.get("label")
+    if cmdlineLabel:
+        cmdlineLabel = cmdlineLabel.lower()
+        if cmdlineLabel.startswith("0x"):
+            cmdlineLabel = cmdlineLabel[2:]
+        try:
+            cmdlineLabel = binascii.a2b_hex(cmdlineLabel)
+            if len(cmdlineLabel) != 8:
+                printError('Bad argument for "label" - must be 8 bytes')
+        except TypeError:
+            printError('Bad argument for "label" - must be hex string')
+
+    try:
+        sig_type = {"v1_key" : TACK_Sig_Type.v1_key, 
+                    "v1_cert" : TACK_Sig_Type.v1_cert}\
+                    [d.get("sig_type", "v1_cert")]
+    except KeyError:
+            printError("Unrecognized sig_type")
+    
+    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password)
+    if tc.break_sigs.isFull():
+        printError("Maximum number of break signatures (%d) already present" %
+            TACK_Break_Sigs.maxLen)
+    
+    if cmdlineSuffix:
+        suffix = cmdlineSuffix
     if not tc.break_sigs:
         tc.break_sigs = TACK_Break_Sigs()
     break_sig = TACK_Break_Sig()   
 
-    if not tc.TACK:
-        print "WARNING: There is no existing TACK..."
-        pin_label = promptForPinLabel()
-        print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
-    elif tc.TACK.pin.pin_key != kf.public_key:
-        print "WARNING: This key DOES NOT MATCH the existing TACK..."
-        pin_label = promptForPinLabel()
-        print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
+    if cmdlineLabel:
+        pin_label = cmdlineLabel
     else:
-        pin_label = tc.TACK.pin.pin_label
-        print "Breaking existing TACK, pin_label = 0x%s" % binascii.b2a_hex(pin_label)
-    confirmY('Is this correct? ("y" to continue): ')            
+        if not tc.TACK:
+            print "WARNING: There is no existing TACK..."
+            pin_label = promptForPinLabel()
+            print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
+        elif tc.TACK.pin.pin_key != kf.public_key:
+            print "WARNING: This key DOES NOT MATCH the existing TACK..."
+            pin_label = promptForPinLabel()
+            print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
+        else:
+            pin_label = tc.TACK.pin.pin_label
+            print "Breaking existing TACK, pin_label = 0x%s" % binascii.b2a_hex(pin_label)
+        confirmY('Is this correct? ("y" to continue): ')            
     
     break_sig.generate(pin_label, kf.sign(pin_label))
     tc.break_sigs.add(break_sig)
@@ -1295,7 +1328,7 @@ def breakPin(argv):
             kf.public_key == tc.TACK.pin.pin_key:
         tc.TACK = None
     
-    writeTACKCert(tc, tcName, suffix, nameCounter, der)
+    writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup)
      
 def view(argv):
     if len(argv) < 1:
@@ -1334,21 +1367,48 @@ def help(argv):
     if len(argv) == 0:
         printUsage()
     cmd = argv[0]
-    if cmd == "new":
-        print("""Creates a new TACK for the target SSL certificate.
+    if cmd == "new"[:len(cmd)]:
+        print """Creates a TACK based on a new pin for the target SSL certificate.
         
   new <cert> <args>
 
 Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
-  --replace          : replace existing TACK without prompting
+  --replace          : replace an existing TACK without prompting
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
-  --sig_type=        : pin to "v1_key" or "v1_cert"
+  --sig_type=        : target signature to "v1_key" or "v1_cert"
   --sig_expiration=  : use this time for sig_expiration
   --sig_revocation=  : use this time for sig_revocation
-""")
+"""
+    elif cmd == "update"[:len(cmd)]:
+        print """Creates a TACK based on an existing pin for the target SSL certificate.
+
+  update <cert> <args>
+
+Optional arguments:
+  --der              : write output as .der instead of .pem
+  --no_backup        : don't backup the TACK certificate
+  --password=        : use this TACK key password
+  --suffix=          : use this TACK file suffix
+  --sig_type=        : target signature to "v1_key" or "v1_cert"
+  --sig_expiration=  : use this time for sig_expiration
+  --sig_revocation=  : use this time for sig_revocation
+"""
+    elif cmd == "break"[:len(cmd)]:
+        print """Adds a break signature to a TACK certificate.
+
+  break <args>
+
+Optional arguments:
+  --label            : pin_label to break (8 bytes hexadecimal)
+  --der              : write output as .der instead of .pem
+  --no_backup        : don't backup the TACK certificate
+  --password=        : use this TACK key password
+  --suffix=          : use this TACK file suffix 
+"""
+        
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -1357,15 +1417,15 @@ if __name__ == '__main__':
         testCert()
         testStructures()
         testKeyFile()        
-    elif sys.argv[1] == "new":
+    elif sys.argv[1] == "new"[:len(sys.argv[1])]:
         pin(sys.argv[2:], False)
-    elif sys.argv[1] == "update":
+    elif sys.argv[1] == "update"[:len(sys.argv[1])]:
         pin(sys.argv[2:], True)
-    elif sys.argv[1] == "break":
+    elif sys.argv[1] == "break"[:len(sys.argv[1])]:
         breakPin(sys.argv[2:])
-    elif sys.argv[1] == "view":
+    elif sys.argv[1] == "view"[:len(sys.argv[1])]:
         view(sys.argv[2:])
-    elif sys.argv[1] == "help":
+    elif sys.argv[1] == "help"[:len(sys.argv[1])]:
         help(sys.argv[2:])
     else:
         printUsage("Unknown command: %s" % sys.argv[1])
