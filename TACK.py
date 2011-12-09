@@ -940,7 +940,8 @@ shifts = [[[0, 0], [1, 3], [2, 2], [3, 1]],
           [[0, 0], [1, 7], [3, 5], [4, 4]]]
 
 # [keysize][block_size]
-num_rounds = {16: {16: 10, 24: 12, 32: 14}, 24: {16: 12, 24: 12, 32: 14}, 32: {16: 14, 24: 14, 32: 14}}
+num_rounds = {16: {16: 10, 24: 12, 32: 14}, 
+24: {16: 12, 24: 12, 32: 14}, 32: {16: 14, 24: 14, 32: 14}}
 
 A = [[1, 1, 1, 1, 1, 0, 0, 0],
      [0, 1, 1, 1, 1, 1, 0, 0],
@@ -1176,7 +1177,8 @@ class rijndael:
 
     def encrypt(self, plaintext):
         if len(plaintext) != self.block_size:
-            raise ValueError('wrong block length, expected ' + str(self.block_size) + ' got ' + str(len(plaintext)))
+            raise ValueError('wrong block length, expected ' + 
+                str(self.block_size) + ' got ' + str(len(plaintext)))
         Ke = self.Ke
 
         BC = self.block_size / 4
@@ -1219,7 +1221,8 @@ class rijndael:
 
     def decrypt(self, ciphertext):
         if len(ciphertext) != self.block_size:
-            raise ValueError('wrong block length, expected ' + str(self.block_size) + ' got ' + str(len(plaintext)))
+            raise ValueError('wrong block length, expected ' + 
+                str(self.block_size) + ' got ' + str(len(plaintext)))
         Kd = self.Kd
 
         BC = self.block_size / 4
@@ -1889,12 +1892,6 @@ class TACK_Cert:
         p = ASN1Parser(b)
         self.extBytes = bytearray()
 
-        # We are going to copy the non-TACK chunks of cert into here
-        # Thus, when we go to write it out, we just have to inject
-        # the TACK chunks and adjust a few length fields
-        self.bytes = bytearray(0)
-        copyFromOffset = 0
-
         #Get the tbsCertificate
         tbsCertificateP = p.getChild(0)
         versionP = tbsCertificateP.getChild(0)        
@@ -1940,11 +1937,11 @@ class TACK_Cert:
             else:  
                 # Collect all non-TACK extensions:
                 self.extBytes += b[extFieldP.offset : \
-                                    extFieldP.offset + extFieldP.getTotalLength()]
+                                extFieldP.offset + extFieldP.getTotalLength()]
             x += 1                
 
         # Finish copying the tail of the certificate
-        self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength() : ]
+        self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength():]
         
     def write(self):        
         b = bytearray(0)
@@ -2030,7 +2027,8 @@ def aes_cbc_decrypt(key, IV, ciphertext):
     plaintext = "" # not efficient, but doesn't matter here
     for c in range(len(ciphertext)/16):
         cipherBlock = ciphertext[c*16 : (c*16)+16]
-        plaintext += xorbytes(bytearray(cipher.decrypt(str(cipherBlock))), chainBlock)
+        plaintext += xorbytes(bytearray(cipher.decrypt(str(cipherBlock))), 
+                                chainBlock)
         chainBlock = cipherBlock
     return plaintext
 
@@ -2041,7 +2039,8 @@ def aes_cbc_encrypt(key, IV, plaintext):
     ciphertext = "" # not efficient, but doesn't matter here
     for c in range(len(plaintext)/16):
         plainBlock = plaintext[c*16 : (c*16)+16]
-        chainBlock = bytearray(cipher.encrypt(str(xorbytes(plainBlock, chainBlock))))
+        chainBlock = bytearray(cipher.encrypt(str(xorbytes(plainBlock, 
+                                chainBlock))))
         ciphertext += chainBlock
     return ciphertext     
 
@@ -2252,7 +2251,8 @@ def printError(s):
 def newKeyFile(extraRandStr=""):
     if not extraRandStr:
         while len(extraRandStr)<20:
-            extraRandStr = getpass.getpass ("Enter at least 20 random keystrokes: ")    
+            extraRandStr = getpass.getpass (
+                "Enter at least 20 random keystrokes: ")    
     kf = TACK_KeyFile()
     kf.generate(extraRandStr)
     return kf
@@ -2368,7 +2368,8 @@ def parseTACKCertName(tcName, old=False):
         tcNameCounter = 0
     else:
         if tcName[rIndex] != "_":
-            printError("Malformed TACK certificate name, after date: %s" % tcName)
+            printError(
+                "Malformed TACK certificate name, after date: %s" % tcName)
         try:
             tcNameCounter = int(tcName[rIndex+1 : -4])
         except ValueError:
@@ -2494,7 +2495,8 @@ def pin(argv, update=False):
         prinError("SSL certificate malformed: %s" % argv[0])
     
     # Open the TACK_cert and TACK_key files, creating latter if needed
-    tc, kf, tcName, parsedSuffix, tcNameCounter = openTACKFiles(update, password)
+    tc, kf, tcName, parsedSuffix, tcNameCounter = \
+        openTACKFiles(update, password)
     if not kf:
         print "No TACK key found, creating new one..."
         kf = newKeyFile()
@@ -2629,7 +2631,8 @@ def breakPin(argv):
             print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
         else:
             pin_label = tc.TACK.pin.pin_label
-            print "Breaking existing TACK, pin_label = 0x%s" % binascii.b2a_hex(pin_label)
+            print "Breaking existing TACK, pin_label = 0x%s" % \
+                    binascii.b2a_hex(pin_label)
         confirmY('Is this correct? ("y" to continue): ')            
     
     break_sig.generate(pin_label, kf.sign(pin_label))
@@ -2681,7 +2684,8 @@ def help(argv):
     cmd = argv[0]
     if cmd == "new"[:len(cmd)]:
         s = posixTimeToStr(time.time())        
-        print """Creates a TACK based on a new pin for the target SSL certificate.
+        print \
+"""Creates a TACK based on a new pin for the target SSL certificate.
         
   new <cert> <args>
 
@@ -2699,7 +2703,8 @@ Optional arguments:
 """ % (s, s[:13], s[:10], s[:4])
     elif cmd == "update"[:len(cmd)]:
         s = posixTimeToStr(time.time())                
-        print """Creates a TACK based on an existing pin for the target SSL certificate.
+        print \
+"""Creates a TACK based on an existing pin for the target SSL certificate.
 
   update <cert> <args>
 
@@ -2715,7 +2720,8 @@ Optional arguments:
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4])
     elif cmd == "break"[:len(cmd)]:
-        print """Adds a break signature to a TACK certificate, and removes any broken TACK.
+        print \
+"""Adds a break signature to a TACK certificate, and removes any broken TACK.
 
   break <args>
 
