@@ -1439,7 +1439,7 @@ Optional arguments:
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4])
     elif cmd == "break"[:len(cmd)]:
-        print """Adds a break signature to a TACK certificate.
+        print """Adds a break signature to a TACK certificate, and removes any broken TACK.
 
   break <args>
 
@@ -1450,6 +1450,11 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix 
 """
+    elif cmd == "view"[:len(cmd)]:
+        print """Views a TACK certificate, SSL certificate, or Key File.
+
+  view <file>
+"""        
     else:
         printError("Help requested for unknown command")
         
