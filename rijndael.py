@@ -31,15 +31,16 @@ import string
 
 
 
+#TREV 2011 - is this still needed? seems not
 #-----------------------
 #TREV - ADDED BECAUSE THERE'S WARNINGS ABOUT INT OVERFLOW BEHAVIOR CHANGING IN
 #2.4.....
-import os
-if os.name != "java":
-    import exceptions
-    if hasattr(exceptions, "FutureWarning"):
-        import warnings
-        warnings.filterwarnings("ignore", category=FutureWarning, append=1)
+#import os
+#if os.name != "java":
+#    import exceptions
+#    if hasattr(exceptions, "FutureWarning"):
+#        import warnings
+#        warnings.filterwarnings("ignore", category=FutureWarning, append=1)
 #-----------------------
 
 
