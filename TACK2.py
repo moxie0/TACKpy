@@ -142,7 +142,25 @@ def getDefaultExpirationStr():
     return posixTimeToStr(exp)
 
 def parseTimeArg(arg):
-    t = time.strptime(arg, "%Y-%m-%dT%H:%MZ")
+    # Allow them to specify as much or as little of
+    # ISO8601 as they want
+    if arg.endswith("Z"):
+        arg = arg[:-1]
+    patterns = ["%Y-%m-%dT%H:%M", "%Y-%m-%dT%H", 
+        "%Y-%m-%d", "%Y-%m", "%Y"]
+    t = None
+    for p in patterns:
+        try:
+            t = time.strptime(arg, p)
+            break
+        except ValueError:
+            pass
+    if not t:
+        s = posixTimeToStr(time.time())
+        printError(
+'''Invalid time format, use e.g. "%s" (current time)
+or some prefix, such as: "%s", "%s", or "%s"''' % 
+            (s, s[:13], s[:10], s[:4]))    
     u = int(calendar.timegm(t)/60)
     return u
 
@@ -1368,6 +1386,7 @@ def help(argv):
         printUsage()
     cmd = argv[0]
     if cmd == "new"[:len(cmd)]:
+        s = posixTimeToStr(time.time())        
         print """Creates a TACK based on a new pin for the target SSL certificate.
         
   new <cert> <args>
@@ -1379,10 +1398,13 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
-  --sig_expiration=  : use this time for sig_expiration
-  --sig_revocation=  : use this time for sig_revocation
-"""
+  --sig_expiration=  : use this UTC time for sig_expiration
+  --sig_revocation=  : use this UTC time for sig_revocation
+                         ("%s", "%s",
+                          "%s", "%s" etc.)
+""" % (s, s[:13], s[:10], s[:4])
     elif cmd == "update"[:len(cmd)]:
+        s = posixTimeToStr(time.time())                
         print """Creates a TACK based on an existing pin for the target SSL certificate.
 
   update <cert> <args>
@@ -1393,9 +1415,11 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
-  --sig_expiration=  : use this time for sig_expiration
-  --sig_revocation=  : use this time for sig_revocation
-"""
+  --sig_expiration=  : use this UTC time for sig_expiration
+  --sig_revocation=  : use this UTC time for sig_revocation
+                         ("%s", "%s",
+                          "%s", "%s" etc.)
+""" % (s, s[:13], s[:10], s[:4])
     elif cmd == "break"[:len(cmd)]:
         print """Adds a break signature to a TACK certificate.
 
@@ -1408,6 +1432,8 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix 
 """
+    else:
+        printError("Help requested for unknown command")
         
 
 if __name__ == '__main__':
