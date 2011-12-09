@@ -1,1 +1,10 @@
-TACK tool.  A tool for TACKs.
+
+Quick start 
+------------ 
+Run "TACK.py new <sslcert>" on your SSL cert. Backup the TACK key in a safe
+place where no one can steal it and you won't lose it. Add the TACK cert to
+your SSL chain (in Apache, append it to the SSLCertificateChainFile).
+
+You will need to update the TACK cert whenever you change your SSL cert, or
+once a year, whichever is sooner. Run "TACK.py update <new_sslcert>" on your
+new SSL cert from a directory containing the old TACK cert and the TACK key.
