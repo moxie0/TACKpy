@@ -1290,13 +1290,17 @@ import sys, binascii
 if sys.version_info >= (3,0):
     def raw_input(s):
         return input(s)
-            
+    
+    def a2b_hex(s):
+        b = binascii.a2b_hex(bytearray(s, "ascii"))  
+        return b  
     def b2a_hex(b):
-        return binascii.b2a_hex(b).decode("ascii")
-        
+        return binascii.b2a_hex(b).decode("ascii")        
     def b2a_base64(b):
         return binascii.b2a_base64(b).decode("ascii")    
 else:
+    def a2b_hex(s):
+        return binascii.a2b_hex(s)
     def b2a_hex(b):
         return binascii.b2a_hex(b)
     def b2a_base64(b):
@@ -1884,17 +1888,17 @@ class TACK_Cert:
     def generate(self, pin=None, sig=None, break_sigs=None):
         self.TACK = None
         self.break_sigs = None
-        self.preExtBytes = binascii.a2b_hex(
-b"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
-b"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
-b"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
-b"10500030e00300b0204010203040203010001")
+        self.preExtBytes = a2b_hex(
+"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
+"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
+"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
+"10500030e00300b0204010203040203010001")
         # Below is BasicConstraints, saving space by omitting
         #self.extBytes = binascii.a2b_hex(\
-#b"300c0603551d13040530030101ff")
+#"300c0603551d13040530030101ff")
         self.extBytes = bytearray()
-        self.postExtBytes = binascii.a2b_hex(
-b"300d06092a864886f70d01010505000303003993")
+        self.postExtBytes = a2b_hex(
+"300d06092a864886f70d01010505000303003993")
     
     def parse(self, b):
         try:
@@ -2577,7 +2581,7 @@ def promptForPinLabel():
         if labelStr.startswith("0x"):
             labelStr = labelStr[2:]
         try:
-            pin_label = binascii.a2b_hex(labelStr)
+            pin_label = a2b_hex(labelStr)
             if len(pin_label) != 8:
                 pass            
             break
@@ -2602,7 +2606,7 @@ def breakPin(argv):
         if cmdlineLabel.startswith("0x"):
             cmdlineLabel = cmdlineLabel[2:]
         try:
-            cmdlineLabel = binascii.a2b_hex(cmdlineLabel)
+            cmdlineLabel = a2b_hex(cmdlineLabel)
             if len(cmdlineLabel) != 8:
                 printError('Bad argument for "label" - must be 8 bytes')
         except TypeError:
