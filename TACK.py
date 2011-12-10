@@ -1286,7 +1286,7 @@ def test():
 
 
 ################ COMPAT ###
-import sys
+import sys, binascii
 if sys.version_info >= (3,0):
     def raw_input(s):
         return input(s)
@@ -1367,13 +1367,12 @@ def ec256Generate(extraRandBytes=None):
     # (except we use 32 extra random bytes instead of 8 before reduction)
     # Random bytes taken from /dev/urandom as well as any extraRandBytes
     # REVIEW THIS CAREFULLY!  CHANGE AT YOUR PERIL!
-    randStr0 = bytearray(os.urandom(64))
+    randBytes0 = bytearray(os.urandom(64))
     if extraRandBytes:
-        randStr0 += bytearray(extraRandBytes)
-    randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
-    randStr2 = HMAC_SHA256(randStr0, bytearray([2]))
-    randStr = randStr1 + randStr2    
-    c = bytesToNumber(randStr) 
+        randBytes0 += bytearray(extraRandBytes)
+    randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
+    randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))
+    c = bytesToNumber(randBytes) 
     n = generator_256.order()
     d = (c % (n-1))+1        
     privateKey = numberToBytes(d, 32)
@@ -1396,13 +1395,11 @@ def ecdsa256Sign(privateKey, publicKey, dataToSign):
     # (except we use 32 extra bytes instead of 8 before reduction)
     # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
     # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
-    randStr0_1 = bytearray(os.urandom(64))
-    randStr0_2 = HMAC_SHA256(privateKey, hash)
-    randStr0 = randStr0_1 + randStr0_2                    
-    randStr1 = HMAC_SHA256(randStr0, bytearray([1]))
-    randStr2 = HMAC_SHA256(randStr0, bytearray([2]))                       
-    randStr = randStr1 + randStr2    
-    c = bytesToNumber(randStr) 
+    randBytes0 = bytearray(os.urandom(64))
+    randBytes0+= HMAC_SHA256(privateKey, hash)
+    randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
+    randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))                       
+    c = bytesToNumber(randBytes) 
     k = (c % (n-1))+1                
     hashNum = bytesToNumber(hash)
     sig = privkey.sign(hashNum, k)
@@ -1433,7 +1430,7 @@ def posixTimeToStr(u, includeSeconds=False):
     
 def getDefaultExpirationStr():
     days = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()) # Get time in minutes
+    currentTime = int(time.time()) # Get time in seconds
     exp = currentTime + (24*60*60) * days
     return posixTimeToStr(exp)
 
@@ -1607,12 +1604,8 @@ class TACK_Sig_Type:
 
 ################ STRUCTURES ###
 
-import binascii
-
 def writeBytes(b):
     s = b2a_hex(b)
-    if hasattr(s, "decode"):
-        s = s.decode("ascii")
     retVal = ""
     while s:
         retVal += s[:32]
@@ -1826,7 +1819,7 @@ def dePemCert(b):
         raise SyntaxError("Missing PEM prefix")
     if end == -1:
         raise SyntaxError("Missing PEM postfix")
-    b = b[start+len("-----BEGIN CERTIFICATE-----") : end]
+    b = b[start+len(b"-----BEGIN CERTIFICATE-----") : end]
     return bytearray(binascii.a2b_base64(b))
 
 def pemCert(b):
@@ -1898,7 +1891,7 @@ b"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
 b"10500030e00300b0204010203040203010001")
         # Below is BasicConstraints, saving space by omitting
         #self.extBytes = binascii.a2b_hex(\
-#"300c0603551d13040530030101ff")
+#b"300c0603551d13040530030101ff")
         self.extBytes = bytearray()
         self.postExtBytes = binascii.a2b_hex(
 b"300d06092a864886f70d01010505000303003993")
@@ -2051,7 +2044,7 @@ def aes_cbc_decrypt(key, IV, ciphertext):
     return plaintext
 
 def aes_cbc_encrypt(key, IV, plaintext):
-    cipher = rijndael(str(key), 16)
+    cipher = rijndael(key, 16)
     assert(len(plaintext) % 16 == 0) # no padding
     chainBlock = IV
     ciphertext = bytearray() # not efficient, but doesn't matter here
