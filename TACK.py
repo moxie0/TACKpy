@@ -122,7 +122,7 @@ def polynomial_exp_mod( base, exponent, polymod, p ):
   else:        s = [ 1 ]
 
   while k > 1:
-    k = k / 2
+    k = k // 2
     G = polynomial_multiply_mod( G, G, polymod, p )
     if k%2 == 1: s = polynomial_multiply_mod( G, s, polymod, p )
 
@@ -146,7 +146,7 @@ def jacobi( a, n ):
   if a == 1: return 1
   a1, e = a, 0
   while a1%2 == 0:
-    a1, e = a1/2, e+1
+    a1, e = a1//2, e+1
   if e%2 == 0 or n%8 == 1 or n%8 == 7: s = 1
   else: s = -1
   if a1 == 1: return s
@@ -174,21 +174,21 @@ def square_root_mod_prime( a, p ):
   if jac == -1: raise SquareRootError( "%d has no square root modulo %d" \
                                        % ( a, p ) )
 
-  if p % 4 == 3: return modular_exp( a, (p+1)/4, p )
+  if p % 4 == 3: return modular_exp( a, (p+1)//4, p )
 
   if p % 8 == 5:
-    d = modular_exp( a, (p-1)/4, p )
-    if d == 1: return modular_exp( a, (p+3)/8, p )
-    if d == p-1: return ( 2 * a * modular_exp( 4*a, (p-5)/8, p ) ) % p
-    raise RuntimeError, "Shouldn't get here."
+    d = modular_exp( a, (p-1)//4, p )
+    if d == 1: return modular_exp( a, (p+3)//8, p )
+    if d == p-1: return ( 2 * a * modular_exp( 4*a, (p-5)//8, p ) ) % p
+    raise RuntimeError("Shouldn't get here.")
 
   for b in range( 2, p ):
     if jacobi( b*b-4*a, p ) == -1:
       f = ( a, -b, 1 )
-      ff = polynomial_exp_mod( ( 0, 1 ), (p+1)/2, f, p )
+      ff = polynomial_exp_mod( ( 0, 1 ), (p+1)//2, f, p )
       assert ff[1] == 0
       return ff[0]
-  raise RuntimeError, "No b found."
+  raise RuntimeError("No b found.")
 
 
 
@@ -235,7 +235,7 @@ def gcd( *a ):
 def lcm2(a,b):
   """Least common multiple of two integers."""
 
-  return (a*b)/gcd(a,b)
+  return (a*b)//gcd(a,b)
 
 
 def lcm( *a ):
@@ -451,8 +451,8 @@ def is_prime( n ):
   r = n - 1
   while ( r % 2 ) == 0:
     s = s + 1
-    r = r / 2
-  for i in xrange( t ):
+    r = r // 2
+  for i in range( t ):
     a = smallprimes[ i ]
     y = modular_exp( a, r, n )
     if y != 1 and y != n-1:
@@ -610,9 +610,9 @@ class Point( object ):
 
     def leftmost_bit( x ):
       assert x > 0
-      result = 1L
+      result = 1
       while result <= x: result = 2 * result
-      return result / 2
+      return result // 2
 
     e = other
     if self.__order: e = e % self.__order
@@ -624,7 +624,7 @@ class Point( object ):
 
     e3 = 3 * e
     negative_self = Point( self.__curve, self.__x, -self.__y, self.__order )
-    i = leftmost_bit( e3 ) / 2
+    i = leftmost_bit( e3 ) // 2
     result = self
     # print "Multiplying %s by %d (e3 = %d):" % ( self, other, e3 )
     while i > 1:
@@ -632,7 +632,7 @@ class Point( object ):
       if ( e3 & i ) != 0 and ( e & i ) == 0: result = result + self
       if ( e3 & i ) == 0 and ( e & i ) != 0: result = result + negative_self
       # print ". . . i = %d, result = %s" % ( i, result )
-      i = i / 2
+      i = i // 2
 
     return result
 
@@ -756,11 +756,11 @@ class Public_key( object ):
     self.point = point
     n = generator.order()
     if not n:
-      raise RuntimeError, "Generator point must have order."
+      raise RuntimeError("Generator point must have order.")
     if not n * point == INFINITY:
-      raise RuntimeError, "Generator point order is bad."
+      raise RuntimeError("Generator point order is bad.")
     if point.x() < 0 or n <= point.x() or point.y() < 0 or n <= point.y():
-      raise RuntimeError, "Generator point has x or y out of range."
+      raise RuntimeError("Generator point has x or y out of range.")
 
 
   def verifies( self, hash, signature ):
@@ -817,10 +817,10 @@ class Private_key( object ):
     k = random_k % n
     p1 = k * G
     r = p1.x()
-    if r == 0: raise RuntimeError, "amazingly unlucky random number r"
+    if r == 0: raise RuntimeError("amazingly unlucky random number r")
     s = ( inverse_mod( k, n ) * \
           ( hash + ( self.secret_multiplier * r ) % n ) ) % n
-    if s == 0: raise RuntimeError, "amazingly unlucky random number s"
+    if s == 0: raise RuntimeError("amazingly unlucky random number s")
     return Signature( r, s )
 
 
@@ -839,7 +839,7 @@ def int_to_string( x ):
 
 def string_to_int( s ):
   """Convert a string of bytes into an integer, as per X9.62."""
-  result = 0L
+  result = 0
   for c in s: result = 256 * result + ord( c )
   return result
 
@@ -874,13 +874,13 @@ def point_is_valid( generator, x, y ):
 
 
 # NIST Curve P-256:
-_p = 115792089210356248762697446949407573530086143415290314195533631308867097853951L
-_r = 115792089210356248762697446949407573529996955224135760342422259061068512044369L
+_p = 115792089210356248762697446949407573530086143415290314195533631308867097853951
+_r = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 # s = 0xc49d360886e704936a6678e1139d26b7819f7e90L
 # c = 0x7efba1662985be9403cb055c75d4f7e0ce8d84a9c5114abcaf3177680104fa0dL
-_b = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bL
-_Gx = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296L
-_Gy = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5L
+_b = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b
+_Gx = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296
+_Gy = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5
 
 curve_256 = CurveFp( _p, -3, _b )
 generator_256 = Point( curve_256, _Gx, _Gy, _r )
@@ -955,14 +955,14 @@ A = [[1, 1, 1, 1, 1, 0, 0, 0],
 # produce log and alog tables, needed for multiplying in the
 # field GF(2^m) (generator = 3)
 alog = [1]
-for i in xrange(255):
+for i in range(255):
     j = (alog[-1] << 1) ^ alog[-1]
     if j & 0x100 != 0:
         j ^= 0x11B
     alog.append(j)
 
 log = [0] * 256
-for i in xrange(1, 255):
+for i in range(1, 255):
     log[alog[i]] = i
 
 # multiply two elements of GF(2^m)
@@ -972,29 +972,29 @@ def mul(a, b):
     return alog[(log[a & 0xFF] + log[b & 0xFF]) % 255]
 
 # substitution box based on F^{-1}(x)
-box = [[0] * 8 for i in xrange(256)]
+box = [[0] * 8 for i in range(256)]
 box[1][7] = 1
-for i in xrange(2, 256):
+for i in range(2, 256):
     j = alog[255 - log[i]]
-    for t in xrange(8):
+    for t in range(8):
         box[i][t] = (j >> (7 - t)) & 0x01
 
 B = [0, 1, 1, 0, 0, 0, 1, 1]
 
 # affine transform:  box[i] <- B + A*box[i]
-cox = [[0] * 8 for i in xrange(256)]
-for i in xrange(256):
-    for t in xrange(8):
+cox = [[0] * 8 for i in range(256)]
+for i in range(256):
+    for t in range(8):
         cox[i][t] = B[t]
-        for j in xrange(8):
+        for j in range(8):
             cox[i][t] ^= A[t][j] * box[i][j]
 
 # S-boxes and inverse S-boxes
 S =  [0] * 256
 Si = [0] * 256
-for i in xrange(256):
+for i in range(256):
     S[i] = cox[i][0] << 7
-    for t in xrange(1, 8):
+    for t in range(1, 8):
         S[i] ^= cox[i][t] << (7-t)
     Si[S[i] & 0xFF] = i
 
@@ -1004,36 +1004,36 @@ G = [[2, 1, 1, 3],
     [1, 3, 2, 1],
     [1, 1, 3, 2]]
 
-AA = [[0] * 8 for i in xrange(4)]
+AA = [[0] * 8 for i in range(4)]
 
-for i in xrange(4):
-    for j in xrange(4):
+for i in range(4):
+    for j in range(4):
         AA[i][j] = G[i][j]
         AA[i][i+4] = 1
 
-for i in xrange(4):
+for i in range(4):
     pivot = AA[i][i]
     if pivot == 0:
         t = i + 1
         while AA[t][i] == 0 and t < 4:
             t += 1
             assert t != 4, 'G matrix must be invertible'
-            for j in xrange(8):
+            for j in range(8):
                 AA[i][j], AA[t][j] = AA[t][j], AA[i][j]
             pivot = AA[i][i]
-    for j in xrange(8):
+    for j in range(8):
         if AA[i][j] != 0:
             AA[i][j] = alog[(255 + log[AA[i][j] & 0xFF] - log[pivot & 0xFF]) % 255]
-    for t in xrange(4):
+    for t in range(4):
         if i != t:
-            for j in xrange(i+1, 8):
+            for j in range(i+1, 8):
                 AA[t][j] ^= mul(AA[i][j], AA[t][i])
             AA[t][i] = 0
 
-iG = [[0] * 4 for i in xrange(4)]
+iG = [[0] * 4 for i in range(4)]
 
-for i in xrange(4):
-    for j in xrange(4):
+for i in range(4):
+    for j in range(4):
         iG[i][j] = AA[i][j + 4]
 
 def mul4(a, bs):
@@ -1059,7 +1059,7 @@ U2 = []
 U3 = []
 U4 = []
 
-for t in xrange(256):
+for t in range(256):
     s = S[t]
     T1.append(mul4(s, G[0]))
     T2.append(mul4(s, G[1]))
@@ -1080,7 +1080,7 @@ for t in xrange(256):
 # round constants
 rcon = [1]
 r = 1
-for t in xrange(1, 30):
+for t in range(1, 30):
     r = mul(2, r)
     rcon.append(r)
 
@@ -1111,26 +1111,26 @@ class rijndael:
         self.block_size = block_size
 
         ROUNDS = num_rounds[len(key)][block_size]
-        BC = block_size / 4
+        BC = block_size // 4
         # encryption round keys
-        Ke = [[0] * BC for i in xrange(ROUNDS + 1)]
+        Ke = [[0] * BC for i in range(ROUNDS + 1)]
         # decryption round keys
-        Kd = [[0] * BC for i in xrange(ROUNDS + 1)]
+        Kd = [[0] * BC for i in range(ROUNDS + 1)]
         ROUND_KEY_COUNT = (ROUNDS + 1) * BC
-        KC = len(key) / 4
+        KC = len(key) // 4
 
         # copy user material bytes into temporary ints
         tk = []
-        for i in xrange(0, KC):
-            tk.append((ord(key[i * 4]) << 24) | (ord(key[i * 4 + 1]) << 16) |
-                (ord(key[i * 4 + 2]) << 8) | ord(key[i * 4 + 3]))
+        for i in range(0, KC):
+            tk.append((key[i * 4] << 24) | (key[i * 4 + 1] << 16) |
+                (key[i * 4 + 2]) << 8 | key[i * 4 + 3])
 
         # copy values into round key arrays
         t = 0
         j = 0
         while j < KC and t < ROUND_KEY_COUNT:
-            Ke[t / BC][t % BC] = tk[j]
-            Kd[ROUNDS - (t / BC)][t % BC] = tk[j]
+            Ke[t // BC][t % BC] = tk[j]
+            Kd[ROUNDS - (t // BC)][t % BC] = tk[j]
             j += 1
             t += 1
         tt = 0
@@ -1145,28 +1145,28 @@ class rijndael:
                      (rcon[rconpointer]    & 0xFF) << 24
             rconpointer += 1
             if KC != 8:
-                for i in xrange(1, KC):
+                for i in range(1, KC):
                     tk[i] ^= tk[i-1]
             else:
-                for i in xrange(1, KC / 2):
+                for i in range(1, KC // 2):
                     tk[i] ^= tk[i-1]
-                tt = tk[KC / 2 - 1]
-                tk[KC / 2] ^= (S[ tt        & 0xFF] & 0xFF)       ^ \
+                tt = tk[KC // 2 - 1]
+                tk[KC // 2] ^= (S[ tt        & 0xFF] & 0xFF)       ^ \
                               (S[(tt >>  8) & 0xFF] & 0xFF) <<  8 ^ \
                               (S[(tt >> 16) & 0xFF] & 0xFF) << 16 ^ \
                               (S[(tt >> 24) & 0xFF] & 0xFF) << 24
-                for i in xrange(KC / 2 + 1, KC):
+                for i in range(KC // 2 + 1, KC):
                     tk[i] ^= tk[i-1]
             # copy values into round key arrays
             j = 0
             while j < KC and t < ROUND_KEY_COUNT:
-                Ke[t / BC][t % BC] = tk[j]
-                Kd[ROUNDS - (t / BC)][t % BC] = tk[j]
+                Ke[t // BC][t % BC] = tk[j]
+                Kd[ROUNDS - (t // BC)][t % BC] = tk[j]
                 j += 1
                 t += 1
         # inverse MixColumn where needed
-        for r in xrange(1, ROUNDS):
-            for j in xrange(BC):
+        for r in range(1, ROUNDS):
+            for j in range(BC):
                 tt = Kd[r][j]
                 Kd[r][j] = U1[(tt >> 24) & 0xFF] ^ \
                            U2[(tt >> 16) & 0xFF] ^ \
@@ -1181,7 +1181,7 @@ class rijndael:
                 str(self.block_size) + ' got ' + str(len(plaintext)))
         Ke = self.Ke
 
-        BC = self.block_size / 4
+        BC = self.block_size // 4
         ROUNDS = len(Ke) - 1
         if BC == 4:
             SC = 0
@@ -1196,14 +1196,14 @@ class rijndael:
         # temporary work array
         t = []
         # plaintext to ints + key
-        for i in xrange(BC):
-            t.append((ord(plaintext[i * 4    ]) << 24 |
-                      ord(plaintext[i * 4 + 1]) << 16 |
-                      ord(plaintext[i * 4 + 2]) <<  8 |
-                      ord(plaintext[i * 4 + 3])        ) ^ Ke[0][i])
+        for i in range(BC):
+            t.append((plaintext[i * 4    ] << 24 |
+                      plaintext[i * 4 + 1] << 16 |
+                      plaintext[i * 4 + 2] <<  8 |
+                      plaintext[i * 4 + 3]        ) ^ Ke[0][i])
         # apply round transforms
-        for r in xrange(1, ROUNDS):
-            for i in xrange(BC):
+        for r in range(1, ROUNDS):
+            for i in range(BC):
                 a[i] = (T1[(t[ i           ] >> 24) & 0xFF] ^
                         T2[(t[(i + s1) % BC] >> 16) & 0xFF] ^
                         T3[(t[(i + s2) % BC] >>  8) & 0xFF] ^
@@ -1211,21 +1211,21 @@ class rijndael:
             t = copy.copy(a)
         # last round is special
         result = []
-        for i in xrange(BC):
+        for i in range(BC):
             tt = Ke[ROUNDS][i]
             result.append((S[(t[ i           ] >> 24) & 0xFF] ^ (tt >> 24)) & 0xFF)
             result.append((S[(t[(i + s1) % BC] >> 16) & 0xFF] ^ (tt >> 16)) & 0xFF)
             result.append((S[(t[(i + s2) % BC] >>  8) & 0xFF] ^ (tt >>  8)) & 0xFF)
             result.append((S[ t[(i + s3) % BC]        & 0xFF] ^  tt       ) & 0xFF)
-        return string.join(map(chr, result), '')
+        return bytearray(result)
 
     def decrypt(self, ciphertext):
         if len(ciphertext) != self.block_size:
             raise ValueError('wrong block length, expected ' + 
-                str(self.block_size) + ' got ' + str(len(plaintext)))
+                str(self.block_size) + ' got ' + str(len(ciphertext)))
         Kd = self.Kd
 
-        BC = self.block_size / 4
+        BC = self.block_size // 4
         ROUNDS = len(Kd) - 1
         if BC == 4:
             SC = 0
@@ -1240,14 +1240,14 @@ class rijndael:
         # temporary work array
         t = [0] * BC
         # ciphertext to ints + key
-        for i in xrange(BC):
-            t[i] = (ord(ciphertext[i * 4    ]) << 24 |
-                    ord(ciphertext[i * 4 + 1]) << 16 |
-                    ord(ciphertext[i * 4 + 2]) <<  8 |
-                    ord(ciphertext[i * 4 + 3])        ) ^ Kd[0][i]
+        for i in range(BC):
+            t[i] = (ciphertext[i * 4    ] << 24 |
+                    ciphertext[i * 4 + 1] << 16 |
+                    ciphertext[i * 4 + 2] <<  8 |
+                    ciphertext[i * 4 + 3]        ) ^ Kd[0][i]
         # apply round transforms
-        for r in xrange(1, ROUNDS):
-            for i in xrange(BC):
+        for r in range(1, ROUNDS):
+            for i in range(BC):
                 a[i] = (T5[(t[ i           ] >> 24) & 0xFF] ^
                         T6[(t[(i + s1) % BC] >> 16) & 0xFF] ^
                         T7[(t[(i + s2) % BC] >>  8) & 0xFF] ^
@@ -1255,13 +1255,13 @@ class rijndael:
             t = copy.copy(a)
         # last round is special
         result = []
-        for i in xrange(BC):
+        for i in range(BC):
             tt = Kd[ROUNDS][i]
             result.append((Si[(t[ i           ] >> 24) & 0xFF] ^ (tt >> 24)) & 0xFF)
             result.append((Si[(t[(i + s1) % BC] >> 16) & 0xFF] ^ (tt >> 16)) & 0xFF)
             result.append((Si[(t[(i + s2) % BC] >>  8) & 0xFF] ^ (tt >>  8)) & 0xFF)
             result.append((Si[ t[(i + s3) % BC]        & 0xFF] ^  tt       ) & 0xFF)
-        return string.join(map(chr, result), '')
+        return bytearray(result)
 
 def encrypt(key, block):
     return rijndael(key, len(block)).encrypt(block)
@@ -1285,13 +1285,30 @@ def test():
     t(32, 32)
 
 
+################ COMPAT ###
+import sys
+if sys.version_info >= (3,0):
+    def raw_input(s):
+        return input(s)
+            
+    def b2a_hex(b):
+        return binascii.b2a_hex(b).decode("ascii")
+        
+    def b2a_base64(b):
+        return binascii.b2a_base64(b).decode("ascii")    
+else:
+    def b2a_hex(b):
+        return binascii.b2a_hex(b)
+    def b2a_base64(b):
+        return binascii.b2a_base64(b)
+
 ################ CRYPTOMATH ###
 
 import math, hashlib, hmac
 
 def bytesToNumber(bytes):
-    total = 0L
-    multiplier = 1L
+    total = 0
+    multiplier = 1
     for count in range(len(bytes)-1, -1, -1):
         byte = bytes[count]
         total += multiplier * byte
@@ -1331,7 +1348,7 @@ def SHA256(b):
     return bytearray(hashlib.sha256(b).digest())
 
 def HMAC_SHA256(k, b):
-    return bytearray(hmac.new(k, b, hashlib.sha256).digest())
+    return bytearray(hmac.new(bytes(k), bytes(b), hashlib.sha256).digest())
 
 def constTimeCompare(a, b):
     if len(a) != len(b):
@@ -1435,13 +1452,12 @@ def parseTimeArg(arg):
         except ValueError:
             pass
     if not t:
-        print "CCC"
         s = posixTimeToStr(time.time())
         printError(
 '''Invalid time format, use e.g. "%s" (current time)
 or some prefix, such as: "%s", "%s", or "%s"''' % 
             (s, s[:13], s[:10], s[:4]))    
-    u = int(calendar.timegm(t)/60)
+    u = int(calendar.timegm(t)//60)
     if u < 0:
         printError("Time too early, epoch starts at 1970.")
     return u
@@ -1469,7 +1485,7 @@ class Writer:
                 newIndex -= 1
         else:
             assert(len(x) == elementLength)
-            for i in xrange(elementLength):
+            for i in range(elementLength):
                 self.bytes[self.index + i] = x[i]                
         self.index += elementLength
 
@@ -1507,7 +1523,7 @@ class Parser:
         if dataLength % elementLength != 0:
             raise SyntaxError()
         return [self.getBytes(elementLength) for x in \
-                range(dataLength/elementLength)]
+                range(dataLength//elementLength)]
 
 
 ################ ASN1 PARSER ###
@@ -1519,7 +1535,7 @@ def asn1Length(x):
     if x < 256:
         return bytearray([0x81,x])  
     if x < 65536:
-        return bytearray([0x82, int(x/256), x % 256])  
+        return bytearray([0x82, int(x//256), x % 256])  
     assert(False)
     
 #Takes a byte array which has a DER TLV field at its head
@@ -1594,7 +1610,9 @@ class TACK_Sig_Type:
 import binascii
 
 def writeBytes(b):
-    s = binascii.b2a_hex(b)
+    s = b2a_hex(b)
+    if hasattr(s, "decode"):
+        s = s.decode("ascii")
     retVal = ""
     while s:
         retVal += s[:32]
@@ -1755,7 +1773,7 @@ class TACK_Break_Sigs:
     
     def parse(self, b):
         p = Parser(b)
-        numBreakSigs = int(p.getInt(2) / TACK_Break_Sig.length)
+        numBreakSigs = int(p.getInt(2) // TACK_Break_Sig.length)
         if numBreakSigs > TACK_Break_Sigs.maxLen:
             raise SyntaxError("Too many break_sigs")
         self.break_sigs = []
@@ -1801,24 +1819,25 @@ class TACK:
 
 ################ SSL CERT ###
 
-def dePemCert(s):
-    start = s.find("-----BEGIN CERTIFICATE-----")
-    end = s.find("-----END CERTIFICATE-----")
+def dePemCert(b):
+    start = b.find(b"-----BEGIN CERTIFICATE-----")
+    end = b.find(b"-----END CERTIFICATE-----")
     if start == -1:
         raise SyntaxError("Missing PEM prefix")
     if end == -1:
         raise SyntaxError("Missing PEM postfix")
-    s = s[start+len("-----BEGIN CERTIFICATE-----") : end]
-    return bytearray(binascii.a2b_base64(s))
+    b = b[start+len("-----BEGIN CERTIFICATE-----") : end]
+    return bytearray(binascii.a2b_base64(b))
 
 def pemCert(b):
-    s1 = binascii.b2a_base64(b)[:-1] # remove terminating \n
+    s1 = b2a_base64(b)[:-1] # remove terminating \n
     s2 = ""
     while s1:
         s2 += s1[:64] + "\n"
         s1 = s1[64:]
-    return "-----BEGIN CERTIFICATE-----\n" + s2 + \
+    s = "-----BEGIN CERTIFICATE-----\n" + s2 + \
             "-----END CERTIFICATE-----"     
+    return bytearray(s, "ascii")
         
 class SSL_Cert:
     def __init__(self):
@@ -1859,8 +1878,8 @@ cert_sha256            = 0x%s\n""" % (\
 ################ TACK CERT ###
 
 class TACK_Cert:
-    oid_TACK = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
-    oid_TACK_Break_Sigs = bytearray("\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
+    oid_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
+    oid_TACK_Break_Sigs = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
     
     def __init__(self):
         self.TACK = None
@@ -1872,17 +1891,17 @@ class TACK_Cert:
     def generate(self, pin=None, sig=None, break_sigs=None):
         self.TACK = None
         self.break_sigs = None
-        self.preExtBytes = binascii.a2b_hex(\
-"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
-"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
-"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
-"10500030e00300b0204010203040203010001")
+        self.preExtBytes = binascii.a2b_hex(
+b"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
+b"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
+b"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
+b"10500030e00300b0204010203040203010001")
         # Below is BasicConstraints, saving space by omitting
         #self.extBytes = binascii.a2b_hex(\
 #"300c0603551d13040530030101ff")
         self.extBytes = bytearray()
-        self.postExtBytes = binascii.a2b_hex(\
-"300d06092a864886f70d01010505000303003993")
+        self.postExtBytes = binascii.a2b_hex(
+b"300d06092a864886f70d01010505000303003993")
     
     def parse(self, b):
         try:
@@ -2008,7 +2027,7 @@ def pbkdf2_hmac_sha256(password, salt, iterations):
     m = salt + bytearray([0,0,0,1])
     result = bytearray(32)
     for c in range(iterations):
-        m = HMAC_SHA256(password, m)
+        m = HMAC_SHA256(bytearray(password, "ascii"), m)
         result = xorbytes(m, result)
     return result
 
@@ -2021,14 +2040,13 @@ def deriveKeyFileKeys(password, salt, iter_count):
     return (encKey, authKey)
 
 def aes_cbc_decrypt(key, IV, ciphertext):
-    cipher = rijndael(str(key), 16)
+    cipher = rijndael(key, 16)
     assert(len(ciphertext) % 16 == 0) # no padding
     chainBlock = IV
-    plaintext = "" # not efficient, but doesn't matter here
-    for c in range(len(ciphertext)/16):
+    plaintext = bytearray() # not efficient, but doesn't matter here
+    for c in range(len(ciphertext)//16):
         cipherBlock = ciphertext[c*16 : (c*16)+16]
-        plaintext += xorbytes(bytearray(cipher.decrypt(str(cipherBlock))), 
-                                chainBlock)
+        plaintext += xorbytes(cipher.decrypt(cipherBlock), chainBlock)
         chainBlock = cipherBlock
     return plaintext
 
@@ -2036,11 +2054,10 @@ def aes_cbc_encrypt(key, IV, plaintext):
     cipher = rijndael(str(key), 16)
     assert(len(plaintext) % 16 == 0) # no padding
     chainBlock = IV
-    ciphertext = "" # not efficient, but doesn't matter here
-    for c in range(len(plaintext)/16):
+    ciphertext = bytearray() # not efficient, but doesn't matter here
+    for c in range(len(plaintext)//16):
         plainBlock = plaintext[c*16 : (c*16)+16]
-        chainBlock = bytearray(cipher.encrypt(str(xorbytes(plainBlock, 
-                                chainBlock))))
+        chainBlock = cipher.encrypt(xorbytes(plainBlock, chainBlock))
         ciphertext += chainBlock
     return ciphertext     
 
@@ -2174,7 +2191,7 @@ def testStructures():
     privKey, pubKey = ec256Generate()
     sig.generate(TACK_Sig_Type.v1_cert,
                  100000, 200000, os.urandom(32), pin,
-                 lambda(b):ecdsa256Sign(privKey, pubKey, b))
+                 lambda b:ecdsa256Sign(privKey, pubKey, b))
     sig2 = TACK_Sig()
     sig2.parse(sig.write())
     assert(sig.write() == sig2.write())
@@ -2204,7 +2221,7 @@ def testKeyFile():
 
 def testCert():
     sigDays = pinDays = 550 # About 1.5 years
-    currentTime = int(time.time()/60) # Get time in minutes
+    currentTime = int(time.time()//60) # Get time in minutes
     sigExp = currentTime + (24*60) * sigDays    
     
     sslBytes = bytearray(range(1,200))
@@ -2219,7 +2236,7 @@ def testCert():
     sig.generate(TACK_Sig_Type.v1_cert,
                  sigExp, sigExp+100, 
                  SHA256(sslBytes), pin,
-                 lambda(b):ecdsa256Sign(privKey,pubKey,b))
+                 lambda b :ecdsa256Sign(privKey,pubKey,b))
                      
     tc = TACK_Cert()
     tc.generate(pin, sig)
@@ -2234,18 +2251,18 @@ import sys, getpass, getopt, glob
 
 def printUsage(s=None):
     if s:
-        print "ERROR: %s\n" % s
-    print"Commands:"
-    print "  new    <cert>"
-    print "  update <cert>"
-    print "  break"
-    print "  view   <file>"
-    print "  help   <command>"
-    print
+        print("ERROR: %s\n" % s)
+    print("""Commands:
+new    <cert>"
+update <cert>"
+break"
+view   <file>"
+help   <command>
+""")
     sys.exit(-1)
 
 def printError(s):
-    print "ERROR: %s\n" % s
+    print("ERROR: %s\n" % s)
     sys.exit(-1)
 
 def newKeyFile(extraRandStr=""):
@@ -2268,7 +2285,7 @@ def openKeyFile(kfBytes, password=None):
         password = getpass.getpass("Enter password for key file: ")
         if kf.parse(kfBytes, password):
             break
-        print "PASSWORD INCORRECT!"
+        print("PASSWORD INCORRECT!")
     return kf
 
 def createFileRaiseOSExIfExists(name):
@@ -2284,7 +2301,7 @@ def writeKeyFile(kf, suffix):
             password1 = getpass.getpass("Choose password for key file: ")    
             password2 = getpass.getpass("Re-enter password for key file: ")  
             if password1 != password2:
-                print "PASSWORDS DON'T MATCH!"      
+                print("PASSWORDS DON'T MATCH!")      
             else:
                 passwordStr = password1    
     b = kf.write(passwordStr)
@@ -2407,17 +2424,17 @@ def openTACKFiles(errorNoCertOrKey=False, password=None):
 
     tc = TACK_Cert()
     if tcBytes:
-        print "Updating %s..." % tcName
+        print("Updating %s..." % tcName)
         try:
             tc.parse(tcBytes)
         except SyntaxError:
             printError("TACK certificate malformed: %s" % tcName)
     else:
         tc.generate()
-        print "No TACK certificate found, creating new one..."
+        print("No TACK certificate found, creating new one...")
 
     if kfBytes:
-        print "Opening %s..." % kfName        
+        print("Opening %s..." % kfName)        
         try:
             kf = openKeyFile(kfBytes, password)   
         except SyntaxError:
@@ -2485,7 +2502,7 @@ def pin(argv, update=False):
                 
     # Open the SSL cert
     try:
-        sslBytes = bytearray(open(sslName).read())
+        sslBytes = bytearray(open(sslName, "rb").read())
     except IOError:
         printError("SSL certificate file not found: %s" % argv[0])
     sslc = SSL_Cert()
@@ -2498,7 +2515,7 @@ def pin(argv, update=False):
     tc, kf, tcName, parsedSuffix, tcNameCounter = \
         openTACKFiles(update, password)
     if not kf:
-        print "No TACK key found, creating new one..."
+        print("No TACK key found, creating new one...")
         kf = newKeyFile()
         mustWriteKeyFile = True
     else:
@@ -2622,17 +2639,17 @@ def breakPin(argv):
         pin_label = cmdlineLabel
     else:
         if not tc.TACK:
-            print "WARNING: There is no existing TACK..."
+            print("WARNING: There is no existing TACK...")
             pin_label = promptForPinLabel()
-            print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
+            print("Breaking pin_label = 0x%s" % b2a_hex(pin_label))        
         elif tc.TACK.pin.pin_key != kf.public_key:
-            print "WARNING: This key DOES NOT MATCH the existing TACK..."
+            print("WARNING: This key DOES NOT MATCH the existing TACK...")
             pin_label = promptForPinLabel()
-            print "Breaking pin_label = 0x%s" % binascii.b2a_hex(pin_label)        
+            print("Breaking pin_label = 0x%s" % b2a_hex(pin_label))        
         else:
             pin_label = tc.TACK.pin.pin_label
-            print "Breaking existing TACK, pin_label = 0x%s" % \
-                    binascii.b2a_hex(pin_label)
+            print("Breaking existing TACK, pin_label = 0x%s" % \
+                    b2a_hex(pin_label))
         confirmY('Is this correct? ("y" to continue): ')            
     
     break_sig.generate(pin_label, kf.sign(pin_label))
@@ -2651,14 +2668,14 @@ def view(argv):
     if len(argv) > 1:
         printError("Can only view one object")
     try:
-        b = bytearray(open(argv[0]).read())
+        b = bytearray(open(argv[0], "rb").read())
     except IOError:
         printError("File not found: %s" % argv[0])
     # If it's a key file
     if len(b) == 168 and b[:3] == TACK_KeyFile.magic:
         kfv = TACK_KeyFileViewer()
         kfv.parse(b)
-        print kfv.writeText()
+        print(kfv.writeText())
     # If not it could be a certificate
     else: 
         try:
@@ -2666,7 +2683,7 @@ def view(argv):
             tc = TACK_Cert()
             tc.parse(b)
             if tc.TACK or tc.break_sigs:
-                print tc.writeText()
+                print(tc.writeText())
                 written = 1      
         except SyntaxError:
             pass
@@ -2674,7 +2691,7 @@ def view(argv):
             try:
                 sslc = SSL_Cert()
                 sslc.parse(b)
-                print sslc.writeText()      
+                print(sslc.writeText())      
             except SyntaxError:
                 printError("Unrecognized file type")
 
@@ -2684,7 +2701,7 @@ def help(argv):
     cmd = argv[0]
     if cmd == "new"[:len(cmd)]:
         s = posixTimeToStr(time.time())        
-        print \
+        print( \
 """Creates a TACK based on a new pin for the target SSL certificate.
         
   new <cert> <args>
@@ -2700,10 +2717,10 @@ Optional arguments:
   --sig_revocation=  : use this UTC time for sig_revocation
                          ("%s", "%s",
                           "%s", "%s" etc.)
-""" % (s, s[:13], s[:10], s[:4])
+""" % (s, s[:13], s[:10], s[:4]))
     elif cmd == "update"[:len(cmd)]:
         s = posixTimeToStr(time.time())                
-        print \
+        print( \
 """Creates a TACK based on an existing pin for the target SSL certificate.
 
   update <cert> <args>
@@ -2718,9 +2735,9 @@ Optional arguments:
   --sig_revocation=  : use this UTC time for sig_revocation
                          ("%s", "%s",
                           "%s", "%s" etc.)
-""" % (s, s[:13], s[:10], s[:4])
+""" % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
-        print \
+        print( \
 """Adds a break signature to a TACK certificate, and removes any broken TACK.
 
   break <args>
@@ -2731,12 +2748,12 @@ Optional arguments:
   --no_backup        : don't backup the TACK certificate
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix 
-"""
+""")
     elif cmd == "view"[:len(cmd)]:
-        print """Views a TACK certificate, SSL certificate, or Key File.
+        print("""Views a TACK certificate, SSL certificate, or Key File.
 
   view <file>
-"""        
+""")        
     else:
         printError("Help requested for unknown command")
         
