@@ -2250,10 +2250,10 @@ def printUsage(s=None):
     if s:
         print("ERROR: %s\n" % s)
     print("""Commands:
-new    <cert>"
-update <cert>"
-break"
-view   <file>"
+new    <cert>
+update <cert>
+break
+view   <file>
 help   <command>
 """)
     sys.exit(-1)
