@@ -1619,15 +1619,17 @@ def writeBytes(b):
     return retVal
         
 class TACK_Pin:
-    length = 73
+    length = 77
     
     def __init__(self):
         self.pin_type = 0
+        self.pin_expiration = 0
         self.pin_label = bytearray(8)
         self.pin_key = bytearray(64)
     
-    def generate(self, pin_type, pin_label, pin_key):
+    def generate(self, pin_type, pin_expiration, pin_label, pin_key):
         self.pin_type = pin_type
+        self.pin_expiration = pin_expiration
         self.pin_label = pin_label
         self.pin_key = pin_key
             
@@ -1636,6 +1638,7 @@ class TACK_Pin:
         self.pin_type = p.getInt(1)
         if self.pin_type != TACK_Pin_Type.v1:
             raise SyntaxError()
+        self.pin_expiration = p.getInt(4)
         self.pin_label = p.getBytes(8)
         self.pin_key = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
@@ -1645,6 +1648,7 @@ class TACK_Pin:
             raise SyntaxError()        
         w = Writer(TACK_Pin.length)
         w.add(self.pin_type, 1)
+        w.add(self.pin_expiration, 4)
         w.add(self.pin_label, 8)  
         w.add(self.pin_key, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
@@ -1655,9 +1659,11 @@ class TACK_Pin:
             raise SyntaxError()
         s = \
 """pin_type               = %s
+pin_expiration         = 0x%s
 pin_label              = 0x%s
 pin_key                = 0x%s\n""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
+posixTimeToStr(self.pin_expiration*60),
 writeBytes(self.pin_label),
 writeBytes(self.pin_key))
         return s
@@ -2176,7 +2182,7 @@ def testStructures():
     pin = TACK_Pin()
     sig = TACK_Sig()
     
-    pin.generate(TACK_Pin_Type.v1, os.urandom(8), os.urandom(64))
+    pin.generate(TACK_Pin_Type.v1, 1000000, os.urandom(8), os.urandom(64))
 
     # Test reading/writing OOC pin
     pin2 = TACK_Pin()
@@ -2226,7 +2232,7 @@ def testCert():
     kf.generate()    
         
     pin = TACK_Pin()
-    pin.generate(TACK_Pin_Type.v1, os.urandom(8), kf.public_key)
+    pin.generate(TACK_Pin_Type.v1, 1000000, os.urandom(8), kf.public_key)
         
     privKey, pubKey = ec256Generate()
     sig = TACK_Sig()
@@ -2473,8 +2479,8 @@ def pin(argv, update=False):
         
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["sig_type", "sig_expiration", "sig_generation",
-                "suffix", "password"]
+    oneArgArgs= ["pin_expiration", "sig_type", "sig_expiration", 
+                "sig_generation", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
     d = parseArgsIntoDict(argv[1:], noArgArgs, oneArgArgs)
@@ -2487,6 +2493,7 @@ def pin(argv, update=False):
     if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
         sig_generation = parseTimeArg(sig_generation)
     defaultExp = getDefaultExpirationStr()  
+    pin_expiration = parseTimeArg(d.get("pin_expiration", defaultExp))
     sig_expiration = parseTimeArg(d.get("sig_expiration", defaultExp))
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
@@ -2528,7 +2535,7 @@ def pin(argv, update=False):
         else:
             if sig_generation < tc.TACK.sig.sig_generation:
                 confirmY(
-'''WARNING: Requested sig_expiration is EARLIER than existing!
+'''WARNING: Requested sig_generation is EARLIER than existing!
 Do you know what you are doing? ("y" to continue): ''')
         tc.TACK.sig = None
     elif not update and tc.TACK:
@@ -2556,7 +2563,11 @@ Do you know what you are doing? ("y" to continue): ''')
         tc.TACK = TACK()
         tc.TACK.pin = TACK_Pin()            
         label = bytearray(os.urandom(8))
-        tc.TACK.pin.generate(TACK_Pin_Type.v1, label, kf.public_key)
+        tc.TACK.pin.generate(TACK_Pin_Type.v1, pin_expiration, 
+                                label, kf.public_key)
+    else:
+        # If "update", at least modify "pin_expiration"
+        tc.TACK.pin.pin_expiration = pin_expiration
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
@@ -2564,7 +2575,7 @@ Do you know what you are doing? ("y" to continue): ''')
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
-    # If not sig_expiration was set or carried-over, set to 1970
+    # If not sig_generation was set or carried-over, set to 1970
     if sig_generation == None:
         sig_generation = 0
     tc.TACK.sig.generate(sig_type, sig_expiration, sig_generation, 
@@ -2710,6 +2721,7 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
+  --pin_expiration   : use this UTC time for sig_expiration
   --sig_expiration=  : use this UTC time for sig_expiration
   --sig_generation=  : use this UTC time for sig_generation
                          ("%s", "%s",
@@ -2728,6 +2740,7 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
+  --pin_expiration   : use this UTC time for pin_expiration  
   --sig_expiration=  : use this UTC time for sig_expiration
   --sig_generation=  : use this UTC time for sig_generation
                          ("%s", "%s",
