@@ -1685,7 +1685,7 @@ class TACK_Sig:
         self.sig_expiration = sig_expiration
         self.sig_generation = sig_generation                
         self.sig_target_sha256 = sig_target_sha256
-        self.signature = signFunc(pin.write() + self.write()[:-64])
+        self.signature = signFunc(self.write()[:-64] + pin.pin_label)
     
     def parse(self, b):
         p = Parser(b)
