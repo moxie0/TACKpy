@@ -2396,7 +2396,7 @@ def parseTACKCertName(tcName, old=False):
             printError("Malformed TACK certificate name, counter: %s" % tcName)
     return tcSuffix, tcNameCounter
             
-def openTACKFiles(errorNoCertOrKey=False, password=None):       
+def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None):       
     tcGlobPem = glob.glob("TACK_cert_*_*.pem")
     tcGlobDer = glob.glob("TACK_cert_*_*.der")
     tcGlob = tcGlobPem + tcGlobDer
@@ -2414,15 +2414,17 @@ def openTACKFiles(errorNoCertOrKey=False, password=None):
         tcSuffix, tcNameCounter = parseTACKCertName(tcName)
         tcBytes = bytearray(open(tcName, "rb").read())
 
-    kfGlob = glob.glob("TACK_key_*.dat")
-    if len(kfGlob) == 0:
-        if errorNoCertOrKey:
-            printError("No TACK key found")
-        kfBytes = None
-    elif len(kfGlob) > 1:
-        printError("More than one TACK key found")
-    else:
-        kfName = kfGlob[0]
+    if not kfName:
+        kfGlob = glob.glob("TACK_key_*.dat")
+        if len(kfGlob) == 0:
+            if errorNoCertOrKey:
+                printError("No TACK key found")
+            kfBytes = None
+        elif len(kfGlob) > 1:
+            printError("More than one TACK key found")
+        else:
+            kfName = kfGlob[0]    
+    if kfName:
         kfBytes = bytearray(open(kfName, "rb").read())        
 
     tc = TACK_Cert()
@@ -2479,7 +2481,7 @@ def pin(argv, update=False):
         
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["pin_expiration", "sig_type", "sig_expiration", 
+    oneArgArgs= ["key", "pin_expiration", "sig_type", "sig_expiration", 
                 "sig_generation", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
@@ -2489,6 +2491,7 @@ def pin(argv, update=False):
     der = "der" in d
     noBackup = "no_backup" in d
     forceReplace = "replace" in d
+    kfName = d.get("key")
     sig_generation = d.get("sig_generation")
     if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
         sig_generation = parseTimeArg(sig_generation)
@@ -2517,7 +2520,7 @@ def pin(argv, update=False):
     
     # Open the TACK_cert and TACK_key files, creating latter if needed
     tc, kf, tcName, parsedSuffix, tcNameCounter = \
-        openTACKFiles(update, password)
+        openTACKFiles(update, password, kfName)
     if not kf:
         print("No TACK key found, creating new one...")
         kf = newKeyFile()
@@ -2603,15 +2606,16 @@ def promptForPinLabel():
 def breakPin(argv):
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["suffix", "password", "label"]
+    oneArgArgs= ["key", "suffix", "password", "label"]
     d = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
     
     # Set vars from cmdline dict
     der = "der" in d
     noBackup = "no_backup" in d
+    kfName = d.get("key")    
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
-    cmdlineLabel = d.get("label")
+    cmdlineLabel = d.get("label")    
     if cmdlineLabel:
         cmdlineLabel = cmdlineLabel.lower()
         if cmdlineLabel.startswith("0x"):
@@ -2630,7 +2634,7 @@ def breakPin(argv):
     except KeyError:
             printError("Unrecognized sig_type")
     
-    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password)
+    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password, kfName)
     
     if cmdlineSuffix:
         suffix = cmdlineSuffix
@@ -2718,10 +2722,11 @@ Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
   --replace          : replace an existing TACK without prompting
+  --key=             : use this TACK key
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
-  --pin_expiration   : use this UTC time for sig_expiration
+  --pin_expiration   : use this UTC time for pin_expiration
   --sig_expiration=  : use this UTC time for sig_expiration
   --sig_generation=  : use this UTC time for sig_generation
                          ("%s", "%s",
@@ -2737,6 +2742,7 @@ Optional arguments:
 Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
+  --key=             : use this TACK key  
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
@@ -2756,6 +2762,7 @@ Optional arguments:
   --label            : pin_label to break (8 bytes hexadecimal)
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
+  --key=             : use this TACK key  
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix 
 """)
