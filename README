@@ -8,3 +8,12 @@ your SSL chain (in Apache, append it to the SSLCertificateChainFile).
 You will need to update the TACK cert whenever you change your SSL cert, or
 once a year, whichever is sooner. Run "TACK.py update <new_sslcert>" on your
 new SSL cert from a directory containing the old TACK cert and the TACK key.
+
+
+
+Advanced uses
+==============
+
+Key reuse
+----------
+To reuse a TACK key for multiple sites create a different directory for each site.  Inside each directory either make a symlink to the TACK key, or specify it via the "--key" argument to "new" and "update".
