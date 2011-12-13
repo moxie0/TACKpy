@@ -1669,15 +1669,15 @@ class TACK_Sig:
     def __init__(self):
         self.sig_type = 0
         self.sig_expiration = 0
-        self.sig_revocation = 0                
+        self.sig_generation = 0                
         self.sig_target_sha256 = bytearray(32)
         self.signature = bytearray(64)
         
-    def generate(self, sig_type, sig_expiration, sig_revocation,
+    def generate(self, sig_type, sig_expiration, sig_generation,
                 sig_target_sha256, pin, signFunc):
         self.sig_type = sig_type
         self.sig_expiration = sig_expiration
-        self.sig_revocation = sig_revocation                
+        self.sig_generation = sig_generation                
         self.sig_target_sha256 = sig_target_sha256
         self.signature = signFunc(pin.write() + self.write()[:-64])
     
@@ -1687,7 +1687,7 @@ class TACK_Sig:
         if self.sig_type not in TACK_Sig_Type.all:
             raise SyntaxError()
         self.sig_expiration = p.getInt(4)
-        self.sig_revocation = p.getInt(4)            
+        self.sig_generation = p.getInt(4)            
         self.sig_target_sha256 = p.getBytes(32)
         self.signature = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
@@ -1698,7 +1698,7 @@ class TACK_Sig:
         w = Writer(TACK_Sig.length)
         w.add(self.sig_type, 1)
         w.add(self.sig_expiration, 4)
-        w.add(self.sig_revocation, 4)
+        w.add(self.sig_generation, 4)
         w.add(self.sig_target_sha256, 32)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
@@ -1710,12 +1710,12 @@ class TACK_Sig:
         s = \
 """sig_type               = %s
 sig_expiration         = %s
-sig_revocation         = %s
+sig_generation         = %s
 sig_target_sha256      = 0x%s
 signature              = 0x%s\n""" % \
 (TACK_Sig_Type.strings[self.sig_type], 
 posixTimeToStr(self.sig_expiration*60),
-posixTimeToStr(self.sig_revocation*60),
+posixTimeToStr(self.sig_generation*60),
 writeBytes(self.sig_target_sha256),
 writeBytes(self.signature))
         return s
@@ -2473,7 +2473,7 @@ def pin(argv, update=False):
         
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["sig_type", "sig_expiration", "sig_revocation",
+    oneArgArgs= ["sig_type", "sig_expiration", "sig_generation",
                 "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
@@ -2483,9 +2483,9 @@ def pin(argv, update=False):
     der = "der" in d
     noBackup = "no_backup" in d
     forceReplace = "replace" in d
-    sig_revocation = d.get("sig_revocation")
-    if sig_revocation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
-        sig_revocation = parseTimeArg(sig_revocation)
+    sig_generation = d.get("sig_generation")
+    if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
+        sig_generation = parseTimeArg(sig_generation)
     defaultExp = getDefaultExpirationStr()  
     sig_expiration = parseTimeArg(d.get("sig_expiration", defaultExp))
     cmdlineSuffix = d.get("suffix")
@@ -2522,11 +2522,11 @@ def pin(argv, update=False):
     if update:
         if not tc.TACK:
             printError("TACK certificate has no TACK extension")
-        # Maintain old sig_revocation on updates, unless overridden on cmdline
-        if sig_revocation == None: # i.e. not set on cmdline, DIFFERENT FROM 0
-            sig_revocation = tc.TACK.sig.sig_revocation
+        # Maintain old sig_generation on updates, unless overridden on cmdline
+        if sig_generation == None: # i.e. not set on cmdline, DIFFERENT FROM 0
+            sig_generation = tc.TACK.sig.sig_generation
         else:
-            if sig_revocation < tc.TACK.sig.sig_revocation:
+            if sig_generation < tc.TACK.sig.sig_generation:
                 confirmY(
 '''WARNING: Requested sig_expiration is EARLIER than existing!
 Do you know what you are doing? ("y" to continue): ''')
@@ -2565,9 +2565,9 @@ Do you know what you are doing? ("y" to continue): ''')
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
     # If not sig_expiration was set or carried-over, set to 1970
-    if sig_revocation == None:
-        sig_revocation = 0
-    tc.TACK.sig.generate(sig_type, sig_expiration, sig_revocation, 
+    if sig_generation == None:
+        sig_generation = 0
+    tc.TACK.sig.generate(sig_type, sig_expiration, sig_generation, 
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
@@ -2711,7 +2711,7 @@ Optional arguments:
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_revocation=  : use this UTC time for sig_revocation
+  --sig_generation=  : use this UTC time for sig_generation
                          ("%s", "%s",
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4]))
@@ -2729,7 +2729,7 @@ Optional arguments:
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_revocation=  : use this UTC time for sig_revocation
+  --sig_generation=  : use this UTC time for sig_generation
                          ("%s", "%s",
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4]))
