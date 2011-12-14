@@ -17,5 +17,5 @@ Advanced uses
 Key reuse
 ----------
 To reuse a TACK key for multiple sites create a different directory for each
-site. Inside each directory either make a symlink to the TACK key, or specify it
+site. Inside each directory either make a link to the TACK key, or specify it
 via the "--key" argument to "new" and "update".
