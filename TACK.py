@@ -1881,6 +1881,7 @@ cert_sha256            = 0x%s\n""" % (\
 ################ TACK CERT ###
 
 class TACK_Cert:
+    # TBD!!!: lengths are hardcoded in write(), be aware if changing...
     oid_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
     oid_TACK_Break_Sigs = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
     
