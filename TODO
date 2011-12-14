@@ -1,0 +1,7 @@
+
+ - Set pin_expiration and sig_expiration based on target certificate's
+expiration time (+3 months)
+
+ - Add --batch for generating a bunch of short-lived sigs
+
+ - testsuite

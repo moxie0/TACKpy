@@ -1659,7 +1659,7 @@ class TACK_Pin:
             raise SyntaxError()
         s = \
 """pin_type               = %s
-pin_expiration         = 0x%s
+pin_expiration         = %s
 pin_label              = 0x%s
 pin_key                = 0x%s\n""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
