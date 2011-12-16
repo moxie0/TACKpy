@@ -1467,6 +1467,28 @@ def getDateStr():
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d") 
 
+################ PEM ###
+
+def dePem(b, name):
+    start = b.find(b"-----BEGIN %s-----" % name)
+    end = b.find(b"-----END %s-----" % name)
+    if start == -1:
+        raise SyntaxError("Missing PEM prefix")
+    if end == -1:
+        raise SyntaxError("Missing PEM postfix")
+    b = b[start+len(b"-----BEGIN %s-----" % name) : end]
+    return bytearray(binascii.a2b_base64(b))
+
+def pem(b, name):
+    s1 = b2a_base64(b)[:-1] # remove terminating \n
+    s2 = ""
+    while s1:
+        s2 += s1[:64] + "\n"
+        s1 = s1[64:]
+    s = ("-----BEGIN %s-----\n" % name) + s2 + \
+            ("-----END %s-----" % name)     
+    return bytearray(s, "ascii")
+        
 ################ CODEC ###
 
 class Writer:
@@ -1822,25 +1844,6 @@ class TACK:
 
 ################ SSL CERT ###
 
-def dePemCert(b):
-    start = b.find(b"-----BEGIN CERTIFICATE-----")
-    end = b.find(b"-----END CERTIFICATE-----")
-    if start == -1:
-        raise SyntaxError("Missing PEM prefix")
-    if end == -1:
-        raise SyntaxError("Missing PEM postfix")
-    b = b[start+len(b"-----BEGIN CERTIFICATE-----") : end]
-    return bytearray(binascii.a2b_base64(b))
-
-def pemCert(b):
-    s1 = b2a_base64(b)[:-1] # remove terminating \n
-    s2 = ""
-    while s1:
-        s2 += s1[:64] + "\n"
-        s1 = s1[64:]
-    s = "-----BEGIN CERTIFICATE-----\n" + s2 + \
-            "-----END CERTIFICATE-----"     
-    return bytearray(s, "ascii")
         
 class SSL_Cert:
     def __init__(self):
@@ -1849,7 +1852,7 @@ class SSL_Cert:
     
     def parse(self, b):
         try:
-            b = dePemCert(b)
+            b = dePem(b, "CERTIFICATE")
         except SyntaxError:
             pass
         p = ASN1Parser(b)
@@ -1909,7 +1912,7 @@ class TACK_Cert:
     
     def parse(self, b):
         try:
-            b = dePemCert(b)
+            b = dePem(b, "CERTIFICATE")
         except SyntaxError:
             pass        
         p = ASN1Parser(b)
@@ -2270,10 +2273,11 @@ def printError(s):
     sys.exit(-1)
 
 def newKeyFile(extraRandStr=""):
-    if not extraRandStr:
-        while len(extraRandStr)<20:
-            extraRandStr = getpass.getpass (
-                "Enter at least 20 random keystrokes: ")    
+    # Don't prompt for more randomness - it might make users nervous
+    #if not extraRandStr:
+    #    while len(extraRandStr)<20:
+    #        extraRandStr = getpass.getpass (
+    #            "Enter at least 20 random keystrokes: ")    
     kf = TACK_KeyFile()
     kf.generate(extraRandStr)
     return kf
@@ -2319,7 +2323,7 @@ def writeTACKCert(tc, oldName, suffix, tcNameCounter,
     b = tc.write()
     if not der:
         newExt = ".pem"
-        b = pemCert(b)
+        b = pem(b, "CERTIFICATE")
     else:
         newExt = ".der"       
         
