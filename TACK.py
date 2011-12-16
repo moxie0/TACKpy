@@ -1969,7 +1969,7 @@ class TACK_Cert:
         # Finish copying the tail of the certificate
         self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength():]
         
-    def write(self):        
+    def write(self, binary=False):                
         b = bytearray(0)
         if self.TACK:
             # type=SEQ,len=?,type=6,len=9(for OID),
@@ -1996,6 +1996,8 @@ class TACK_Cert:
         # then its prefix'd type/length fields
         b = b + self.postExtBytes
         b = bytearray([0x30]) + asn1Length(len(b)) + b
+        if not binary:
+            b = pem(b, "CERTIFICATE")        
         return b
 
     def writeText(self):
@@ -2079,6 +2081,10 @@ class TACK_KeyFileViewer:
         self.mac = bytearray(32)
         
     def parse(self, b):
+        try:
+            b = dePem(b, "TACK KEY")
+        except SyntaxError:
+            pass        
         p = Parser(b)
         magic = p.getBytes(3)
         if magic != TACK_KeyFile.magic:
@@ -2134,6 +2140,10 @@ class TACK_KeyFile:
         return signature
 
     def parse(self, b, password):
+        try:
+            b = dePem(b, "TACK KEY")
+        except SyntaxError:
+            pass                
         p = Parser(b)
         magic = p.getBytes(3)
         if magic != TACK_KeyFile.magic:
@@ -2158,7 +2168,7 @@ class TACK_KeyFile:
         self.private_key = plaintext
         return True
     
-    def write(self, password):
+    def write(self, password, binary=False):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
         encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
@@ -2176,7 +2186,11 @@ class TACK_KeyFile:
         w.add(self.public_key, 64)
         w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
-        return w.bytes
+        if not binary:
+            b = pem(w.bytes, "TACK KEY")
+        else:
+            b = w.bytes
+        return b
 
 
 ################ TESTS ###
@@ -2313,17 +2327,16 @@ def writeKeyFile(kf, suffix):
             else:
                 passwordStr = password1    
     b = kf.write(passwordStr)
-    f = open("TACK_key_%s.dat" % suffix, "wb")
+    f = open("TACK_key_%s.pem" % suffix, "wb")
     f.write(b)
     f.close()
     return kf    
 
 def writeTACKCert(tc, oldName, suffix, tcNameCounter, 
                     der=False, noBackup=False):    
-    b = tc.write()
+    b = tc.write(der)
     if not der:
         newExt = ".pem"
-        b = pem(b, "CERTIFICATE")
     else:
         newExt = ".der"       
         
@@ -2420,7 +2433,7 @@ def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None):
         tcBytes = bytearray(open(tcName, "rb").read())
 
     if not kfName:
-        kfGlob = glob.glob("TACK_key_*.dat")
+        kfGlob = glob.glob("TACK_key_*.pem")
         if len(kfGlob) == 0:
             if errorNoCertOrKey:
                 printError("No TACK key found")
@@ -2689,12 +2702,12 @@ def view(argv):
     except IOError:
         printError("File not found: %s" % argv[0])
     # If it's a key file
-    if len(b) == 168 and b[:3] == TACK_KeyFile.magic:
+    try:
         kfv = TACK_KeyFileViewer()
         kfv.parse(b)
         print(kfv.writeText())
+    except SyntaxError:
     # If not it could be a certificate
-    else: 
         try:
             written=0            
             tc = TACK_Cert()
