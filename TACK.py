@@ -2315,7 +2315,7 @@ def createFileRaiseOSExIfExists(name):
     f = os.fdopen(fd, "wb")
     return f    
 
-def writeKeyFile(kf, suffix):
+def writeKeyFile(kf, outkfName):
     passwordStr = ""
     while not passwordStr:
         password1, password2 = "a", "b"
@@ -2327,18 +2327,23 @@ def writeKeyFile(kf, suffix):
             else:
                 passwordStr = password1    
     b = kf.write(passwordStr)
-    f = open("TACK_key_%s.pem" % suffix, "wb")
+    f = open(outkfName, "wb")
     f.write(b)
     f.close()
     return kf    
 
 def writeTACKCert(tc, oldName, suffix, tcNameCounter, 
-                    der=False, noBackup=False):    
+                    der=False, noBackup=False, outfName=None):    
     b = tc.write(der)
     if not der:
         newExt = ".pem"
     else:
         newExt = ".der"       
+    
+    # If there is an explicitly specified out-file, use it
+    if outfName:
+        open(outfName, "wb").write(b)
+        return
         
     # Backup old TACK cert (if there is one)
     if oldName and not noBackup:
@@ -2414,22 +2419,27 @@ def parseTACKCertName(tcName, old=False):
             printError("Malformed TACK certificate name, counter: %s" % tcName)
     return tcSuffix, tcNameCounter
             
-def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None):       
-    tcGlobPem = glob.glob("TACK_cert_*_*.pem")
-    tcGlobDer = glob.glob("TACK_cert_*_*.der")
-    tcGlob = tcGlobPem + tcGlobDer
-    if len(tcGlob) == 0:
-        if errorNoCertOrKey:
-            printError("No TACK cert found")
-        tcBytes = None
-        tcName = None
-        tcNameCounter = None
-        tcSuffix = None
-    elif len(tcGlob) > 1:
-        printError("More than one TACK cert found")
-    else:
-        tcName = tcGlob[0]
-        tcSuffix, tcNameCounter = parseTACKCertName(tcName)
+def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None, 
+                    tcName=None):
+    if tcName:
+        tcSuffix, tcNameCounter = None, None
+    elif not tcName:       
+        tcGlobPem = glob.glob("TACK_cert_*_*.pem")
+        tcGlobDer = glob.glob("TACK_cert_*_*.der")
+        tcGlob = tcGlobPem + tcGlobDer
+        if len(tcGlob) == 0:
+            if errorNoCertOrKey:
+                printError("No TACK cert found")
+            tcBytes = None
+            tcName = None
+            tcNameCounter = None
+            tcSuffix = None
+        elif len(tcGlob) > 1:
+            printError("More than one TACK cert found")
+        else:
+            tcName = tcGlob[0]
+            tcSuffix, tcNameCounter = parseTACKCertName(tcName)
+    if tcName:
         tcBytes = bytearray(open(tcName, "rb").read())
 
     if not kfName:
@@ -2499,10 +2509,12 @@ def pin(argv, update=False):
         
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["key", "pin_expiration", "sig_type", "sig_expiration", 
+    oneArgArgs= ["key", "in", "out",
+                "pin_expiration", "sig_type", "sig_expiration", 
                 "sig_generation", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
+        oneArgArgs += ["out_key"]
     d = parseArgsIntoDict(argv[1:], noArgArgs, oneArgArgs)
     
     # Set vars from cmdline dict
@@ -2510,6 +2522,11 @@ def pin(argv, update=False):
     noBackup = "no_backup" in d
     forceReplace = "replace" in d
     kfName = d.get("key")
+    infName = d.get("in")
+    outfName = d.get("out")
+    outkfName = d.get("out_key")
+    if infName and not outfName:
+        printError("--in requires --out")
     sig_generation = d.get("sig_generation")
     if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
         sig_generation = parseTimeArg(sig_generation)
@@ -2538,7 +2555,7 @@ def pin(argv, update=False):
     
     # Open the TACK_cert and TACK_key files, creating latter if needed
     tc, kf, tcName, parsedSuffix, tcNameCounter = \
-        openTACKFiles(update, password, kfName)
+        openTACKFiles(update, password, kfName, infName)
     if not kf:
         print("No TACK key found, creating new one...")
         kf = newKeyFile()
@@ -2566,18 +2583,19 @@ Do you know what you are doing? ("y" to continue): ''')
 
     # Set suffix for output (new=cmdline or prompt, update=parsed)
     suffix = None
-    if cmdlineSuffix:
-        suffix = cmdlineSuffix
-    else:
-        if not update:
-            if mustWriteKeyFile:
-                suffix = raw_input(
-"Enter a short suffix for your TACK key and cert files: ")
-            else:
-                suffix = raw_input(
-"Enter a short suffix for your TACK cert file: ")
+    if not outfName:
+        if cmdlineSuffix:
+            suffix = cmdlineSuffix
         else:
-            suffix = parsedSuffix
+            if not update:
+                if mustWriteKeyFile:
+                    suffix = raw_input(
+    "Enter a short suffix for your TACK key and cert files: ")
+                else:
+                    suffix = raw_input(
+    "Enter a short suffix for your TACK cert file: ")
+            else:
+                suffix = parsedSuffix
 
     # Produce the TACK_Pin (if "new")
     if not update:
@@ -2603,9 +2621,11 @@ Do you know what you are doing? ("y" to continue): ''')
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
-    writeTACKCert(tc, tcName, suffix, tcNameCounter, der, noBackup)
+    writeTACKCert(tc, tcName, suffix, tcNameCounter, der, noBackup, outfName)
     if mustWriteKeyFile:
-        writeKeyFile(kf, suffix)
+        if not outkfName:
+            outkfName = "TACK_key_%s.pem" % suffix
+        writeKeyFile(kf, outkfName)
 
 def promptForPinLabel():
     while 1:
@@ -2624,13 +2644,18 @@ def promptForPinLabel():
 def breakPin(argv):
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
-    oneArgArgs= ["key", "suffix", "password", "label"]
+    oneArgArgs= ["key", "in", "out", 
+                "suffix", "password", "label"]
     d = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
     
     # Set vars from cmdline dict
     der = "der" in d
     noBackup = "no_backup" in d
     kfName = d.get("key")    
+    infName = d.get("in")
+    outfName = d.get("out")    
+    if infName and not outfName:
+        printError("--in requires --out")    
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
     cmdlineLabel = d.get("label")    
@@ -2652,7 +2677,8 @@ def breakPin(argv):
     except KeyError:
             printError("Unrecognized sig_type")
     
-    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password, kfName)
+    tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password, kfName,
+                                            infName)
     
     if cmdlineSuffix:
         suffix = cmdlineSuffix
@@ -2690,7 +2716,7 @@ def breakPin(argv):
             kf.public_key == tc.TACK.pin.pin_key:
         tc.TACK = None
     
-    writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup)
+    writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup, outfName)
      
 def view(argv):
     if len(argv) < 1:
@@ -2741,6 +2767,9 @@ Optional arguments:
   --no_backup        : don't backup the TACK certificate
   --replace          : replace an existing TACK without prompting
   --key=             : use this TACK key
+  --in=              : update this TACK certificate
+  --out=             : write the output TACK certificate here
+  --out_key=         : write the output TACK key here
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
@@ -2760,7 +2789,9 @@ Optional arguments:
 Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
-  --key=             : use this TACK key  
+  --key=             : use this TACK key
+  --in=              : update this TACK certificate
+  --out=             : write the output TACK certificate here    
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
@@ -2781,6 +2812,8 @@ Optional arguments:
   --der              : write output as .der instead of .pem
   --no_backup        : don't backup the TACK certificate
   --key=             : use this TACK key  
+  --in=              : update this TACK certificate
+  --out=             : write the output TACK certificate here  
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix 
 """)
