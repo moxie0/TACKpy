@@ -2482,10 +2482,12 @@ def confirmY(s):
         printError("Cancelled")    
 
 def parseArgsIntoDict(argv, noArgArgs, oneArgArgs):
-    argsDict = {}    
+    argsDict = {}
+    newArgv = []    
     for arg in argv:
         if not arg.startswith("--"):
-            printError("Malformed argument: %s" % arg)
+            newArgv.append(arg)
+            continue
         arg = arg[2:]
         parts = arg.split("=")
         if parts[0] in argsDict:
@@ -2500,13 +2502,9 @@ def parseArgsIntoDict(argv, noArgArgs, oneArgArgs):
             argsDict[parts[0]] = None
         else:
             printError("Unknown or malformed argument: %s" % parts[0])
-    return argsDict
+    return argsDict, newArgv
 
-def pin(argv, update=False):
-    if len(argv) < 1:
-        printError("Missing argument: SSL certificate file")    
-    sslName = argv[0]
-        
+def pin(argv, update=False):        
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out",
@@ -2515,7 +2513,12 @@ def pin(argv, update=False):
     if not update:
         noArgArgs += ["replace"]
         oneArgArgs += ["out_key"]
-    d = parseArgsIntoDict(argv[1:], noArgArgs, oneArgArgs)
+    d, argv = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
+    if len(argv) < 1:
+        printError("Missing argument: SSL certificate file")    
+    if len(argv) > 1:
+        printError("Extra arguments")            
+    sslName = argv[0]    
     
     # Set vars from cmdline dict
     der = "der" in d
@@ -2646,7 +2649,9 @@ def breakPin(argv):
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out", 
                 "suffix", "password", "label"]
-    d = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
+    d, argv = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
+    if len(argv) > 0:
+        printError("Extra arguments")    
     
     # Set vars from cmdline dict
     der = "der" in d
