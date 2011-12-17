@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 from numbertheory import *
 from ellipticcurve import *
 from ecdsa import *
@@ -397,9 +399,8 @@ def promptForPinLabel():
             labelStr = labelStr[2:]
         try:
             pin_label = a2b_hex(labelStr)
-            if len(pin_label) != 8:
-                pass            
-            break
+            if len(pin_label) == 8:
+                break
         except TypeError:
             pass
     return pin_label
