@@ -1467,6 +1467,32 @@ def getDateStr():
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d") 
 
+# Return UNIX time int
+def parseASN1UTCTime(b):
+    try:
+        if b[-1] != ord("Z"):
+            raise SyntaxError()
+        if len(b) == len("YYMHDDHHMMSSZ"):
+            pass
+        elif len(b) == len("YYHHDDHHMMZ"):
+            b = b[:-1] + b"00Z"
+        else:
+            raise SyntaxError()
+        year = int(b[:2])
+        if year < 50:
+            b = b"20" + b
+        else:
+            b = b"19" + b
+    except:
+        raise SyntaxError()
+    return parseASN1GeneralizedTime(b)
+    
+
+def parseASN1GeneralizedTime(b):
+    t = time.strptime(b, "%Y%m%d%H%M%SZ")
+    return int(calendar.timegm(t))
+    
+
 ################ PEM ###
 
 def dePem(b, name):
@@ -1864,20 +1890,35 @@ class SSL_Cert:
         #This determines which index the key is at
         if tbsCertificateP.value[0]==0xA0:
             subjectPublicKeyInfoIndex = 6
+            validityIndex = 4
         else:
-            subjectPublicKeyInfoIndex = 5             
+            subjectPublicKeyInfoIndex = 5
+            validityIndex = 3             
         #Get the subjectPublicKeyInfo
         spkiP = tbsCertificateP.getChild(\
                                     subjectPublicKeyInfoIndex)
+
+        #Parse the notAfter time
+        validityP = tbsCertificateP.getChild(validityIndex)
+        notAfterP = validityP.getChild(1)
+        if notAfterP.type == 0x17: # UTCTime
+            self.notAfter = parseASN1UTCTime(notAfterP.value)
+        elif notAfterP.type == 0x18: # GeneralizedTime
+            self.notAfter = parseASN1GeneralizedTime(notAfterP.value)
+        else:
+            raise SyntaxError()            
         self.cert_sha256 = SHA256(b)
         self.key_sha256 = SHA256(spkiP.getTotalBytes())
     
     def writeText(self):
         s = \
 """key_sha256             = 0x%s
-cert_sha256            = 0x%s\n""" % (\
+cert_sha256            = 0x%s
+notAfter               = %s
+\n""" % (\
         writeBytes(self.key_sha256),
-        writeBytes(self.cert_sha256))
+        writeBytes(self.cert_sha256),
+        posixTimeToStr(self.notAfter))
         return s
         
 
@@ -2265,6 +2306,7 @@ def testCert():
     tc2 = TACK_Cert()
     tc2.parse(tc.write())
     assert(tc.write() == tc2.write())
+    
 
 ################ MAIN ###
 
@@ -2533,9 +2575,12 @@ def pin(argv, update=False):
     sig_generation = d.get("sig_generation")
     if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
         sig_generation = parseTimeArg(sig_generation)
-    defaultExp = getDefaultExpirationStr()  
-    pin_expiration = parseTimeArg(d.get("pin_expiration", defaultExp))
-    sig_expiration = parseTimeArg(d.get("sig_expiration", defaultExp))
+    pin_expiration = d.get("pin_expiration")
+    if pin_expiration != None:
+        pin_expiration = parseTimeArg(pin_expiration)
+    sig_expiration = d.get("sig_expiration")
+    if sig_expiration != None:
+        sig_expiration= parseTimeArg(sig_expiration)
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
     try:
@@ -2565,6 +2610,13 @@ def pin(argv, update=False):
         mustWriteKeyFile = True
     else:
         mustWriteKeyFile = False        
+
+    # Set default pin_expiration and sig_expiration
+    defaultExpTime = (sslc.notAfter//60) + (60*24)*60 # 60 days grace period
+    if not pin_expiration:
+        pin_expiration = defaultExpTime
+    if not sig_expiration:
+        sig_expiration = defaultExpTime
 
     # Check existing TACK_Pin and TACK_Sig
     if update:
@@ -2769,7 +2821,7 @@ def help(argv):
 
 Optional arguments:
   --der              : write output as .der instead of .pem
-  --no_backup        : don't backup the TACK certificate
+  --no_backup        : don't backup any existing TACK certificate
   --replace          : replace an existing TACK without prompting
   --key=             : use this TACK key
   --in=              : update this TACK certificate
@@ -2793,7 +2845,7 @@ Optional arguments:
 
 Optional arguments:
   --der              : write output as .der instead of .pem
-  --no_backup        : don't backup the TACK certificate
+  --no_backup        : don't backup the existing TACK certificate
   --key=             : use this TACK key
   --in=              : update this TACK certificate
   --out=             : write the output TACK certificate here    
@@ -2837,7 +2889,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == "test":
         testCert()
         testStructures()
-        testKeyFile()        
+        testKeyFile()
     elif sys.argv[1] == "new"[:len(sys.argv[1])]:
         pin(sys.argv[2:], False)
     elif sys.argv[1] == "update"[:len(sys.argv[1])]:

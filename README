@@ -5,12 +5,12 @@ Run "TACK.py new <sslcert>" on your SSL cert. Backup the TACK key in a safe
 place where no one can steal it and you won't lose it. Add the TACK cert to
 your SSL chain (in Apache, append it to the SSLCertificateChainFile).
 
-You will need to update the TACK cert whenever you change your SSL cert, or
-once a year, whichever is sooner. Run "TACK.py update <new_sslcert>" on your
-new SSL cert from a directory containing the old TACK cert and the TACK key.
+You will need to update the TACK cert whenever you change your SSL cert. Run
+"TACK.py update <new_sslcert>" on your new SSL cert from the directory
+containing the old TACK cert and the TACK key.
 
 If you have multiple sites create a different directory for each site, and
-perform the relevant commands in each directory.
+perform the commands in each directory.
 
 
 Advanced uses
@@ -25,7 +25,7 @@ To reuse a TACK key for multiple sites specify it via the "--key" argument to
 Manual naming
 --------------
 By default the tool looks for files in the current directory with the "TACK_"
-naming pattern and increments the TACK cert name while making backups.
+name and increments the TACK cert name while making backups.
 
 If you'd prefer to manually specify filenames use the "--in", "--out", "--key",
 and "--out_key" arguments. I.e.:
