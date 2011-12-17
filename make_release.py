@@ -1,27 +1,30 @@
 #! /usr/bin/env python
 
 fnames = [\
-"numbertheory.py",
-"ellipticcurve.py",
-"ecdsa.py",
-"rijndael.py",
-"compat.py",
-"cryptomath.py",
-"ecdsa_wrappers.py",
-"time_funcs.py",
-"pem.py",
-"struct_parser.py",
-"asn1_parser.py",
-"constants.py",
-"tack_structures.py",
-"ssl_cert.py",
-"tack_cert.py",
-"keyfile.py",
-"tests.py",
-"main.py"] 
+"src/numbertheory.py",
+"src/ellipticcurve.py",
+"src/ecdsa.py",
+"src/rijndael.py",
+"src/compat.py",
+"src/cryptomath.py",
+"src/ecdsa_wrappers.py",
+"src/time_funcs.py",
+"src/pem.py",
+"src/struct_parser.py",
+"src/asn1_parser.py",
+"src/constants.py",
+"src/tack_structures.py",
+"src/ssl_cert.py",
+"src/tack_cert.py",
+"src/keyfile.py",
+"src/tests.py",
+"src/main.py"] 
 
+# Stitch the source files together, ommitting anything before 
+# the ######... header (usually just import statements) necessary 
+# for when this is separate modules
 
-s = open("header.py").read()
+s = open("src/header.py").read()
 for fname in fnames:
     s2 = open(fname).read()
     i = s2.find("################ ")

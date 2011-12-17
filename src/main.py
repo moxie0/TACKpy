@@ -25,7 +25,9 @@ import sys, getpass, getopt, glob
 def printUsage(s=None):
     if s:
         print("ERROR: %s\n" % s)
-    print("""Commands:
+    print("""TACK-tool version VV.VV.VV  
+
+Commands:
 new    <cert>
 update <cert>
 break

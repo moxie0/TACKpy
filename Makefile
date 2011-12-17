@@ -1,0 +1,17 @@
+
+
+version := 0.9.0
+version_insert := sed -e 's/VV.VV.VV/$(version)/g'
+dir := TACK-tool-$(version)
+
+clean:
+	rm -rf $(dir)
+	rm -f TACK-tool-*.tar.gz
+
+release:
+	rm -rf $(dir)
+	mkdir $(dir)
+	./make_release.py | $(version_insert) > $(dir)/TACK.py
+	chmod +x $(dir)/TACK.py
+	$(version_insert) README > $(dir)/README
+	tar czvf TACK-tool-$(version).tar.gz $(dir)
