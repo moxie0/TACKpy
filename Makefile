@@ -14,4 +14,4 @@ release:
 	./make_release.py | $(version_insert) > $(dir)/TACK.py
 	chmod +x $(dir)/TACK.py
 	$(version_insert) README > $(dir)/README
-	tar czvf TACK-tool-$(version).tar.gz $(dir)
+	tar czvf $(dir).tar.gz $(dir)
