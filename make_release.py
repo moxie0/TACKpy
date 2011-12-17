@@ -1,21 +1,4 @@
-from numbertheory import *
-from ellipticcurve import *
-from ecdsa import *
-from rijndael import *
-from compat import *
-from cryptomath import *
-from ecdsa_wrappers import *
-from time import *
-from pem import *
-from struct_parser import *
-from asn1_parser import *
-from constants import *
-from tack_structures import *
-from ssl_cert import *
-from tack_cert import *
-from keyfile import *
-from tests import *
-
+#! /usr/bin/env python
 
 fnames = [\
 "numbertheory.py",
