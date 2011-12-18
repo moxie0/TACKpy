@@ -263,7 +263,7 @@ def pin(argv, update=False):
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out",
                 "pin_expiration", "sig_type", "sig_expiration", 
-                "sig_generation", "suffix", "password"]
+                "sig_cutoff", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
         oneArgArgs += ["out_key"]
@@ -284,9 +284,9 @@ def pin(argv, update=False):
     outkfName = d.get("out_key")
     if infName and not outfName:
         printError("--in requires --out")
-    sig_generation = d.get("sig_generation")
-    if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0          
-        sig_generation = parseTimeArg(sig_generation)
+    sig_cutoff = d.get("sig_cutoff")
+    if sig_cutoff != None: # Ie not set on cmdline, DIFFERENT FROM 0          
+        sig_cutoff = parseTimeArg(sig_cutoff)
     pin_expiration = d.get("pin_expiration")
     if pin_expiration != None:
         pin_expiration = parseTimeArg(pin_expiration)
@@ -334,13 +334,13 @@ def pin(argv, update=False):
     if update:
         if not tc.TACK:
             printError("TACK certificate has no TACK extension")
-        # Maintain old sig_generation on updates, unless overridden on cmdline
-        if sig_generation == None: # i.e. not set on cmdline, DIFFERENT FROM 0
-            sig_generation = tc.TACK.sig.sig_generation
+        # Maintain old sig_cutoff on updates, unless overridden on cmdline
+        if sig_cutoff == None: # i.e. not set on cmdline, DIFFERENT FROM 0
+            sig_cutoff = tc.TACK.sig.sig_cutoff
         else:
-            if sig_generation < tc.TACK.sig.sig_generation:
+            if sig_cutoff < tc.TACK.sig.sig_cutoff:
                 confirmY(
-'''WARNING: Requested sig_generation is EARLIER than existing!
+'''WARNING: Requested sig_cutoff is EARLIER than existing!
 Do you know what you are doing? ("y" to continue): ''')
         tc.TACK.sig = None
     elif not update and tc.TACK:
@@ -381,10 +381,10 @@ Do you know what you are doing? ("y" to continue): ''')
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
-    # If not sig_generation was set or carried-over, set to 1970
-    if sig_generation == None:
-        sig_generation = 0
-    tc.TACK.sig.generate(sig_type, sig_expiration, sig_generation, 
+    # If not sig_cutoff was set or carried-over, set to 1970
+    if sig_cutoff == None:
+        sig_cutoff = 0
+    tc.TACK.sig.generate(sig_type, sig_expiration, sig_cutoff, 
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
@@ -543,7 +543,7 @@ Optional arguments:
   --sig_type=        : target signature to "v1_key" or "v1_cert"
   --pin_expiration   : use this UTC time for pin_expiration
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_generation=  : use this UTC time for sig_generation
+  --sig_cutoff=      : use this UTC time for sig_cutoff
                          ("%s", "%s",
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4]))
@@ -565,7 +565,7 @@ Optional arguments:
   --sig_type=        : target signature to "v1_key" or "v1_cert"
   --pin_expiration   : use this UTC time for pin_expiration  
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_generation=  : use this UTC time for sig_generation
+  --sig_cutoff=      : use this UTC time for sig_cutoff
                          ("%s", "%s",
                           "%s", "%s" etc.)
 """ % (s, s[:13], s[:10], s[:4]))

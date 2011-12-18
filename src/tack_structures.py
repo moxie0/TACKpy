@@ -61,15 +61,15 @@ class TACK_Sig:
     def __init__(self):
         self.sig_type = 0
         self.sig_expiration = 0
-        self.sig_generation = 0                
+        self.sig_cutoff = 0                
         self.sig_target_sha256 = bytearray(32)
         self.signature = bytearray(64)
         
-    def generate(self, sig_type, sig_expiration, sig_generation,
+    def generate(self, sig_type, sig_expiration, sig_cutoff,
                 sig_target_sha256, pin, signFunc):
         self.sig_type = sig_type
         self.sig_expiration = sig_expiration
-        self.sig_generation = sig_generation                
+        self.sig_cutoff = sig_cutoff                
         self.sig_target_sha256 = sig_target_sha256
         self.signature = signFunc(self.write()[:-64] + pin.pin_label)
     
@@ -79,7 +79,7 @@ class TACK_Sig:
         if self.sig_type not in TACK_Sig_Type.all:
             raise SyntaxError()
         self.sig_expiration = p.getInt(4)
-        self.sig_generation = p.getInt(4)            
+        self.sig_cutoff = p.getInt(4)            
         self.sig_target_sha256 = p.getBytes(32)
         self.signature = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
@@ -90,7 +90,7 @@ class TACK_Sig:
         w = Writer(TACK_Sig.length)
         w.add(self.sig_type, 1)
         w.add(self.sig_expiration, 4)
-        w.add(self.sig_generation, 4)
+        w.add(self.sig_cutoff, 4)
         w.add(self.sig_target_sha256, 32)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
@@ -102,12 +102,12 @@ class TACK_Sig:
         s = \
 """sig_type               = %s
 sig_expiration         = %s
-sig_generation         = %s
+sig_cutoff             = %s
 sig_target_sha256      = 0x%s
 signature              = 0x%s\n""" % \
 (TACK_Sig_Type.strings[self.sig_type], 
 posixTimeToStr(self.sig_expiration*60),
-posixTimeToStr(self.sig_generation*60),
+posixTimeToStr(self.sig_cutoff*60),
 writeBytes(self.sig_target_sha256),
 writeBytes(self.signature))
         return s
