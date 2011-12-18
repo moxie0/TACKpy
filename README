@@ -1,17 +1,57 @@
 TACK-tool version VV.VV.VV
 
 Quick start 
------------- 
-Run "TACK.py new <sslcert>" on your SSL cert. Backup the TACK key in a safe
-place where no one can steal it and you won't lose it. Add the TACK cert to
-your SSL chain (in Apache, append it to the SSLCertificateChainFile).
+============
 
-You will need to update the TACK cert whenever you change your SSL cert. Run
-"TACK.py update <new_sslcert>" on your new SSL cert from the directory
-containing the old TACK cert and the TACK key.
+To create a site's first TACK cert:
 
-If you have multiple sites create a different directory for each site, and
-perform the commands in each directory.
+  1) Create an empty directory for the site and "cd" to it.  
+  2) Run "TACK new <sslcert>" on the site's SSL cert.
+    - this generates a TACK cert and a TACK key in the directory
+    - this TACK cert has a 5-minute "pin_duration", so clients encountering it
+      will only remember the pin for 5 minutes.  
+    - This lets you to test the TACK cert without fear of long-lasting problems.
+  3) Backup the TACK key in a place where it won't be stolen or lost
+  4) Add the TACK cert to the site's SSL cert chain 
+    - in Apache, append it to the SSLCertificateChainFile
+  5) Test the site
+    - ensure the pin is causing no compatibility problems in any browsers
+    - If there are problems, see "Removing the TACK cert"
+    - If there are no problems, see "Adjusting the TACK cert"
+
+
+Removing the TACK cert:
+(if you don't wish to use TACKs any longer)
+
+  1) Go to the directory containing the site's TACK key and TACK cert
+  2) Run "TACK break"
+    - this generates a "pin-break" TACK cert
+  3) Add the pin-break TACK cert to the site's SSL cert chain, replacing the 
+     previous TACK cert.
+  4) After the previous pin_duration has elapsed (which is 5 minutes for a 
+     newly-created TACK cert), you may remove the pin-break TACK cert.
+  5) It is OK to create a new pin for the site while the previous pin_duration
+     is still in effect:
+       - "cd" to the directory with the pin-break TACK cert 
+       - repeat the "TACK new <sslcert>" process
+
+
+Adjusting the TACK cert:
+(if you are satisfied with testing and wish to make the TACK long-lived)
+
+  1) Go to a directory containing the site's TACK cert
+  2) Run "TACK adjust 30d" to adjust the pin_duration to 30 days.
+  3) Replace the previous TACK cert with the new one in your SSL cert chain. 
+
+
+Changing your SSL cert:
+(whenever you change your SSL cert, you *MUST* do the following)
+
+  1) Go to the directory containing the site's TACK key and TACK cert
+  2) Run "TACK update <new_sslcert>"
+  3) Replace the old TACK cert with the new TACK cert in the SSL cert chain
+    - you must update the SSL cert and TACK cert at the same time
+
 
 
 Advanced uses
@@ -20,15 +60,26 @@ Advanced uses
 Key reuse
 ----------
 To reuse a TACK key for multiple sites specify it via the "--key" argument to
-"new" and "update".
+"new" and "update", or place it (or a link) in each site's directory.
 
 
-Manual naming
---------------
-By default the tool looks for files in the current directory with the "TACK_"
-name and increments the TACK cert name while making backups.
+Manual filenames
+-----------------
+By default the tool looks for "TACK_" files in the current directory and
+increments the TACK cert name while making backups.
 
 If you'd prefer to manually specify filenames use the "--in", "--out", "--key",
-and "--out_key" arguments. I.e.:
-  TACK.py new <sslcert> --out=cert.pem --out_key=key.pem
-  TACK.py update <new_sslcert> --key=key.pem --in=cert.pem --out=cert2.pem
+and "--out_key" arguments:
+  TACK new <sslcert> --out=cert.pem --out_key=key.pem
+  TACK update <new_sslcert> --key=key.pem --in=cert.pem --out=cert2.pem
+
+
+Revoking old TACKs
+-------------------
+If an older SSL cert has been compromised and you are switching to a new SSL
+cert, you may revoke all older TACK certs by "--sig_cutoff=<cutoff_time>" in a
+"update" command. Set "<cutoff_time>" to a time in the future at which you will
+have replaced all old TACK certs with this new TACK cert.
+
+Clients who encounter the new TACK cert will, as of the cutoff time, reject
+older TACK certs.

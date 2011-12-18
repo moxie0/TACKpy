@@ -1,6 +1,7 @@
 from constants import *
 from struct_parser import *
 from time_funcs import *
+from misc import *
 
 ################ TACK STRUCTURES ###
         
@@ -9,13 +10,13 @@ class TACK_Pin:
     
     def __init__(self):
         self.pin_type = 0
-        self.pin_expiration = 0
+        self.pin_duration = 0
         self.pin_label = bytearray(8)
         self.pin_key = bytearray(64)
     
-    def generate(self, pin_type, pin_expiration, pin_label, pin_key):
+    def generate(self, pin_type, pin_duration, pin_label, pin_key):
         self.pin_type = pin_type
-        self.pin_expiration = pin_expiration
+        self.pin_duration = pin_duration
         self.pin_label = pin_label
         self.pin_key = pin_key
             
@@ -24,7 +25,7 @@ class TACK_Pin:
         self.pin_type = p.getInt(1)
         if self.pin_type != TACK_Pin_Type.v1:
             raise SyntaxError()
-        self.pin_expiration = p.getInt(4)
+        self.pin_duration = p.getInt(4)
         self.pin_label = p.getBytes(8)
         self.pin_key = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
@@ -34,7 +35,7 @@ class TACK_Pin:
             raise SyntaxError()        
         w = Writer(TACK_Pin.length)
         w.add(self.pin_type, 1)
-        w.add(self.pin_expiration, 4)
+        w.add(self.pin_duration, 4)
         w.add(self.pin_label, 8)  
         w.add(self.pin_key, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
@@ -45,11 +46,11 @@ class TACK_Pin:
             raise SyntaxError()
         s = \
 """pin_type               = %s
-pin_expiration         = %s
+pin_duration           = %s
 pin_label              = 0x%s
 pin_key                = 0x%s\n""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
-posixTimeToStr(self.pin_expiration*60),
+durationToStr(self.pin_duration),
 writeBytes(self.pin_label),
 writeBytes(self.pin_key))
         return s

@@ -5,6 +5,7 @@ fnames = [\
 "src/ellipticcurve.py",
 "src/ecdsa.py",
 "src/rijndael.py",
+"src/misc.py",
 "src/compat.py",
 "src/cryptomath.py",
 "src/ecdsa_wrappers.py",

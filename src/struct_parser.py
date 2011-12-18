@@ -2,17 +2,6 @@ from compat import *
 
 ################ STRUCT PARSER ###
 
-# Helper function for structures, sticking here for time being...
-def writeBytes(b):
-    s = b2a_hex(b)
-    retVal = ""
-    while s:
-        retVal += s[:32]
-        s = s[32:]
-        if len(s):
-            retVal += "\n                           "
-    return retVal
-
 class Writer:
     def __init__(self, totalLength):
         self.index = 0

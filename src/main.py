@@ -4,6 +4,7 @@ from numbertheory import *
 from ellipticcurve import *
 from ecdsa import *
 from rijndael import *
+from misc import *
 from compat import *
 from cryptomath import *
 from ecdsa_wrappers import *
@@ -30,14 +31,11 @@ def printUsage(s=None):
 Commands:
 new    <cert>
 update <cert>
+adjust <duration>
 break
 view   <file>
 help   <command>
 """)
-    sys.exit(-1)
-
-def printError(s):
-    print("ERROR: %s\n" % s)
     sys.exit(-1)
 
 def newKeyFile(extraRandStr=""):
@@ -174,7 +172,7 @@ def parseTACKCertName(tcName, old=False):
     return tcSuffix, tcNameCounter
             
 def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None, 
-                    tcName=None):
+                    tcName=None, skipKeyFile=False):
     if tcName:
         tcSuffix, tcNameCounter = None, None
     elif not tcName:       
@@ -196,7 +194,7 @@ def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None,
     if tcName:
         tcBytes = bytearray(open(tcName, "rb").read())
 
-    if not kfName:
+    if not skipKeyFile and not kfName:
         kfGlob = glob.glob("TACK_key_*.pem")
         if len(kfGlob) == 0:
             if errorNoCertOrKey:
@@ -220,7 +218,7 @@ def openTACKFiles(errorNoCertOrKey=False, password=None, kfName=None,
         tc.generate()
         print("No TACK certificate found, creating new one...")
 
-    if kfBytes:
+    if not skipKeyFile and kfBytes:
         print("Opening %s..." % kfName)        
         try:
             kf = openKeyFile(kfBytes, password)   
@@ -262,7 +260,7 @@ def pin(argv, update=False):
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out",
-                "pin_expiration", "sig_type", "sig_expiration", 
+                "pin_duration", "sig_type", "sig_expiration", 
                 "sig_cutoff", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
@@ -287,9 +285,12 @@ def pin(argv, update=False):
     sig_cutoff = d.get("sig_cutoff")
     if sig_cutoff != None: # Ie not set on cmdline, DIFFERENT FROM 0          
         sig_cutoff = parseTimeArg(sig_cutoff)
-    pin_expiration = d.get("pin_expiration")
-    if pin_expiration != None:
-        pin_expiration = parseTimeArg(pin_expiration)
+    pin_duration = d.get("pin_duration")
+    if pin_duration != None:
+        try:
+            pin_duration = parseDurationArg(pin_duration)
+        except SyntaxError:
+            printError("Malformed pin_duration")
     sig_expiration = d.get("sig_expiration")
     if sig_expiration != None:
         sig_expiration= parseTimeArg(sig_expiration)
@@ -323,18 +324,18 @@ def pin(argv, update=False):
     else:
         mustWriteKeyFile = False        
 
-    # Set default pin_expiration and sig_expiration
-    defaultExpTime = (sslc.notAfter//60) + (60*24)*60 # 60 days grace period
-    if not pin_expiration:
-        pin_expiration = defaultExpTime
-    if not sig_expiration:
-        sig_expiration = defaultExpTime
+    # Set sig_expiration (cmdline or from SSL cert)
+    if sig_expiration == None:
+        sig_expiration = int(math.ceil(sslc.notAfter / 60.0)) # round up 
 
     # Check existing TACK_Pin and TACK_Sig
     if update:
         if not tc.TACK:
             printError("TACK certificate has no TACK extension")
-        # Maintain old sig_cutoff on updates, unless overridden on cmdline
+        # Maintain old sig_cutoff and pin_duration on updates, 
+        # unless overridden on cmdline
+        if pin_duration != None:
+            tc.TACK.pin.pin_duration = pin_duration
         if sig_cutoff == None: # i.e. not set on cmdline, DIFFERENT FROM 0
             sig_cutoff = tc.TACK.sig.sig_cutoff
         else:
@@ -369,11 +370,11 @@ Do you know what you are doing? ("y" to continue): ''')
         tc.TACK = TACK()
         tc.TACK.pin = TACK_Pin()            
         label = bytearray(os.urandom(8))
-        tc.TACK.pin.generate(TACK_Pin_Type.v1, pin_expiration, 
+        # If pin_duration was not set or carried-over, set to 5 minutes
+        if pin_duration == None:
+            pin_duration = 5        
+        tc.TACK.pin.generate(TACK_Pin_Type.v1, pin_duration, 
                                 label, kf.public_key)
-    else:
-        # If "update", at least modify "pin_expiration"
-        tc.TACK.pin.pin_expiration = pin_expiration
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
@@ -381,7 +382,7 @@ Do you know what you are doing? ("y" to continue): ''')
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
-    # If not sig_cutoff was set or carried-over, set to 1970
+    # If sig_cutoff was not set or carried-over, set to 1970
     if sig_cutoff == None:
         sig_cutoff = 0
     tc.TACK.sig.generate(sig_type, sig_expiration, sig_cutoff, 
@@ -393,6 +394,42 @@ Do you know what you are doing? ("y" to continue): ''')
         if not outkfName:
             outkfName = "TACK_key_%s.pem" % suffix
         writeKeyFile(kf, outkfName)
+
+def adjust(argv):        
+    # Collect cmdline args into a dictionary        
+    noArgArgs = ["der", "no_backup"]
+    oneArgArgs= ["in", "out", "suffix"]
+    d, argv = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
+    if len(argv) < 1:
+        printError("Missing argument: duration")    
+    if len(argv) > 1:
+        printError("Extra arguments")
+    try:
+        pin_duration = parseDurationArg(argv[0])
+    except SyntaxError:
+        printError("Malformed pin_duration")   
+    
+    # Set vars from cmdline dict
+    der = "der" in d
+    noBackup = "no_backup" in d
+    infName = d.get("in")
+    outfName = d.get("out")    
+    if infName and not outfName:
+        printError("--in requires --out")    
+    cmdlineSuffix = d.get("suffix")
+    
+    tc, kf, tcName, suffix, nameCounter = openTACKFiles(False, None, None,
+                                            infName, skipKeyFile=True)    
+    if cmdlineSuffix:
+        suffix = cmdlineSuffix
+        
+    if not tc.TACK:
+        print("WARNING: There is no existing TACK...")
+        
+    
+    tc.TACK.pin.pin_duration = pin_duration    
+
+    writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup, outfName)    
 
 def promptForPinLabel():
     while 1:
@@ -437,13 +474,6 @@ def breakPin(argv):
                 printError('Bad argument for "label" - must be 8 bytes')
         except TypeError:
             printError('Bad argument for "label" - must be hex string')
-
-    try:
-        sig_type = {"v1_key" : TACK_Sig_Type.v1_key, 
-                    "v1_cert" : TACK_Sig_Type.v1_cert}\
-                    [d.get("sig_type", "v1_cert")]
-    except KeyError:
-            printError("Unrecognized sig_type")
     
     tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password, kfName,
                                             infName)
@@ -541,11 +571,13 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
-  --pin_expiration   : use this UTC time for pin_expiration
+  --pin_duration=    : use this pin_duration
+                         ("5m", "30d", "1d12h5m", etc.)
   --sig_expiration=  : use this UTC time for sig_expiration
   --sig_cutoff=      : use this UTC time for sig_cutoff
-                         ("%s", "%s",
-                          "%s", "%s" etc.)
+                         ("%s", "%sZ",
+                          "%sZ", "%sZ" etc.)
+                         (or, specify a duration from current time)
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "update"[:len(cmd)]:
         s = posixTimeToStr(time.time())                
@@ -563,11 +595,13 @@ Optional arguments:
   --password=        : use this TACK key password
   --suffix=          : use this TACK file suffix
   --sig_type=        : target signature to "v1_key" or "v1_cert"
-  --pin_expiration   : use this UTC time for pin_expiration  
+  --pin_duration=    : use this pin_duration
+                         ("5m", "30d", "1d12h5m", etc.) 
   --sig_expiration=  : use this UTC time for sig_expiration
   --sig_cutoff=      : use this UTC time for sig_cutoff
-                         ("%s", "%s",
-                          "%s", "%s" etc.)
+                         ("%s", "%sZ",
+                          "%sZ", "%sZ" etc.)
+                         (or, specify a duration from current time)
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
         print( \
@@ -590,6 +624,23 @@ Optional arguments:
 
   view <file>
 """)        
+
+    elif cmd == "adjust"[:len(cmd)]:
+        print( \
+"""Adjusts pin_duration.
+
+  adjust <duration> <args>
+
+Duration can be specified in days, hours, minutes, or some combination:
+  ("5m", "30d", "1d12h5m", "365d90m", "1h45m" etc.) 
+
+Optional arguments:
+  --der              : write output as .der instead of .pem
+  --no_backup        : don't backup the existing TACK certificate
+  --in=              : update this TACK certificate
+  --out=             : write the output TACK certificate here    
+  --suffix=          : use this TACK file suffix
+""")
     else:
         printError("Help requested for unknown command")
         
@@ -605,6 +656,8 @@ if __name__ == '__main__':
         pin(sys.argv[2:], False)
     elif sys.argv[1] == "update"[:len(sys.argv[1])]:
         pin(sys.argv[2:], True)
+    elif sys.argv[1] == "adjust"[:len(sys.argv[1])]:
+        adjust(sys.argv[2:])
     elif sys.argv[1] == "break"[:len(sys.argv[1])]:
         breakPin(sys.argv[2:])
     elif sys.argv[1] == "view"[:len(sys.argv[1])]:
