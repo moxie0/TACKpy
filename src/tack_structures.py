@@ -10,21 +10,21 @@ class TACK_Pin:
     
     def __init__(self):
         self.pin_type = 0
-        self.pin_label = bytearray(8)
         self.pin_key = bytearray(64)
+        self.pin_label = bytearray(8)
     
     def generate(self, pin_type, pin_label, pin_key):
         self.pin_type = pin_type
-        self.pin_label = pin_label
         self.pin_key = pin_key
+        self.pin_label = pin_label
             
     def parse(self, b):
         p = Parser(b)
         self.pin_type = p.getInt(1)
         if self.pin_type != TACK_Pin_Type.v1:
             raise SyntaxError()
-        self.pin_label = p.getBytes(8)
         self.pin_key = p.getBytes(64)
+        self.pin_label = p.getBytes(8)
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):        
@@ -32,8 +32,8 @@ class TACK_Pin:
             raise SyntaxError()        
         w = Writer(TACK_Pin.length)
         w.add(self.pin_type, 1)
-        w.add(self.pin_label, 8)  
         w.add(self.pin_key, 64)
+        w.add(self.pin_label, 8)  
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
         return w.bytes  
 
@@ -42,11 +42,11 @@ class TACK_Pin:
             raise SyntaxError()
         s = \
 """pin_type               = %s
-pin_label              = 0x%s
-pin_key                = 0x%s\n""" % \
+pin_key                = 0x%s
+pin_label              = 0x%s\n""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
-writeBytes(self.pin_label),
-writeBytes(self.pin_key))
+writeBytes(self.pin_key),
+writeBytes(self.pin_label))
         return s
         
            
