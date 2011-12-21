@@ -128,7 +128,7 @@ class TACK_Cert:
         if self.TACK:
             s += self.TACK.writeText()
         if self.break_sigs:
-            s += self.break_sigs.writeText()
+            s += "\n"+self.break_sigs.writeText()
         if not s:
             return "No TACK structures\n"
         else:

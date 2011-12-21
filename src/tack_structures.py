@@ -109,35 +109,35 @@ writeBytes(self.signature))
    
         
 class TACK_Break_Sig:
-    length = 72
+    length = 64 + TACK_Pin.length
     
     def __init__(self):
-        self.pin_label = bytearray(8)
+        self.pin = None
         self.signature = bytearray(64)
         
-    def generate(self, pin_label, signature):
-        self.pin_label = pin_label
+    def generate(self, pin, signature):
+        self.pin = pin
         self.signature = signature
         
     def parse(self, b):
         p = Parser(b)
-        self.pin_label = p.getBytes(8)
+        self.pin = TACK_Pin()
+        self.pin.parse(b[ : TACK_Pin.length])
+        b = b[TACK_Pin.length : ]  
+        p = Parser(b)      
         self.signature = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):
         w = Writer(TACK_Break_Sig.length)
-        w.add(self.pin_label, 8)
+        w.add(self.pin.write(), TACK_Pin.length)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
         return w.bytes
 
     def writeText(self, i):
-        s = \
-"""break_label[%02d]        = 0x%s
-break_signature[%02d]    = 0x%s\n""" % \
-(i, writeBytes(self.pin_label), 
- i, writeBytes(self.signature))
+        s = ("break_sig[%02d]:\n" % i) + self.pin.writeText()
+        s += "break_signature        = 0x%s\n" % (writeBytes(self.signature))
         return s
 
 

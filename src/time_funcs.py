@@ -31,7 +31,6 @@ def parseTimeArg(arg):
     # First, see if they specified time as a duration
     try:
         mins = parseDurationArg(arg)
-        print arg, mins
         return int(math.ceil(time.time() / 60.0)) + mins
     except SyntaxError:
         pass

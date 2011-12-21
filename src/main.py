@@ -433,25 +433,13 @@ def adjust(argv):
     tc.TACK.pin_duration = pin_duration    
 
     writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup, outfName)    
-
-def promptForPinLabel():
-    while 1:
-        labelStr = raw_input("Enter pin_label to break: ").lower()
-        if labelStr.startswith("0x"):
-            labelStr = labelStr[2:]
-        try:
-            pin_label = a2b_hex(labelStr)
-            if len(pin_label) == 8:
-                break
-        except TypeError:
-            pass
-    return pin_label
+    
 
 def breakPin(argv):
     # Collect cmdline args into a dictionary        
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out", 
-                "suffix", "password", "label"]
+                "suffix", "password"]
     d, argv = parseArgsIntoDict(argv, noArgArgs, oneArgArgs)
     if len(argv) > 0:
         printError("Extra arguments")    
@@ -466,17 +454,6 @@ def breakPin(argv):
         printError("--in requires --out")    
     cmdlineSuffix = d.get("suffix")
     password = d.get("password")
-    cmdlineLabel = d.get("label")    
-    if cmdlineLabel:
-        cmdlineLabel = cmdlineLabel.lower()
-        if cmdlineLabel.startswith("0x"):
-            cmdlineLabel = cmdlineLabel[2:]
-        try:
-            cmdlineLabel = a2b_hex(cmdlineLabel)
-            if len(cmdlineLabel) != 8:
-                printError('Bad argument for "label" - must be 8 bytes')
-        except TypeError:
-            printError('Bad argument for "label" - must be hex string')
     
     tc, kf, tcName, suffix, nameCounter = openTACKFiles(True, password, kfName,
                                             infName)
@@ -492,30 +469,16 @@ def breakPin(argv):
         
     break_sig = TACK_Break_Sig()   
 
-    if cmdlineLabel:
-        pin_label = cmdlineLabel
-    else:
-        if not tc.TACK:
-            print("WARNING: There is no existing TACK...")
-            pin_label = promptForPinLabel()
-            print("Breaking pin_label = 0x%s" % b2a_hex(pin_label))        
-        elif tc.TACK.pin.pin_key != kf.public_key:
-            print("WARNING: This key DOES NOT MATCH the existing TACK...")
-            pin_label = promptForPinLabel()
-            print("Breaking pin_label = 0x%s" % b2a_hex(pin_label))        
-        else:
-            pin_label = tc.TACK.pin.pin_label
-            print("Breaking existing TACK, pin_label = 0x%s" % \
-                    b2a_hex(pin_label))
-        confirmY('Is this correct? ("y" to continue): ')            
+    if not tc.TACK:
+        printError("There is no existing TACK to break")
+    pin_label = tc.TACK.pin.pin_label
+    print("Breaking existing TACK, pin_label = 0x%s" % \
+            b2a_hex(pin_label))
+    confirmY('Is this correct? ("y" to continue): ')            
     
-    break_sig.generate(pin_label, kf.sign(pin_label))
-    tc.break_sigs.add(break_sig)
-    
-    # If we broke the existing TACK pin, remove it
-    if tc.TACK and pin_label == tc.TACK.pin.pin_label and \
-            kf.public_key == tc.TACK.pin.pin_key:
-        tc.TACK = None
+    break_sig.generate(tc.TACK.pin, kf.sign(tc.TACK.pin.write()))
+    tc.break_sigs.add(break_sig)    
+    tc.TACK = None
     
     writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup, outfName)
      
