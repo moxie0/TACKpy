@@ -261,7 +261,7 @@ def pin(argv, update=False):
     noArgArgs = ["der", "no_backup"]
     oneArgArgs= ["key", "in", "out",
                 "pin_duration", "sig_type", "sig_expiration", 
-                "sig_cutoff", "suffix", "password"]
+                "sig_generation", "suffix", "password"]
     if not update:
         noArgArgs += ["replace"]
         oneArgArgs += ["out_key"]
@@ -282,9 +282,14 @@ def pin(argv, update=False):
     outkfName = d.get("out_key")
     if infName and not outfName:
         printError("--in requires --out")
-    sig_cutoff = d.get("sig_cutoff")
-    if sig_cutoff != None: # Ie not set on cmdline, DIFFERENT FROM 0          
-        sig_cutoff = parseTimeArg(sig_cutoff)
+    sig_generation = d.get("sig_generation")
+    if sig_generation != None: # Ie not set on cmdline, DIFFERENT FROM 0
+        try:
+            sig_generation = int(sig_generation)
+            if sig_generation < 0 or sig_generation > 255:
+                printError("sig_generation out of range")
+        except ValueError:
+            printError("Malformed sig_generation")
     pin_duration = d.get("pin_duration")
     if pin_duration != None:
         try:
@@ -332,16 +337,16 @@ def pin(argv, update=False):
     if update:
         if not tc.TACK:
             printError("TACK certificate has no TACK extension")
-        # Maintain old sig_cutoff and pin_duration on updates, 
+        # Maintain old sig_generation and pin_duration on updates, 
         # unless overridden on cmdline
         if pin_duration != None:
             tc.TACK.pin_duration = pin_duration
-        if sig_cutoff == None: # i.e. not set on cmdline, DIFFERENT FROM 0
-            sig_cutoff = tc.TACK.sig.sig_cutoff
+        if sig_generation == None: # i.e. not set on cmdline, DIFFERENT FROM 0
+            sig_generation = tc.TACK.sig.sig_generation
         else:
-            if sig_cutoff < tc.TACK.sig.sig_cutoff:
+            if sig_generation < tc.TACK.sig.sig_generation:
                 confirmY(
-'''WARNING: Requested sig_cutoff is EARLIER than existing!
+'''WARNING: Requested sig_generation is EARLIER than existing!
 Do you know what you are doing? ("y" to continue): ''')
         tc.TACK.sig = None
     elif not update and tc.TACK:
@@ -381,10 +386,10 @@ Do you know what you are doing? ("y" to continue): ''')
     elif sig_type == TACK_Sig_Type.v1_cert:
         sig_target_sha256 = sslc.cert_sha256
     tc.TACK.sig = TACK_Sig()
-    # If sig_cutoff was not set or carried-over, set to 1970
-    if sig_cutoff == None:
-        sig_cutoff = 0
-    tc.TACK.sig.generate(sig_type, sig_expiration, sig_cutoff, 
+    # If sig_generation was not set or carried-over, set to 1970
+    if sig_generation == None:
+        sig_generation = 0
+    tc.TACK.sig.generate(sig_type, sig_expiration, sig_generation, 
                     sig_target_sha256, tc.TACK.pin, kf.sign)
 
     # Write out files
@@ -572,10 +577,11 @@ Optional arguments:
   --pin_duration=    : use this pin_duration
                          ("5m", "30d", "1d12h5m", etc.)
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_cutoff=      : use this UTC time for sig_cutoff
                          ("%s", "%sZ",
                           "%sZ", "%sZ" etc.)
                          (or, specify a duration from current time)
+  --sig_generation=  : the signature belongs to this generation
+                         
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "update"[:len(cmd)]:
         s = posixTimeToStr(time.time())                
@@ -596,10 +602,10 @@ Optional arguments:
   --pin_duration=    : use this pin_duration
                          ("5m", "30d", "1d12h5m", etc.) 
   --sig_expiration=  : use this UTC time for sig_expiration
-  --sig_cutoff=      : use this UTC time for sig_cutoff
                          ("%s", "%sZ",
                           "%sZ", "%sZ" etc.)
                          (or, specify a duration from current time)
+  --sig_generation=  : the signature belongs to this generation
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
         print( \
