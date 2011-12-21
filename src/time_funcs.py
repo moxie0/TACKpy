@@ -17,10 +17,10 @@ def posixTimeToStr(u, includeSeconds=False):
 # u in minutes
 def durationToStr(u):
     s = ""
-    if u > (1440): # 1440 minutes per day
+    if u >= (1440): # 1440 minutes per day
         s += "%dd" % (u//1440)
         u %= 1440
-    if u > (60): # 60 minutes per hour
+    if u >= (60): # 60 minutes per hour
         s += "%dh" % (u//60)
         u %= 60
     if u > 0:
