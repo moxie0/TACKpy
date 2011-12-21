@@ -81,4 +81,5 @@ cert, you may revoke all older TACK certs by "--sig_generation=<new_generation>"
 in an "update" command, where "new_generation" is a number from 0-255 that is
 larger than the generations of all previous TACKs.
 
-Clients who encounter the new TACK cert will reject the older generations from then on.
+Clients who encounter the new TACK cert will reject the older generations from
+then on.
