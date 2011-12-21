@@ -335,7 +335,7 @@ def pin(argv, update=False):
         # Maintain old sig_cutoff and pin_duration on updates, 
         # unless overridden on cmdline
         if pin_duration != None:
-            tc.TACK.pin.pin_duration = pin_duration
+            tc.TACK.pin_duration = pin_duration
         if sig_cutoff == None: # i.e. not set on cmdline, DIFFERENT FROM 0
             sig_cutoff = tc.TACK.sig.sig_cutoff
         else:
@@ -372,9 +372,8 @@ Do you know what you are doing? ("y" to continue): ''')
         label = bytearray(os.urandom(8))
         # If pin_duration was not set or carried-over, set to 5 minutes
         if pin_duration == None:
-            pin_duration = 5        
-        tc.TACK.pin.generate(TACK_Pin_Type.v1, pin_duration, 
-                                label, kf.public_key)
+            tc.TACK.pin_duration = 5        
+        tc.TACK.pin.generate(TACK_Pin_Type.v1, label, kf.public_key)
 
     # Produce the TACK_Sig
     if sig_type == TACK_Sig_Type.v1_key:
@@ -426,8 +425,7 @@ def adjust(argv):
     if not tc.TACK:
         print("WARNING: There is no existing TACK...")
         
-    
-    tc.TACK.pin.pin_duration = pin_duration    
+    tc.TACK.pin_duration = pin_duration    
 
     writeTACKCert(tc, tcName, suffix, nameCounter, der, noBackup, outfName)    
 

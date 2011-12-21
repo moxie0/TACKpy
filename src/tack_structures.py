@@ -6,17 +6,15 @@ from misc import *
 ################ TACK STRUCTURES ###
         
 class TACK_Pin:
-    length = 77
+    length = 73
     
     def __init__(self):
         self.pin_type = 0
-        self.pin_duration = 0
         self.pin_label = bytearray(8)
         self.pin_key = bytearray(64)
     
-    def generate(self, pin_type, pin_duration, pin_label, pin_key):
+    def generate(self, pin_type, pin_label, pin_key):
         self.pin_type = pin_type
-        self.pin_duration = pin_duration
         self.pin_label = pin_label
         self.pin_key = pin_key
             
@@ -25,7 +23,6 @@ class TACK_Pin:
         self.pin_type = p.getInt(1)
         if self.pin_type != TACK_Pin_Type.v1:
             raise SyntaxError()
-        self.pin_duration = p.getInt(4)
         self.pin_label = p.getBytes(8)
         self.pin_key = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
@@ -35,7 +32,6 @@ class TACK_Pin:
             raise SyntaxError()        
         w = Writer(TACK_Pin.length)
         w.add(self.pin_type, 1)
-        w.add(self.pin_duration, 4)
         w.add(self.pin_label, 8)  
         w.add(self.pin_key, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
@@ -46,11 +42,9 @@ class TACK_Pin:
             raise SyntaxError()
         s = \
 """pin_type               = %s
-pin_duration           = %s
 pin_label              = 0x%s
 pin_key                = 0x%s\n""" % \
 (TACK_Pin_Type.strings[self.pin_type], 
-durationToStr(self.pin_duration),
 writeBytes(self.pin_label),
 writeBytes(self.pin_key))
         return s
@@ -188,21 +182,30 @@ class TACK:
     def __init__(self):
         self.pin = None
         self.sig = None
+        self.pin_duration = 0
         
     def parse(self, b):
-        assert(len(b) == TACK_Pin.length + TACK_Sig.length)
+        assert(len(b) == TACK_Pin.length + TACK_Sig.length + 4)
         self.pin = TACK_Pin()
         self.sig = TACK_Sig()
         self.pin.parse(b[ : TACK_Pin.length])
         b = b[TACK_Pin.length : ]
         self.sig.parse(b[ : TACK_Sig.length])
+        b = b[TACK_Sig.length : ]
+        p = Parser(b)
+        self.pin_duration = p.getInt(4)
+        assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):
-        w = Writer(TACK_Pin.length + TACK_Sig.length)
+        w = Writer(TACK_Pin.length + TACK_Sig.length + 4)
         w.add(self.pin.write(), TACK_Pin.length) 
         w.add(self.sig.write(), TACK_Sig.length)
+        w.add(self.pin_duration, 4)
         return w.bytes
 
     def writeText(self):
-        return "%s%s" % \
+        s ="%s%s" % \
             (self.pin.writeText(), self.sig.writeText())
+        s += "pin_duration           = %s\n" % durationToStr(self.pin_duration)
+        return s
+        
