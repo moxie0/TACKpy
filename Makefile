@@ -1,5 +1,5 @@
 
-version := 0.9.0
+version := 0.9.1
 version_insert := sed -e 's/VV.VV.VV/$(version)/g'
 dir := TACK-tool-$(version)
 

@@ -77,9 +77,8 @@ and "--out_key" arguments:
 Revoking old TACKs
 -------------------
 If an older SSL cert has been compromised and you are switching to a new SSL
-cert, you may revoke all older TACK certs by "--sig_cutoff=<cutoff_time>" in a
-"update" command. Set "<cutoff_time>" to a time in the future at which you will
-have replaced all old TACK certs with this new TACK cert.
+cert, you may revoke all older TACK certs by "--sig_generation=<new_generation>"
+in an "update" command, where "new_generation" is a number from 0-255 that is
+larger than the generations of all previous TACKs.
 
-Clients who encounter the new TACK cert will, as of the cutoff time, reject
-older TACK certs.
+Clients who encounter the new TACK cert will reject the older generations from then on.
