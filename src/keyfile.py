@@ -126,8 +126,6 @@ class TACK_KeyFile:
 
     def sign(self, bytesToSign):
         signature = ecdsa256Sign(self.private_key, self.public_key, bytesToSign)
-        # Double-check value before returning
-        assert(ecdsa256Verify(self.public_key, bytesToSign, signature))
         return signature
 
     def parse(self, b, password):

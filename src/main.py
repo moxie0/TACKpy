@@ -24,9 +24,13 @@ from tests import *
 import sys, getpass, getopt, glob
 
 def printUsage(s=None):
+    if m2cryptoLoaded:
+        crypto = "M2Crypto/OpenSSL"
+    else:
+        crypto = "Python crypto"        
     if s:
         print("ERROR: %s\n" % s)
-    print("""TACK-tool version VV.VV.VV  
+    print("""TACK-tool version VV.VV.VV (using %s)  
 
 Commands:
 new    <cert>
@@ -35,7 +39,7 @@ adjust <duration>
 break
 view   <file>
 help   <command>
-""")
+""" % crypto)
     sys.exit(-1)
 
 def newKeyFile(extraRandStr=""):

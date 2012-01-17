@@ -1,5 +1,6 @@
 
 from struct_parser import *
+from cryptomath import *
 
 ################ ASN1 PARSER ###
 # Returns bytearray encoding an ASN1 length field
@@ -12,7 +13,20 @@ def asn1Length(x):
     if x < 65536:
         return bytearray([0x82, int(x//256), x % 256])  
     assert(False)
-    
+
+def asn1Int(x):
+    """Converts a Python integer to a bytearray containing ASN.1 integer"""
+    b = numberToBytes(x)
+    # Strip leading zeros
+    while b[0] == 0 and len(b)>1:
+        b = b[1:]
+    # Add a leading zero if high bit is set
+    if b[0] & 0x80:
+        b = bytearray([0]) + b
+    # Add ASN.1 type and length fields
+    b = bytearray([2]) + asn1Length(len(b)) + b
+    return b
+            
 #Takes a byte array which has a DER TLV field at its head
 class ASN1Parser:
     def __init__(self, bytes, offset = 0):
