@@ -6,17 +6,29 @@ from pem import *
 ################ KEY FILE ###
 
 import os
-#  File format:
-#
-#  version        1  byte = 0x01
-#  iter_count     4 bytes = uint32
-#  salt          16 bytes
-#  IV            16 bytes         } auth
-#    EC privkey  32 bytes  } enc  } auth
-#  EC pubkey     64 bytes         } auth
-#  HMAC          32 bytes	
-# 
-#  total		165
+"""
+File format:
+
+  version        1  byte = 0x01
+  iter_count     4 bytes = uint32, bigendian
+  salt          16 bytes
+  IV            16 bytes                } hmac-sha256
+    EC privkey  32 bytes  } aes256-cbc  } hmac-sha256
+  EC pubkey     64 bytes                } hmac-sha256
+  HMAC          32 bytes	
+
+  Total		    165
+
+The AES256-CBC and HMAC-SHA256 steps require independent
+32-byte keys (encKey and authKey, respectively).
+
+These keys are derived from a 32-byte masterKey.  The masterKey is
+derived from a password via PBKDF2-HMAC-SHA26:
+
+  masterKey = PBKDF2-HMAC-SHA256(password, salt, iter_count)
+  encKey = HMAC-SHA256(masterKey, 0x01)
+  authKey = HMAC-SHA256(masterKey, 0x02)
+"""
 
 def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])

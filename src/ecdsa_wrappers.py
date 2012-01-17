@@ -5,6 +5,28 @@ from asn1 import *
 from misc import *
 
 ################ ECDSA_WRAPPERS ###
+"""The following three "wrapper" functions are used for working with ECDSA:
+  ec256Generate
+  ecdsa256Sign
+  ecdsa256Verify
+
+These wrapper functions operate on bytearrays:
+  privateKey is a bytearray of length 32
+  publicKey is a bytearray of length 64
+  signature is a bytearray of length 64
+  dataToSign/Verify is an arbitrary-length bytearray
+  
+There are M2Crypto/OpenSSL versions of these functions, as well as 
+pure Python versions based on Peter Pearson's code (see the 
+NUMBERTHEORY, ELLIPTICCURVE, and ECDSA sections for pure Python).
+
+The M2Crypto/OpenSSL versions are loaded and used if present, otherwise 
+the pure Python versions are loaded.
+
+Because M2Crypto operates on ASN.1-encoded signatures, and PEM-encoded
+public and private keys, there is a fair bit of data munging to
+convert to/from M2Crypto formats.
+"""
 
 import os
 
@@ -16,7 +38,6 @@ except ImportError:
     m2cryptoLoaded = False
     
 if m2cryptoLoaded:
-    from M2Crypto import EC
 
     # Marshal/unmarshal PEM-wrapped ECPrivateKey and ASN.1 Signatures    
 

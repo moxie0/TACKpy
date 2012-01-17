@@ -1,4 +1,7 @@
 ################ COMPAT ###
+"""These functions abstract away the differences between Python 2 and 3.
+"""
+
 import sys, binascii
 if sys.version_info >= (3,0):
     def raw_input(s):

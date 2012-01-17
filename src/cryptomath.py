@@ -3,6 +3,7 @@
 import math, hashlib, hmac
 
 def bytesToNumber(bytes):
+    "Convert a sequence of bytes (eg bytearray) into integer."
     total = 0
     multiplier = 1
     for count in range(len(bytes)-1, -1, -1):
@@ -12,6 +13,12 @@ def bytesToNumber(bytes):
     return total
 
 def numberToBytes(n, howManyBytes=None):
+    """Convert an integer into a bytearray, zero-pad to howManyBytes.
+    
+    The returned bytearray may be smaller than howManyBytes, but will
+    not be larger.  The returned bytearray will contain a big-endian
+    encoding of the input integer (n).
+    """    
     if not howManyBytes:
         howManyBytes = numBytes(n)
     bytes = bytearray(howManyBytes)
@@ -21,9 +28,11 @@ def numberToBytes(n, howManyBytes=None):
     return bytes
     
 def stringToNumber(s):
+    "Convert a string - interpreted as a sequence of bytes - into integer."    
     return bytesToNumber(bytearray(s))
     
 def numBits(n):
+    "Return the number of bits needed to represent the integer n."
     if n==0:
         return 0
     s = "%x" % n
@@ -35,18 +44,27 @@ def numBits(n):
      }[s[0]]
     
 def numBytes(n):
+    "Return the number of bytes needed to represent the integer n."
     if n==0:
         return 0
     bits = numBits(n)
     return int(math.ceil(bits / 8.0))
 
 def SHA256(b):
+    "Return a 32-byte bytearray which is the SHA256 of input bytearray."
     return bytearray(hashlib.sha256(b).digest())
 
 def HMAC_SHA256(k, b):
+    """Return a 32-byte bytearray which is HMAC-SHA256 of key and input."""    
     return bytearray(hmac.new(bytes(k), bytes(b), hashlib.sha256).digest())
 
 def constTimeCompare(a, b):
+    """Compare two sequences of integer (eg bytearrays) without a timing leak.
+    
+    This function is secure when comparing against secret values, such as 
+    passwords, MACs, etc., where a more naive, early-exit comparison loop
+    would leak information that could be used to extract the secret.
+    """
     if len(a) != len(b):
         return False
     result = 0

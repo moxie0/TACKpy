@@ -2,10 +2,20 @@
 from struct_parser import *
 from cryptomath import *
 
-################ ASN1 PARSER ###
-# Returns bytearray encoding an ASN1 length field
-# Assumes maximum of 2-byte length
+################ ASN1 ###
 def asn1Length(x):
+    """Return a bytearray encoding an ASN1 length field based on input length.
+    
+    The ASN.1 length field is itself variable-length, depending on whether
+    the length can be encoded in 7 bits.  If so, the length is encoded in a
+    single byte with the high bit cleared.  Otherwise, the first byte's
+    high bit is set, and the remaining 7 bits encode the number of following
+    bytes needed to encode the length as a big-endian integer.
+    
+    The function is currently limited to input lengths < 65536.
+    
+    This function is useful when kludging together ASN.1 data structures.
+    """
     if x < 128:
         return bytearray([x])
     if x < 256:
@@ -15,7 +25,12 @@ def asn1Length(x):
     assert(False)
 
 def asn1Int(x):
-    """Converts a Python integer to a bytearray containing ASN.1 integer"""
+    """Return a bytearray containing ASN.1 integer based on the input integer.
+    
+    An ASN.1 integer is a big-endian sequence of bytes, with excess zero bytes
+    at the beginning removed.  However, if the high bit of the first byte is 
+    set, a zero byte is prepended.
+    """
     b = numberToBytes(x)
     # Strip leading zeros
     while b[0] == 0 and len(b)>1:
