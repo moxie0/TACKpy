@@ -8,16 +8,15 @@ from pem import *
 import os
 #  File format:
 #
-#  magic number   3 bytes = 0x9a6127
-#  version        1  byte
-#  iter_count     4 bytes
+#  version        1  byte = 0x01
+#  iter_count     4 bytes = uint32
 #  salt          16 bytes
 #  IV            16 bytes         } auth
 #    EC privkey  32 bytes  } enc  } auth
 #  EC pubkey     64 bytes         } auth
 #  HMAC          32 bytes	
 # 
-#  total		168
+#  total		165
 
 def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])
@@ -77,9 +76,6 @@ class TACK_KeyFileViewer:
         except SyntaxError:
             pass        
         p = Parser(b)
-        magic = p.getBytes(3)
-        if magic != TACK_KeyFile.magic:
-            raise SyntaxError("Bad magic number in Secret File")
         self.version = p.getInt(1)
         if self.version != 1:
             raise SyntaxError("Bad version in Secret File")
@@ -111,8 +107,6 @@ mac                    = 0x%s\n""" % \
         
     
 class TACK_KeyFile:
-    magic = bytearray([0x9A,0x61,0x27])
-
     def __init__(self):
         self.version = 0
         self.private_key = bytearray(32)
@@ -134,9 +128,6 @@ class TACK_KeyFile:
         except SyntaxError:
             pass                
         p = Parser(b)
-        magic = p.getBytes(3)
-        if magic != TACK_KeyFile.magic:
-            raise SyntaxError("Bad magic number in Secret File")
         self.version = p.getInt(1)
         if self.version != 1:
             raise SyntaxError("Bad version in Secret File")
@@ -165,8 +156,7 @@ class TACK_KeyFile:
         ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
         macData = IV + ciphertext + self.public_key
         mac = HMAC_SHA256(authKey, macData)        
-        w = Writer(168)
-        w.add(TACK_KeyFile.magic, 3)
+        w = Writer(165)
         w.add(self.version, 1)
         w.add(self.iter_count, 4)
         w.add(salt, 16)
