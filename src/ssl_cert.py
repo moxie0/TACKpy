@@ -1,5 +1,5 @@
 from pem import *
-from asn1_parser import *
+from asn1 import *
 from time_funcs import *
 from cryptomath import *
 

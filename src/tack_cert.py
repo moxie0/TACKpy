@@ -1,6 +1,6 @@
 from cryptomath import *
 from compat import *
-from asn1_parser import *
+from asn1 import *
 from pem import *
 from tack_structures import *
 

@@ -8,7 +8,7 @@ fnames = [\
 "src/misc.py",
 "src/compat.py",
 "src/cryptomath.py",
-"src/asn1_parser.py",
+"src/asn1.py",
 "src/pem.py",
 "src/ecdsa_wrappers.py",
 "src/time_funcs.py",

@@ -1,7 +1,7 @@
 from ecdsa import *
 from cryptomath import *
 from pem import *
-from asn1_parser import *
+from asn1 import *
 from misc import *
 
 ################ ECDSA_WRAPPERS ###

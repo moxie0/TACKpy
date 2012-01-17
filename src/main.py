@@ -11,7 +11,7 @@ from ecdsa_wrappers import *
 from time_funcs import *
 from pem import *
 from struct_parser import *
-from asn1_parser import *
+from asn1 import *
 from constants import *
 from tack_structures import *
 from ssl_cert import *
