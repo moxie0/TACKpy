@@ -142,7 +142,7 @@ def handleArgs(argv, argString):
 
 def addComments(inStr):
     timeStr = posixTimeToStr(time.time(), True)
-    verStr = "VV.VV.VV"
+    verStr = "V.V.V"
     outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % (verStr, timeStr, inStr)
     return outStr
     
@@ -252,7 +252,7 @@ def printUsage(s=None):
         crypto = "Python crypto"        
     if s:
         print("ERROR: %s" % s)
-    print("""\nTACK-tool version VV.VV.VV (using %s)  
+    print("""\nTACK-tool version V.V.V (using %s)  
 
 Commands (use "help <command>" to see optional args):
   genkey
