@@ -22,7 +22,7 @@ from keyfile import *
 
 import sys, getpass, getopt
 
-def handleArgs(argv, argString):
+def handleArgs(argv, argString, mandatoryString):
     try:
         opts, argv = getopt.getopt(argv, argString)
     except getopt.GetoptError, e:
@@ -96,7 +96,16 @@ def handleArgs(argv, argString):
             assert(False)
     if argv:
         printError("Unknown arguments: %s" % argv)
-        
+
+    if "k" in mandatoryString and not keyPem:
+        printError("-k missing (TACK_Key)")
+    if "c" in mandatoryString and not inCert:
+        printError("-c missing (SSL certificate)")
+    if "i" in mandatoryString and not inTack:
+        printError("-i missing (TACK)")
+    if "d" in mandatoryString and duration == None:
+        printError("-d missing (duration)")        
+
     if keyPem:
         try:
             inKey = TACK_KeyFile()
@@ -111,7 +120,7 @@ def handleArgs(argv, argString):
                     sys.stderr.write("PASSWORD INCORRECT!")
         except SyntaxError:
             printError("Error processing TACK Secret Key File")
-        
+                    
     retList = []
     if "p:" in argString:
         retList.append(password)
@@ -162,7 +171,7 @@ def genkeyCmd(argv):
 def createCmd(argv):
     password, outputFile, inCert, inKey, generation, \
     duration, expiration, sigType, hash = \
-        handleArgs(argv, "p:o:c:k:g:d:e:s:")
+        handleArgs(argv, "p:o:c:k:g:d:e:s:", "kc")
     
     if generation == None:
         generation = 0
@@ -176,7 +185,7 @@ def createCmd(argv):
 def updateCmd(argv):
     password, outputFile, tack, inCert, inKey, generation, \
     duration, expiration, sigType, hash = \
-        handleArgs(argv, "p:o:i:c:k:g:d:e:s:")
+        handleArgs(argv, "p:o:i:c:k:g:d:e:s:", "kci")
 
     if generation == None:
         generation = tack.sig.generation
@@ -187,13 +196,13 @@ def updateCmd(argv):
     outputFile.write(addComments(tack.writePem()))    
 
 def adjustCmd(argv):
-    outputFile, tack, duration, = handleArgs(argv, "o:i:d:")
+    outputFile, tack, duration, = handleArgs(argv, "o:i:d:", "id")
     tack.pin_duration = duration
     outputFile.write(addComments(tack.writePem()))    
     
 def breakCmd(argv):
     password, outputFile, tack, inKey = \
-        handleArgs(argv, "p:o:i:k:")
+        handleArgs(argv, "p:o:i:k:", "ki")
 
     breakSig = TACK_Break_Sig()   
     breakSig.generate(tack.pin, inKey.sign(tack.pin.write()))

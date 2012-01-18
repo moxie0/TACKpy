@@ -16,40 +16,31 @@ Quick start
 ============
 
 To create a TACK based on a site's SSL certificate:
-
   1) Run "TACK genkey > TACK_Key.pem" to create a new TACK key.  
-  2) Backup the TACK key in a place where it won't be stolen or lost.
+  2) Backup the TACK key in a place where it won't be lost or stolen.
   3) Run "TACK create -k TACK_Key.pem -c CERT > TACK.pem" to create a 
      new TACK.
     - The resulting TACK has a 5 minute duration so clients encountering
-      it will only remember the pin for 5 minutes.  This lets you test 
+      it will only remember it for 5 minutes.  This lets you test 
       the TACK without fear of long-lasting problems.
   4) Add the TACK to <!!!>.
   5) Test the site
-    - If there are problems, see "Removing the TACK".
-    - If there are no problems, see "Adjusting the TACK's duration".
-
-
-Removing the TACK:
-
-  1) Run "TACK break -i TACK.pem > TACK_Break_Sig.pem"
-    - This generates a "break signature".
-  2) Add the break signature to <!!!>, and remove the TACK from <!!!>.
-  3) After the TACK's duration has elapsed, you may remove the break 
-     signature from <!!!>.
-
+    - If there are problems, follow the next step to adjust the TACK's
+      duration to zero.  Put this new TACK up for 5 minutes, and then
+      remove it.  At this point, all clients will have forgotten about 
+      the TACK, so any problems should disappear.
+    - If there are no problems, follow the next step to adjust the TACK
+      to a longer duration.
 
 Adjusting the TACK's duration:
-
   1) Run "TACK -i TACK.pem adjust -d 30d > TACK2.pem" to set the 
      duration to 30 days.
+    - Or, if you want clients to forget the TACK, use "-d 0".
   2) Replace the previous TACK with the new one in <!!!>.
 
-
-Changing your SSL cert:
+Changing your SSL certificate:
 (NOTE:  whenever you change your SSL cert, you *MUST* do the following)
-
-  1) Run "TACK update -k TACK_Key.pem -i TACK.pem -c CERT > TACK_2.pem".
+  1) Run "TACK up -k TACK_Key.pem -i TACKold.pem -c CERT > TACKnew.pem".
   2) Replace the old TACK with the new TACK.
     - You MUST update the SSL cert and TACK at the same time.
 
@@ -59,11 +50,43 @@ Advanced uses
 
 Key reuse
 ----------
-You may use a single TACK key to create different TACKs.
+You may use a single TACK key to create different TACKs.  Just be 
+careful to update the correct TACK for new SSL certificates.
 
 
-Revoking old TACKs 
--------------------
+Halting use of a TACK, and "break signatures"
+----------------------------------------------
+If you wish to stop using a TACK, you must consider that some clients
+may have stored the TACK, and will be expecting it (or an updated 
+version) for the remainder of the stored TACK's duration.  This time 
+interval during which clients may be expecting an old TACK is known as 
+the "ghost interval".
+
+An easy way to handle this is to set the TACK's duration to zero for the
+ghost interval.  This will cause any clients contacting the site to 
+forget about the TACK, instead of storing it again.  Once the ghost 
+interval expires, the TACK can be safely removed.
+
+However, there may be situations where you need to remove or replace a
+TACK during a ghost interval.  In this case, the site must provide a
+"break" signature from the "ghost TACK" during the ghost interval.  
+Otherwise, clients storing the "ghost TACK" will reject the site.
+
+At any point in time, a site can have up to ten break signatures from
+different ghost TACKs.  However, keep in mind that break signatures
+add to TLS overhead, so are best avoided.
+
+In any case, once the ghost interval for a ghost TACK is elapsed, the 
+corresponding break signature may be removed.
+
+To generate a break signature:
+  1) Run "TACK break -i TACK_ghost.pem > TACK_Break_Sig.pem"
+  2) Add the break signature to <!!!>.
+  3) After the ghost interval has elapsed, remove the break signature.
+
+
+Revoking older versions of a TACK 
+----------------------------------
 If an SSL cert has been compromised and you are switching to a new SSL 
 cert, you may revoke all older TACKs by "-g <new_generation>" in the 
 "update" command.  <new_generation> is a number from 0-255 that is 
@@ -82,13 +105,14 @@ robust defense against SSL certificate compromise, consider using
 short-lived TACKs.
 
 
-Short-lived TACKs
-------------------
+Short-lived TACK versions
+--------------------------
 Every TACK contains a signature covering some SSL certificate.  By 
-default the TACK will expire at the same time as the certificate.
+default the TACK will expire at the same time as the certificate, and
+must be replaced by an updated version after that point.
 
 If you shorten the TACK's expiration time, then a compromised SSL 
-certificate will become unusable once the TACK expires.  
+certificate will become unusable to an attacker once the TACK expires.  
 
 For example, every day at midnight you could deploy a new TACK that 
 expires within 48 hours.  You could generate all these TACKs in a batch,
