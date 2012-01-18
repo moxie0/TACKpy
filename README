@@ -4,12 +4,12 @@ Installation
 =============
 The "TACK" file is a Python script.  It requires Python 2.7 or greater.
 
-Copy the file somewhere on your PATH, then test it via "TACK help".  If you 
-are having problems, try invoking it via "python TACK help".
+Copy the file somewhere on your PATH, then test it via "TACK help".  If 
+you are having problems, try invoking it via "python TACK help".
 
-If you have M2Crypto installed, TACK-tool will use it to access OpenSSL for
-elliptic curve and AES operations.  Otherwise, TACK-tool will use its internal 
-Python implementations.
+If you have M2Crypto installed, TACK-tool will use it to access OpenSSL 
+for elliptic curve and AES operations.  Otherwise, TACK-tool will use 
+its internal Python implementations.
 
 
 Quick start 
@@ -19,20 +19,21 @@ To create a TACK based on a site's SSL certificate:
 
   1) Run "TACK genkey > TACK_Key.pem" to create a new TACK key.  
   2) Backup the TACK key in a place where it won't be stolen or lost.
-  3) Run "TACK create -k TACK_Key.pem -c CERT > TACK.pem" to create a new TACK.
-    - The resulting TACK has a 5 minute "pin_duration" so clients encountering
-      it will only remember the pin for 5 minutes.  This lets you test the TACK 
-      without fear of long-lasting problems.
+  3) Run "TACK create -k TACK_Key.pem -c CERT > TACK.pem" to create a 
+     new TACK.
+    - The resulting TACK has a 5 minute duration so clients encountering
+      it will only remember the pin for 5 minutes.  This lets you test 
+      the TACK without fear of long-lasting problems.
   4) Add the TACK to <!!!>.
   5) Test the site
-    - If there are problems, see "Removing the TACK"
-    - If there are no problems, see "Adjusting the TACK's duration"
+    - If there are problems, see "Removing the TACK".
+    - If there are no problems, see "Adjusting the TACK's duration".
 
 
 Removing the TACK:
 
   1) Run "TACK break -i TACK.pem > TACK_Break_Sig.pem"
-    - this generates a "break signature".
+    - This generates a "break signature".
   2) Add the break signature to <!!!>, and remove the TACK from <!!!>.
   3) After the TACK's pin_duration has elapsed, you may remove the 
      break signature from <!!!>.
@@ -40,15 +41,15 @@ Removing the TACK:
 
 Adjusting the TACK's duration:
 
-  1) Run "TACK -i TACK.pem adjust -d 30d > TACK2.pem" to set the "pin_duration" 
-     to 30 days.
+  1) Run "TACK -i TACK.pem adjust -d 30d > TACK2.pem" to set the 
+     duration to 30 days.
   2) Replace the previous TACK with the new one in <!!!>.
 
 
 Changing your SSL cert:
-(IMPORTANT:  whenever you change your SSL cert, you *MUST* do the following)
+(NOTE:  whenever you change your SSL cert, you *MUST* do the following)
 
-  1) Run "TACK update -k TACK_Key.pem -i TACK_old.pem -c CERT > TACK_new.pem"
+  1) Run "TACK update -k TACK_Key.pem -i TACK.pem -c CERT > TACK_2.pem".
   2) Replace the old TACK with the new TACK.
     - You MUST update the SSL cert and TACK at the same time.
 
@@ -63,40 +64,42 @@ You may use a single TACK key to create different TACKs.
 
 Revoking old TACKs 
 -------------------
-If an SSL cert has been compromised and you are switching to a new SSL cert, 
-you may revoke all older TACKs by "-g <new_generation>" in the "update" 
-command.  <new_generation> is a number from 0-255 that is larger than the 
-generations of all previous TACKs.
+If an SSL cert has been compromised and you are switching to a new SSL 
+cert, you may revoke all older TACKs by "-g <new_generation>" in the 
+"update" command.  <new_generation> is a number from 0-255 that is 
+larger than the generations of all previous TACKs.
 
-Clients who encounter the new TACK will reject older generations from then on.
+Clients who encounter the new TACK will reject older generations from 
+then on.
 
-For example:  The initial TACK has generation=0, so the first time you use this 
-capability you will want to set "-g1".  If you have to use it a second time, 
-you will set "-g2", and so on. 
+For example:  The initial TACK has generation=0, so the first time you 
+use this capability you will want to set "-g1".  If you have to use it 
+a second time, you will set "-g2", and so on. 
 
-Security Consideration:  This revocation capability only provides protection 
-if clients receive the new generation value.  For a more robust defense against 
-SSL certificate compromise, consider using short-lived TACKs.
+Security Consideration:  This revocation capability only provides 
+protection if clients receive the new generation value.  For a more 
+robust defense against SSL certificate compromise, consider using 
+short-lived TACKs.
 
 
 Short-lived TACKs
 ------------------
-Every TACK contains a signature covering some SSL certificate.  By default
-the TACK will expire at the same time as the certificate.
+Every TACK contains a signature covering some SSL certificate.  By 
+default the TACK will expire at the same time as the certificate.
 
-If you shorten the TACK's expiration time, then a compromised SSL certificate 
-will become unusable once the TACK expires.  
+If you shorten the TACK's expiration time, then a compromised SSL 
+certificate will become unusable once the TACK expires.  
 
-For example, every day at midnight you could deploy a new TACK that expires
-within 48 hours.  You could generate all these TACKs in a batch, then store
-them on a secure system and dole them out to webservers daily.  
+For example, every day at midnight you could deploy a new TACK that 
+expires within 48 hours.  You could generate all these TACKs in a batch,
+then store them on a secure system and dole them out to webservers daily.  
 
 Example of batch generation of TACKs:
 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_for_Jan1.pem
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_for_Jan2.pem 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_for_Jan3.pem 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_for_Jan4.pem 
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_1_1.pem
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_1_2.pem 
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_1_3.pem 
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_1_4.pem 
 ...
 
 !!!TODO - add --batchinc 2d
