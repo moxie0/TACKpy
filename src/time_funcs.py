@@ -23,7 +23,7 @@ def durationToStr(u):
     if u >= (60): # 60 minutes per hour
         s += "%dh" % (u//60)
         u %= 60
-    if u > 0:
+    if u>0 or not s:
         s += "%dm" % u
     return s
     

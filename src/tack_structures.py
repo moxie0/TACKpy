@@ -2,8 +2,11 @@ from constants import *
 from struct_parser import *
 from time_funcs import *
 from misc import *
+from pem import *
 
 ################ TACK STRUCTURES ###
+
+import os # for os.urandom
         
 class TACK_Pin:
     length = 73
@@ -13,10 +16,10 @@ class TACK_Pin:
         self.pin_key = bytearray(64)
         self.pin_label = bytearray(8)
     
-    def generate(self, pin_type, pin_label, pin_key):
-        self.pin_type = pin_type
+    def generate(self, pin_key):
+        self.pin_type = TACK_Pin_Type.v1
         self.pin_key = pin_key
-        self.pin_label = pin_label
+        self.pin_label = os.urandom(8)
             
     def parse(self, b):
         p = Parser(b)
@@ -106,7 +109,52 @@ self.sig_generation,
 writeBytes(self.sig_target_sha256),
 writeBytes(self.signature))
         return s
-   
+
+class TACK:
+    def __init__(self):
+        self.pin = None
+        self.sig = None
+        self.pin_duration = 0
+
+    def new(self, keyFile, sig_type, sig_expiration, \
+                sig_generation, sig_target_sha256, pin_duration):
+        self.pin = TACK_Pin()
+        self.pin.generate(keyFile.public_key)
+        self.update(keyFile, sig_type, sig_expiration, \
+                    sig_generation, sig_target_sha256, pin_duration)
+                
+    def update(self, keyFile, sig_type, sig_expiration, \
+                sig_generation, sig_target_sha256, pin_duration):
+        self.sig = TACK_Sig()
+        self.sig.generate(sig_type, sig_expiration, sig_generation, 
+                            sig_target_sha256, self.pin, keyFile.sign)
+        self.pin_duration = pin_duration
+
+    def parsePem(self, b):
+        b = dePem(b, "TACK")                
+        assert(len(b) == TACK_Pin.length + TACK_Sig.length + 4)
+        self.pin = TACK_Pin()
+        self.sig = TACK_Sig()
+        self.pin.parse(b[ : TACK_Pin.length])
+        b = b[TACK_Pin.length : ]
+        self.sig.parse(b[ : TACK_Sig.length])
+        b = b[TACK_Sig.length : ]
+        p = Parser(b)
+        self.pin_duration = p.getInt(4)
+        assert(p.index == len(b)) # did we fully consume byte-array?
+
+    def writePem(self):
+        w = Writer(TACK_Pin.length + TACK_Sig.length + 4)
+        w.add(self.pin.write(), TACK_Pin.length) 
+        w.add(self.sig.write(), TACK_Sig.length)
+        w.add(self.pin_duration, 4)
+        return pem(w.bytes, "TACK")
+
+    def writeText(self):
+        s ="%s%s" % \
+            (self.pin.writeText(), self.sig.writeText())
+        s += "pin_duration           = %s\n" % durationToStr(self.pin_duration)
+        return s   
         
 class TACK_Break_Sig:
     length = 64 + TACK_Pin.length
@@ -119,7 +167,8 @@ class TACK_Break_Sig:
         self.pin = pin
         self.signature = signature
         
-    def parse(self, b):
+    def parsePem(self, b):
+        b = dePem(b, "TACK BREAK SIG")
         p = Parser(b)
         self.pin = TACK_Pin()
         self.pin.parse(b[ : TACK_Pin.length])
@@ -128,84 +177,14 @@ class TACK_Break_Sig:
         self.signature = p.getBytes(64)
         assert(p.index == len(b)) # did we fully consume byte-array?
         
-    def write(self):
+    def writePem(self):
         w = Writer(TACK_Break_Sig.length)
         w.add(self.pin.write(), TACK_Pin.length)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
-        return w.bytes
+        return pem(w.bytes, "TACK BREAK SIG")
 
-    def writeText(self, i):
-        s = ("break_sig[%02d]:\n" % i) + self.pin.writeText()
+    def writeText(self):
+        s = "break_sig:\n" + self.pin.writeText()
         s += "break_signature        = 0x%s\n" % (writeBytes(self.signature))
         return s
-
-
-class TACK_Break_Sigs:
-    maxLen = 20
-    
-    def __init__(self):
-        self.break_sigs = []
-    
-    def isFull(self):
-        return len(self.break_sigs) == TACK_Break_Sigs.maxLen
-    
-    def add(self, break_sig):
-        assert(len(self.break_sigs) < TACK_Break_Sigs.maxLen)
-        assert(isinstance(break_sig, TACK_Break_Sig))
-        self.break_sigs.append(break_sig)
-    
-    def parse(self, b):
-        p = Parser(b)
-        numBreakSigs = int(p.getInt(2) // TACK_Break_Sig.length)
-        if numBreakSigs > TACK_Break_Sigs.maxLen:
-            raise SyntaxError("Too many break_sigs")
-        self.break_sigs = []
-        for x in range(numBreakSigs):
-            break_sig = TACK_Break_Sig()
-            break_sig.parse(p.getBytes(TACK_Break_Sig.length))
-            self.break_sigs.append(break_sig)
-    
-    def write(self):
-        w = Writer(2 + TACK_Break_Sig.length * len(self.break_sigs))
-        w.add(len(self.break_sigs) * TACK_Break_Sig.length, 2)
-        for x in range(len(self.break_sigs)):
-            w.add(self.break_sigs[x].write(), TACK_Break_Sig.length)
-        assert(w.index == len(w.bytes)) # did we fill entire byte-array?                    
-        return w.bytes
-
-    def writeText(self):
-        return "".join(b.writeText(i) for i,b in enumerate(self.break_sigs))
-
-
-class TACK:
-    def __init__(self):
-        self.pin = None
-        self.sig = None
-        self.pin_duration = 0
-        
-    def parse(self, b):
-        assert(len(b) == TACK_Pin.length + TACK_Sig.length + 4)
-        self.pin = TACK_Pin()
-        self.sig = TACK_Sig()
-        self.pin.parse(b[ : TACK_Pin.length])
-        b = b[TACK_Pin.length : ]
-        self.sig.parse(b[ : TACK_Sig.length])
-        b = b[TACK_Sig.length : ]
-        p = Parser(b)
-        self.pin_duration = p.getInt(4)
-        assert(p.index == len(b)) # did we fully consume byte-array?
-        
-    def write(self):
-        w = Writer(TACK_Pin.length + TACK_Sig.length + 4)
-        w.add(self.pin.write(), TACK_Pin.length) 
-        w.add(self.sig.write(), TACK_Sig.length)
-        w.add(self.pin_duration, 4)
-        return w.bytes
-
-    def writeText(self):
-        s ="%s%s" % \
-            (self.pin.writeText(), self.sig.writeText())
-        s += "pin_duration           = %s\n" % durationToStr(self.pin_duration)
-        return s
-        

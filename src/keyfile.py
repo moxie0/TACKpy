@@ -63,6 +63,9 @@ def aes_cbc_decrypt(key, IV, ciphertext):
 
 def aes_cbc_encrypt(key, IV, plaintext):
     cipher = rijndael(key, 16)
+    if len(plaintext) % 16 != 0:
+        # !!! Uh, this is triggering occasionally, probably a bug in my M2Crypto EC priv keys
+        print(len(plaintext), writeBytes(plaintext))
     assert(len(plaintext) % 16 == 0) # no padding
     chainBlock = IV
     ciphertext = bytearray() # not efficient, but doesn't matter here
@@ -84,7 +87,7 @@ class TACK_KeyFileViewer:
         
     def parse(self, b):
         try:
-            b = dePem(b, "TACK KEY")
+            b = dePem(b, "TACK SECRET KEY")
         except SyntaxError:
             pass        
         p = Parser(b)
@@ -134,11 +137,8 @@ class TACK_KeyFile:
         signature = ecdsa256Sign(self.private_key, self.public_key, bytesToSign)
         return signature
 
-    def parse(self, b, password):
-        try:
-            b = dePem(b, "TACK KEY")
-        except SyntaxError:
-            pass                
+    def parsePem(self, b, password):
+        b = dePem(b, "TACK SECRET KEY")
         p = Parser(b)
         self.version = p.getInt(1)
         if self.version != 1:
@@ -160,7 +160,7 @@ class TACK_KeyFile:
         self.private_key = plaintext
         return True
     
-    def write(self, password, binary=False):
+    def writePem(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))
         encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
@@ -177,9 +177,6 @@ class TACK_KeyFile:
         w.add(self.public_key, 64)
         w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire byte-array?
-        if not binary:
-            b = pem(w.bytes, "TACK KEY")
-        else:
-            b = w.bytes
+        b = pem(w.bytes, "TACK SECRET KEY")
         return b
 

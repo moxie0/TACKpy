@@ -55,9 +55,8 @@ def pem(b, name):
     while s1:
         s2 += s1[:64] + "\n"
         s1 = s1[64:]
-    b = (bytearray("-----BEGIN %s-----\n" % name, "ascii")) + \
-            bytearray(s2, "ascii") + \
-            (bytearray("-----END %s-----" % name, "ascii"))     
-    return b
+    s = ("-----BEGIN %s-----\n" % name) + s2 + \
+        ("-----END %s-----\n" % name)     
+    return s
 
 
