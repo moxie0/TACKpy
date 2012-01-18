@@ -1,56 +1,57 @@
 TACK-tool version VV.VV.VV
 
+Installation
+=============
+The "TACK" file is a Python script.  It requires Python 2.7 or greater.
+
+Simply copy the file somewhere on your PATH, then test it via "TACK help".  If 
+you are having problems, try invoking it via "python TACK help".
+
+If you have M2Crypto installed, TACK-tool will use it to access OpenSSL for
+elliptic curve and AES operations.  Otherwise, TACK-tool will use its internal 
+Python implementations.  You may run "TACK help" to see whether TACK-tool is 
+using M2Crypto or not.
+
+
 Quick start 
 ============
 
-To create a site's first TACK cert:
+To create a TACK based on a site's SSL certificate:
 
-  1) Create an empty directory for the site and "cd" to it.  
-  2) Run "TACK new <sslcert>" on the site's SSL cert.
-    - this generates a TACK cert and a TACK key in the directory
-    - this TACK cert has a 5-minute "pin_duration", so clients encountering it
-      will only remember the pin for 5 minutes.  
-    - This lets you to test the TACK cert without fear of long-lasting problems.
-  3) Backup the TACK key in a place where it won't be stolen or lost
-  4) Add the TACK cert to the site's SSL cert chain 
-    - in Apache, append it to the SSLCertificateChainFile
+  1) Run "TACK genkey > TACK_Key.pem" to create a new TACK key.  
+  2) Backup the TACK key in a place where it won't be stolen or lost.
+  3) Run "TACK create -k TACK_Key.pem -c CERT > TACK.pem" to create a new TACK.
+    - The resulting TACK has a 5 minute "pin_duration" so clients encountering
+      it will only remember the pin for 5 minutes.  This lets you test the TACK 
+      without fear of long-lasting problems.
+  4) Add the TACK to <!!!>.
   5) Test the site
-    - ensure the pin is causing no compatibility problems in any browsers
-    - If there are problems, see "Removing the TACK cert"
-    - If there are no problems, see "Adjusting the TACK cert"
+    - If there are problems, see "Removing the TACK"
+    - If there are no problems, see "Adjusting the TACK"
 
 
-Removing the TACK cert:
-(if you don't wish to use TACKs any longer)
+Removing the TACK:
 
-  1) Go to the directory containing the site's TACK key and TACK cert
-  2) Run "TACK break"
-    - this generates a "pin-break" TACK cert
-  3) Add the pin-break TACK cert to the site's SSL cert chain, replacing the 
-     previous TACK cert.
-  4) After the previous pin_duration has elapsed (which is 5 minutes for a 
-     newly-created TACK cert), you may remove the pin-break TACK cert.
-  5) It is OK to create a new pin for the site while the previous pin_duration
-     is still in effect:
-       - "cd" to the directory with the pin-break TACK cert 
-       - repeat the "TACK new <sslcert>" process
+  1) Run "TACK break -i TACK.pem > TACK_Break_Sig.pem"
+    - this generates a "break signature".
+  2) Add the break signature to <!!!>, and remove the TACK from <!!!>.
+  3) After the TACK's pin_duration has elapsed, you may remove the 
+     break signature from <!!!>.
 
 
-Adjusting the TACK cert:
-(if you are satisfied with testing and wish to make the TACK long-lived)
+Adjusting the TACK:
 
-  1) Go to a directory containing the site's TACK cert
-  2) Run "TACK adjust 30d" to adjust the pin_duration to 30 days.
-  3) Replace the previous TACK cert with the new one in your SSL cert chain. 
+  1) Run "TACK -i TACK.pem adjust 30d > TACK2.pem" to set the pin_duration to
+     30 days.
+  2) Replace the previous TACK with the new one in <!!!>.
 
 
 Changing your SSL cert:
-(whenever you change your SSL cert, you *MUST* do the following)
+(IMPORTANT:  whenever you change your SSL cert, you *MUST* do the following)
 
-  1) Go to the directory containing the site's TACK key and TACK cert
-  2) Run "TACK update <new_sslcert>"
-  3) Replace the old TACK cert with the new TACK cert in the SSL cert chain
-    - you must update the SSL cert and TACK cert at the same time
+  1) Run "TACK update -k TACK_Key.pem -i TACK_old.pem -c CERT > TACK_new.pem"
+  2) Replace the old TACK with the new TACK.
+    - You must update the SSL cert and TACK at the same time.
 
 
 
@@ -59,27 +60,45 @@ Advanced uses
 
 Key reuse
 ----------
-To reuse a TACK key for multiple sites specify it via the "--key" argument to
-"new" and "update", or place it (or a link) in each site's directory.
+You may use a single TACK key to create different TACKs.
 
 
-Manual filenames
------------------
-By default the tool looks for "TACK_" files in the current directory and
-increments the TACK cert name while making backups.
-
-If you'd prefer to manually specify filenames use the "--in", "--out", "--key",
-and "--out_key" arguments:
-  TACK new <sslcert> --out=cert.pem --out_key=key.pem
-  TACK update <new_sslcert> --key=key.pem --in=cert.pem --out=cert2.pem
-
-
-Revoking old TACKs
+Revoking old TACKs 
 -------------------
-If an older SSL cert has been compromised and you are switching to a new SSL
-cert, you may revoke all older TACK certs by "--sig_generation=<new_generation>"
-in an "update" command, where "new_generation" is a number from 0-255 that is
-larger than the generations of all previous TACKs.
+If an SSL cert has been compromised and you are switching to a new SSL cert, 
+you may revoke all older TACKs by "-g <new_generation>" in the "update" 
+command.  <new_generation> is a number from 0-255 that is larger than the 
+generations of all previous TACKs.
 
-Clients who encounter the new TACK cert will reject the older generations from
-then on.
+Clients who encounter the new TACK will reject older generations from then on.
+
+For example:  The initial TACK has generation=0, so the first time you use this 
+capability you will want to set "-g1".  If you have to use it a second time, 
+you will set "-g2", and so on. 
+
+Security Consideration:  This revocation capability only provides protection 
+if clients receive the new generation value.  For a more robust defense against 
+SSL certificate compromise, consider using short-lived TACKs.
+
+
+Short-lived TACKs
+------------------
+Every TACK contains a signature covering some SSL certificate, and by default
+the TACK's signature will expire at the same time as the certificate.
+
+If you shorten the TACK's "sig_expiration" time, then a compromised SSL 
+certificate will become unusable once the TACK expires.  
+
+For example, every day at midnight you could deploy a new TACK that expires
+within 48 hours.  You could generate all these TACKs in a batch, then store
+them on a secure system and dole them out to webservers daily.  
+
+Example of batch generation of TACKs:
+
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_for_Jan1.pem
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_for_Jan2.pem 
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_for_Jan3.pem 
+TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_for_Jan4.pem 
+...
+
+!!!TODO - add --batchinc 2d

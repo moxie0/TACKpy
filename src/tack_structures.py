@@ -116,7 +116,7 @@ class TACK:
         self.sig = None
         self.pin_duration = 0
 
-    def new(self, keyFile, sig_type, sig_expiration, \
+    def create(self, keyFile, sig_type, sig_expiration, \
                 sig_generation, sig_target_sha256, pin_duration):
         self.pin = TACK_Pin()
         self.pin.generate(keyFile.public_key)

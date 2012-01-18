@@ -159,7 +159,7 @@ def genkeyCmd(argv):
                 sys.stderr.write("PASSWORDS DON'T MATCH!")      
     outputFile.write(addComments(kf.writePem(password)))
 
-def newCmd(argv):
+def createCmd(argv):
     password, outputFile, inCert, inKey, generation, \
     duration, expiration, sigType, hash = \
         handleArgs(argv, "p:o:c:k:g:d:e:s:")
@@ -170,7 +170,7 @@ def newCmd(argv):
         duration = 5
         
     tack = TACK()
-    tack.new(inKey, sigType, expiration, generation, hash, duration)
+    tack.create(inKey, sigType, expiration, generation, hash, duration)
     outputFile.write(addComments(tack.writePem()))
     
 def updateCmd(argv):
@@ -256,7 +256,7 @@ def printUsage(s=None):
 
 Commands (use "help <command>" to see optional args):
   genkey
-  new    -k KEY -c CERT  
+  create -k KEY -c CERT  
   update -k KEY -c CERT -i TACK
   adjust -i TACK -d DURATION
   break  -k KEY -i TACK
@@ -279,12 +279,12 @@ Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)        
-    elif cmd == "new"[:len(cmd)]:
+    elif cmd == "create"[:len(cmd)]:
         s = posixTimeToStr(time.time())        
         print( \
 """Creates a TACK based on a new pin for the target SSL certificate.
         
-  new -k KEY -c CERT
+  create -k KEY -c CERT
   
   -k KEY             : Use this TACK SecretKey file
   -c CERT            : Sign this SSL certificate
@@ -366,8 +366,8 @@ if __name__ == '__main__':
         testKeyFile()
     elif sys.argv[1] == "genkey"[:len(sys.argv[1])]:
         genkeyCmd(sys.argv[2:])
-    elif sys.argv[1] == "new"[:len(sys.argv[1])]:
-        newCmd(sys.argv[2:])
+    elif sys.argv[1] == "create"[:len(sys.argv[1])]:
+        createCmd(sys.argv[2:])
     elif sys.argv[1] == "update"[:len(sys.argv[1])]:
         updateCmd(sys.argv[2:])
     elif sys.argv[1] == "adjust"[:len(sys.argv[1])]:
