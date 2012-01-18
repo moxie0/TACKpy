@@ -17,7 +17,6 @@ from tack_structures import *
 from ssl_cert import *
 from tack_cert import *
 from keyfile import *
-from tests import *
 
 ################ MAIN ###
 

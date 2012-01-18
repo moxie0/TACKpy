@@ -17,7 +17,6 @@ fnames = [\
 "src/tack_structures.py",
 "src/ssl_cert.py",
 "src/keyfile.py",
-"src/tests.py",
 "src/main.py"] 
 
 # Stitch the source files together, ommitting anything before 
