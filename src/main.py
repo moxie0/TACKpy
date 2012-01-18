@@ -143,7 +143,7 @@ def handleArgs(argv, argString):
 def addComments(inStr):
     timeStr = posixTimeToStr(time.time(), True)
     verStr = "VV.VV.VV"
-    outStr = "Created by TACK-tool %s\nCreated on %s\n%s" % (verStr, timeStr, inStr)
+    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % (verStr, timeStr, inStr)
     return outStr
     
 def genkeyCmd(argv):

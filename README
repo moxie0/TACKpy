@@ -4,13 +4,12 @@ Installation
 =============
 The "TACK" file is a Python script.  It requires Python 2.7 or greater.
 
-Simply copy the file somewhere on your PATH, then test it via "TACK help".  If 
-you are having problems, try invoking it via "python TACK help".
+Copy the file somewhere on your PATH, then test it via "TACK help".  If you 
+are having problems, try invoking it via "python TACK help".
 
 If you have M2Crypto installed, TACK-tool will use it to access OpenSSL for
 elliptic curve and AES operations.  Otherwise, TACK-tool will use its internal 
-Python implementations.  You may run "TACK help" to see whether TACK-tool is 
-using M2Crypto or not.
+Python implementations.
 
 
 Quick start 
@@ -27,7 +26,7 @@ To create a TACK based on a site's SSL certificate:
   4) Add the TACK to <!!!>.
   5) Test the site
     - If there are problems, see "Removing the TACK"
-    - If there are no problems, see "Adjusting the TACK"
+    - If there are no problems, see "Adjusting the TACK's duration"
 
 
 Removing the TACK:
@@ -39,10 +38,10 @@ Removing the TACK:
      break signature from <!!!>.
 
 
-Adjusting the TACK:
+Adjusting the TACK's duration:
 
-  1) Run "TACK -i TACK.pem adjust 30d > TACK2.pem" to set the pin_duration to
-     30 days.
+  1) Run "TACK -i TACK.pem adjust -d 30d > TACK2.pem" to set the "pin_duration" 
+     to 30 days.
   2) Replace the previous TACK with the new one in <!!!>.
 
 
@@ -51,8 +50,7 @@ Changing your SSL cert:
 
   1) Run "TACK update -k TACK_Key.pem -i TACK_old.pem -c CERT > TACK_new.pem"
   2) Replace the old TACK with the new TACK.
-    - You must update the SSL cert and TACK at the same time.
-
+    - You MUST update the SSL cert and TACK at the same time.
 
 
 Advanced uses
@@ -83,11 +81,11 @@ SSL certificate compromise, consider using short-lived TACKs.
 
 Short-lived TACKs
 ------------------
-Every TACK contains a signature covering some SSL certificate, and by default
-the TACK's signature will expire at the same time as the certificate.
+Every TACK contains a signature covering some SSL certificate.  By default
+the TACK will expire at the same time as the certificate.
 
-If you shorten the TACK's "sig_expiration" time, then a compromised SSL 
-certificate will become unusable once the TACK expires.  
+If you shorten the TACK's expiration time, then a compromised SSL certificate 
+will become unusable once the TACK expires.  
 
 For example, every day at midnight you could deploy a new TACK that expires
 within 48 hours.  You could generate all these TACKs in a batch, then store
