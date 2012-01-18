@@ -17,14 +17,14 @@ release:
 	$(version_insert) README > $(dir)/README
 	tar czvf $(dir).tar.gz $(dir)
 
-EXEC = src/main2.py
+EXEC = src/main.py
 CERT1 = ~/godaddy/gd1.pem
 CERT2 = ~/godaddy/gd2.pem
 
 test:
 	rm -rf $(TEST)
 	mkdir $(TEST)
-	# !!! USE 'asdf' for passwords...
+	# NOTE: USE 'asdf' for passwords...
 	$(EXEC) genkey > $(TEST)/TACK_Key1.pem 
 	$(EXEC) genkey -p asdf > $(TEST)/TACK_Key2.pem 
 	$(EXEC) genkey -p asdf -o $(TEST)/TACK_Key3.pem 

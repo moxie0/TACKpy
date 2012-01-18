@@ -16,7 +16,6 @@ fnames = [\
 "src/constants.py",
 "src/tack_structures.py",
 "src/ssl_cert.py",
-"src/tack_cert.py",
 "src/keyfile.py",
 "src/tests.py",
 "src/main.py"] 
