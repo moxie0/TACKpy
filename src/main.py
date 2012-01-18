@@ -140,6 +140,12 @@ def handleArgs(argv, argString):
             retList.append(inCert.key_sha256)        
     return retList
 
+def addComments(inStr):
+    timeStr = posixTimeToStr(time.time(), True)
+    verStr = "VV.VV.VV"
+    outStr = "Created by TACK-tool %s\nCreated on %s\n%s" % (verStr, timeStr, inStr)
+    return outStr
+    
 def genkeyCmd(argv):
     password, outputFile = handleArgs(argv, "p:o:")    
     kf = TACK_KeyFile()
@@ -151,7 +157,7 @@ def genkeyCmd(argv):
             password2 = getpass.getpass("Re-enter password for key file: ")  
             if password != password2:
                 sys.stderr.write("PASSWORDS DON'T MATCH!")      
-    outputFile.write(kf.writePem(password))
+    outputFile.write(addComments(kf.writePem(password)))
 
 def newCmd(argv):
     password, outputFile, inCert, inKey, generation, \
@@ -165,7 +171,7 @@ def newCmd(argv):
         
     tack = TACK()
     tack.new(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(tack.writePem())
+    outputFile.write(addComments(tack.writePem()))
     
 def updateCmd(argv):
     password, outputFile, tack, inCert, inKey, generation, \
@@ -178,12 +184,12 @@ def updateCmd(argv):
         duration = tack.pin_duration
         
     tack.update(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(tack.writePem())    
+    outputFile.write(addComments(tack.writePem()))    
 
 def adjustCmd(argv):
     outputFile, tack, duration, = handleArgs(argv, "o:i:d:")
     tack.pin_duration = duration
-    outputFile.write(tack.writePem())    
+    outputFile.write(addComments(tack.writePem()))    
     
 def breakCmd(argv):
     password, outputFile, tack, inKey = \
@@ -191,7 +197,7 @@ def breakCmd(argv):
 
     breakSig = TACK_Break_Sig()   
     breakSig.generate(tack.pin, inKey.sign(tack.pin.write()))
-    outputFile.write(breakSig.writePem())    
+    outputFile.write(addComments(breakSig.writePem()))    
      
 def viewCmd(argv):
     if len(argv) < 1:
