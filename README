@@ -35,8 +35,8 @@ Removing the TACK:
   1) Run "TACK break -i TACK.pem > TACK_Break_Sig.pem"
     - This generates a "break signature".
   2) Add the break signature to <!!!>, and remove the TACK from <!!!>.
-  3) After the TACK's pin_duration has elapsed, you may remove the 
-     break signature from <!!!>.
+  3) After the TACK's duration has elapsed, you may remove the break 
+     signature from <!!!>.
 
 
 Adjusting the TACK's duration:

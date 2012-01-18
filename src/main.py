@@ -179,9 +179,9 @@ def updateCmd(argv):
         handleArgs(argv, "p:o:i:c:k:g:d:e:s:")
 
     if generation == None:
-        generation = tack.sig.sig_generation
+        generation = tack.sig.generation
     if duration == None:
-        duration = tack.pin_duration
+        duration = tack.duration
         
     tack.update(inKey, sigType, expiration, generation, hash, duration)
     outputFile.write(addComments(tack.writePem()))    

@@ -104,13 +104,13 @@ class TACK_KeyFileViewer:
 
     def writeText(self):
         s = \
-"""version                = %d
-iter_count             = %d
-salt                   = 0x%s
-IV                     = 0x%s
-ciphertext             = 0x%s
-public_key             = 0x%s
-mac                    = 0x%s\n""" % \
+"""version        = %d
+iter_count     = %d
+salt           = 0x%s
+IV             = 0x%s
+ciphertext     = 0x%s
+public_key     = 0x%s
+mac            = 0x%s\n""" % \
         (self.version, 
         self.iter_count,
         writeBytes(self.salt),
