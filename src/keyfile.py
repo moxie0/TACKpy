@@ -100,7 +100,7 @@ class TACK_KeyFileViewer:
         self.ciphertext = p.getBytes(32)
         self.public_key = p.getBytes(64)
         self.mac = bytearray(p.getBytes(32))
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
 
     def writeText(self):
         s = \
@@ -149,7 +149,7 @@ class TACK_KeyFile:
         ciphertext = p.getBytes(32)
         self.public_key = p.getBytes(64)
         mac = bytearray(p.getBytes(32))
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
 
         encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
         macData = IV + ciphertext + self.public_key
@@ -176,7 +176,7 @@ class TACK_KeyFile:
         w.add(ciphertext, 32)
         w.add(self.public_key, 64)
         w.add(mac, 32)
-        assert(w.index == len(w.bytes)) # did we fill entire byte-array?
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
         b = pem(w.bytes, "TACK SECRET KEY")
         return b
 

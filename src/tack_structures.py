@@ -40,7 +40,7 @@ class TACK_Pin:
             raise SyntaxError()
         self.key = p.getBytes(64)
         self.label = p.getBytes(8)
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
         
     def write(self):        
         """Return a 73-byte bytearray encoding of this TACK_Pin."""
@@ -49,7 +49,7 @@ class TACK_Pin:
         w.add(self.type, 1)
         w.add(self.key, 64)
         w.add(self.label, 8)  
-        assert(w.index == len(w.bytes)) # did we fill entire byte-array?            
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?            
         return w.bytes  
 
     def writeText(self):
@@ -118,7 +118,7 @@ class TACK_Sig:
         self.generation = p.getInt(1)            
         self.target_sha256 = p.getBytes(32)
         self.signature = p.getBytes(64)
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
         
     def write(self):
         """Return a 102-byte bytearray encoding of this TACK_Sig."""        
@@ -129,7 +129,7 @@ class TACK_Sig:
         w.add(self.generation, 1)
         w.add(self.target_sha256, 32)
         w.add(self.signature, 64)
-        assert(w.index == len(w.bytes)) # did we fill entire byte-array?
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
         return w.bytes
 
     def writeText(self):
@@ -186,7 +186,7 @@ class TACK:
         b = b[TACK_Sig.length : ]
         p = Parser(b)
         self.duration = p.getInt(4)
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
 
     def writePem(self):
         w = Writer(TACK_Pin.length + TACK_Sig.length + 4)
@@ -230,13 +230,13 @@ class TACK_Break_Sig:
         b = b[TACK_Pin.length : ]  
         p = Parser(b)      
         self.signature = p.getBytes(64)
-        assert(p.index == len(b)) # did we fully consume byte-array?
+        assert(p.index == len(b)) # did we fully consume bytearray?
         
     def writePem(self):
         w = Writer(TACK_Break_Sig.length)
         w.add(self.pin.write(), TACK_Pin.length)
         w.add(self.signature, 64)
-        assert(w.index == len(w.bytes)) # did we fill entire byte-array?        
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?        
         return pem(w.bytes, "TACK BREAK SIG")
 
     def writeText(self):

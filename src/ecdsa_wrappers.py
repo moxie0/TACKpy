@@ -49,22 +49,34 @@ if m2cryptoLoaded:
         """
         b = dePem(pemPrivKeyBytes, "EC PRIVATE KEY")
         p = ASN1Parser(b)
+        # The private key is stored as an ASN.1 integer which may
+        # need to have zero padding removed (if 33 bytes) or added
+        # (if < 32 bytes):
         privateKey = p.getChild(1).value
+        privateKey = fromAsn1IntBytes(privateKey, 32)
         # There is a 00 04 byte prior to the 64-byte public key
         # I'm not sure why M2Crypto has the 00 byte there?,
         # some ASN1 thing - the 04 byte signals "uncompressed"
         # per SECG.  Anyways, strip both those bytes off ([2:])
         publicKey = p.getChild(3).getTagged().value[2:]
+        assert(len(privateKey) == 32)
+        assert(len(publicKey) == 64)
         return (privateKey, publicKey)        
     
     def _writeECPrivateKey(privateKey, publicKey):
-        bytes1 = a2b_hex("30770201010420")  
+        assert(len(privateKey) == 32)
+        assert(len(publicKey) == 64)
+        bytes1 = a2b_hex("02010104")  
         bytes2 = a2b_hex("a00a06082a8648ce3d030107a14403420004")
-        asn1KeyBytes = bytes1 + privateKey + bytes2 + publicKey
-        pemPrivKeyBytes = pem(asn1KeyBytes, "EC PRIVATE KEY")
+        privateKey = toAsn1IntBytes(privateKey)
+        b = bytes1 + asn1Length(len(privateKey)) + privateKey + \
+            bytes2 + publicKey
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        pemPrivKeyBytes = pem(b, "EC PRIVATE KEY")
         return pemPrivKeyBytes
     
     def _writeECPublicKey(publicKey):
+        assert(len(publicKey) == 64)
         bytes1 = a2b_hex(\
             "3059301306072a8648ce3d020106082a8648ce3d03010703420004")  
         asn1KeyBytes = bytes1 + publicKey
@@ -78,10 +90,13 @@ if m2cryptoLoaded:
         return numberToBytes(r, 32) + numberToBytes(s, 32)
     
     def _writeECSignature(ecSigBytes):
-        r = bytesToNumber(ecSigBytes[:32])
-        s = bytesToNumber(ecSigBytes[32:])
-        asn1R = asn1Int(r)
-        asn1S = asn1Int(s)
+        assert(len(ecSigBytes) == 64)
+        asn1R = toAsn1IntBytes(ecSigBytes[:32])
+        asn1S = toAsn1IntBytes(ecSigBytes[32:])
+        # Add ASN1 Type=2(int), and Length fields
+        asn1R = bytearray([2]) + asn1Length(len(asn1R)) + asn1R         
+        asn1S = bytearray([2]) + asn1Length(len(asn1S)) + asn1S 
+        # Add ASN1 Type=0x30(Sequence) and Length fields       
         asn1ECSigBytes = bytearray([0x30]) + \
                             asn1Length(len(asn1R+asn1S)) + asn1R + asn1S
         return asn1ECSigBytes
@@ -109,7 +124,7 @@ if m2cryptoLoaded:
         hash = SHA256(dataToSign)
         asn1SigBytes = m2EC.sign_dsa_asn1(hash)
         
-        # Convert stupid ASN.1 signature into sensible 64-byte signature
+        # Convert stupid ASN.1 signature into 64-byte signature
         # Double-check before returning
         sigBytes = _parseECSignature(asn1SigBytes)
         assert(ecdsa256Verify(publicKey, dataToSign, sigBytes))
@@ -121,7 +136,7 @@ if m2cryptoLoaded:
         pemPubKeyBytes = _writeECPublicKey(publicKey)        
         m2ECpub = EC.load_pub_key_bio(BIO.MemoryBuffer(pemPubKeyBytes))
 
-        # Convert the sensible signature into a stupid 64-byte signature
+        # Convert 64-byte signature into a stupid ASN.1 signature
         asn1SigBytes = _writeECSignature(signature)        
         hash = SHA256(dataToVerify)  
         return m2ECpub.verify_dsa_asn1(hash, asn1SigBytes)

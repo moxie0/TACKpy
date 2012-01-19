@@ -24,23 +24,30 @@ def asn1Length(x):
         return bytearray([0x82, int(x//256), x % 256])  
     assert(False)
 
-def asn1Int(x):
-    """Return a bytearray containing ASN.1 integer based on the input integer.
+def toAsn1IntBytes(b):
+    """Return a bytearray containing ASN.1 integer based on input bytearray.
     
     An ASN.1 integer is a big-endian sequence of bytes, with excess zero bytes
-    at the beginning removed.  However, if the high bit of the first byte is 
-    set, a zero byte is prepended.
-    """
-    b = numberToBytes(x)
+    at the beginning removed.  However, if the high bit of the first byte 
+    would be set, a zero byte is prepended.
+    """    
     # Strip leading zeros
     while b[0] == 0 and len(b)>1:
         b = b[1:]
     # Add a leading zero if high bit is set
     if b[0] & 0x80:
         b = bytearray([0]) + b
-    # Add ASN.1 type and length fields
-    b = bytearray([2]) + asn1Length(len(b)) + b
-    return b
+    return b    
+
+def fromAsn1IntBytes(b, size):
+    if len(b) > size+1:
+        raise SyntaxError()
+    if len(b)==size+1:
+        if b[0] != 0 or ((b[1] & 0x80) == 0):
+            raise SyntaxError()
+        return b[1:]
+    else:
+        return bytearray([0]*(size-len(b))) + b
             
 #Takes a byte array which has a DER TLV field at its head
 class ASN1Parser:
