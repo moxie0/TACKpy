@@ -64,8 +64,8 @@ the "ghost interval".
 
 An easy way to handle this is to set the TACK's duration to zero for the
 ghost interval.  This will cause any clients contacting the site to 
-forget about the TACK, instead of storing it again.  Once the ghost 
-interval expires, the TACK can be safely removed.
+forget about the TACK.  Once the ghost interval expires, the TACK can be 
+safely removed.
 
 However, there may be situations where you need to remove or replace a
 TACK during a ghost interval.  In this case, the site must provide a
@@ -74,7 +74,7 @@ Otherwise, clients storing the "ghost TACK" will reject the site.
 
 At any point in time, a site can have up to ten break signatures from
 different ghost TACKs.  However, keep in mind that break signatures
-add to TLS overhead, so are best avoided.
+add to TLS handshake overhead, so are best avoided.
 
 In any case, once the ghost interval for a ghost TACK is elapsed, the 
 corresponding break signature may be removed.
@@ -88,9 +88,9 @@ To generate a break signature:
 Revoking older versions of a TACK 
 ----------------------------------
 If an SSL cert has been compromised and you are switching to a new SSL 
-cert, you may revoke all older TACKs by "-g <new_generation>" in the 
-"update" command.  <new_generation> is a number from 0-255 that is 
-larger than the generations of all previous TACKs.
+cert, you may revoke all older versions of the TACK by "-g <new_generation>" 
+in the "update" command.  <new_generation> is a number from 0-255 that is 
+larger than the generations of all previous versions of the TACK.
 
 Clients who encounter the new TACK will reject older generations from 
 then on.
@@ -105,8 +105,8 @@ robust defense against SSL certificate compromise, consider using
 short-lived TACKs.
 
 
-Short-lived TACK versions
---------------------------
+Short-lived TACKs
+------------------
 Every TACK contains a signature covering some SSL certificate.  By 
 default the TACK will expire at the same time as the certificate, and
 must be replaced by an updated version after that point.
