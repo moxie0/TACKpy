@@ -37,7 +37,7 @@ values in the correct order.
     getOptArgString = ":".join(argString) + ":"
     try:
         opts, argv = getopt.getopt(argv, getOptArgString)
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         printError(e) 
     # Default values if arg not present   
     password = None
@@ -61,7 +61,7 @@ values in the correct order.
                 printError("Error opening output file: %s" % arg)
         elif opt == "-i":
             try:
-                tackPem = open(arg, "r").read()
+                tackPem = open(arg, "rU").read()
             except IOError:
                 printError("Error opening TACK file: %s" % arg)                        
             try:
@@ -71,17 +71,15 @@ values in the correct order.
                 printError("TACK malformed: %s" % arg)
         elif opt == "-c":
             try:
-                sslBytes = bytearray(open(arg, "rb").read())
-            except IOError:
-                printError("Error opening SSL certificate: %s" % arg)            
-            inCert = SSL_Cert()
-            try:
-                inCert.parse(sslBytes)        
+                inCert = SSL_Cert()
+                inCert.open(arg)
             except SyntaxError:
-                prinError("SSL certificate malformed: %s" % arg)
+                printError("SSL certificate malformed: %s" % arg)
+            except IOError:
+                printError("Error opening SSL certificate: %s" % arg)                
         elif opt == "-k":
             try:
-                keyPem = open(arg, "r").read()
+                keyPem = open(arg, "rU").read()
             except IOError:
                 printError("Error opening TACK Secret Key File: %s" % arg)            
         elif opt == "-g":
@@ -227,43 +225,61 @@ def breakCmd(argv):
 def viewCmd(argv):
     """Handle "TACK view <argv>" command."""    
     if len(argv) < 1:
-        printError("Missing argument: object to view")
+        printError("Missing argument: file to view")
     if len(argv) > 1:
-        printError("Can only view one object")
+        printError("Can only view one file")
     try:
         # Read both binary (bytearray) and text (str) versions of the input
-        s = open(argv[0], "r").read()
         b = bytearray(open(argv[0], "rb").read())
+        try:
+            s = open(argv[0], "rU").read()
+        except UnicodeDecodeError:
+            # Python3 error, so it must be a binary file; not text
+            s = None            
     except IOError:
-        printError("File not found: %s" % argv[0])
+        printError("Error opening file: %s" % argv[0])
 
     fileType = None
     try:
-        if pemSniff(s, "TACK SECRET KEY"):
-            fileType = "Secret Key"
-            kfv = TACK_KeyFileViewer()
-            kfv.parse(s)
-            print(kfv.writeText())
-        elif pemSniff(s, "TACK"):
-            fileType = "TACK"
-            t = TACK()
-            t.parsePem(s)
-            print(t.writeText())
-        elif pemSniff(s, "TACK BREAK SIG"):
-            fileType = "Break Sig"
-            tbs = TACK_Break_Sig()
-            tbs.parsePem(s)
-            print(tbs.writeText())            
-        else:    
-        # Is it an SSL certificate?        
-            try:
-                sslc = SSL_Cert()
-                sslc.parse(bytearray(b))
+        if s:            
+            if pemSniff(s, "TACK SECRET KEY"):
+                fileType = "Secret Key"
+                kfv = TACK_KeyFileViewer()
+                kfv.parse(s)
+                print(kfv.writeText())
+                return
+            elif pemSniff(s, "TACK"):
+                fileType = "TACK"
+                t = TACK()
+                t.parsePem(s)
+                print(t.writeText())
+                return
+            elif pemSniff(s, "TACK BREAK SIG"):
+                fileType = "Break Sig"
+                tbs = TACK_Break_Sig()
+                tbs.parsePem(s)
+                print(tbs.writeText())  
+                return
+            elif pemSniff(s, "CERTIFICATE"):
+                fileType = "Certificate"
+                sslc = SSL_Cert() 
+                sslc.parsePem(s)
                 print(sslc.writeText())
-            except SyntaxError:
-                printError("Unrecognized file type")
-    except SyntaxError, e:
+                return
+        # Is it an SSL certificate?
+        try:
+            sslc = SSL_Cert()
+            sslc.parse(b)
+            print(sslc.writeText())
+        except SyntaxError:
+            printError("Unrecognized file type")
+    except SyntaxError as e:
         printError("Error parsing %s: %s" % (fileType, e))
+
+def testCmd(argv):
+    testASN1()
+    testCompat()
+    print("OK")
 
 def printUsage(s=None):
     if m2cryptoLoaded:
@@ -281,6 +297,7 @@ Commands (use "help <command>" to see optional args):
   adjust -i TACK -d DURATION
   break  -k KEY -i TACK
   view   FILE
+  test  
   help   COMMAND
 """ % crypto)
     sys.exit(-1)
@@ -374,6 +391,10 @@ Optional arguments:
 Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
 """)
+    elif cmd == "test"[:len(cmd)]:
+        print( \
+"""Runs self-tests.
+""")
     else:
         printError("Help requested for unknown command")
         
@@ -393,6 +414,8 @@ if __name__ == '__main__':
         breakCmd(sys.argv[2:])
     elif sys.argv[1] == "view"[:len(sys.argv[1])]:
         viewCmd(sys.argv[2:])
+    elif sys.argv[1] == "test"[:len(sys.argv[1])]:
+        testCmd(sys.argv[2:])
     elif sys.argv[1] == "help"[:len(sys.argv[1])]:
         helpCmd(sys.argv[2:])
     else:

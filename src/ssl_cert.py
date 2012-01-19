@@ -10,12 +10,25 @@ class SSL_Cert:
     def __init__(self):
         self.key_sha256 = bytearray(32)
         self.cert_sha256 = bytearray(32)
+        
+    def open(self, filename):
+        # May raise IOError or SyntaxError
+        try:
+            sslStr = open(filename, "rU").read() # IOError, UnicodeDecodeError
+            self.parsePem(sslStr) # SyntaxError
+            return
+        except (UnicodeDecodeError, SyntaxError):
+            # File had non-text chars in it (python3), *OR*
+            # File did not PEM-decode
+            pass
+        sslBytes = bytearray(open(filename, "rb").read()) # IOError            
+        self.parse(sslBytes)  # SyntaxError
+    
+    def parsePem(self, s):
+        b = dePem(s, "CERTIFICATE")
+        self.parse(b)
     
     def parse(self, b):
-        try:
-            b = dePem(b, "CERTIFICATE")
-        except SyntaxError:
-            pass
         p = ASN1Parser(b)
 
         #Get the tbsCertificate

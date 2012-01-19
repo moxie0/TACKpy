@@ -114,7 +114,7 @@ def parseASN1UTCTime(b):
     
 
 def parseASN1GeneralizedTime(b):
-    t = time.strptime(bytesToStr(b), "%Y%m%d%H%M%SZ")
+    t = time.strptime(bytesToStrAscii(b), "%Y%m%d%H%M%SZ")
     return int(calendar.timegm(t))
     
 

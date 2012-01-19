@@ -5,7 +5,7 @@ from time_funcs import *
 
 import binascii
 
-def dePem(b, name):
+def dePem(s, name):
     """Decode a PEM bytearray into a bytearray of its payload.
     
     The input must contain an appropriate PEM prefix and postfix
@@ -20,18 +20,15 @@ def dePem(b, name):
     The first such PEM block in the input will be found, and its
     payload will be base64 decoded and returned.
     """
-    start = b.find(bytearray("-----BEGIN %s-----" % name, "ascii"))
-    end = b.find(bytearray("-----END %s-----" % name, "ascii"), start)
+    start = s.find("-----BEGIN %s-----" % name)
+    end = s.find("-----END %s-----" % name, start)
     if start == -1:
         raise SyntaxError("Missing PEM prefix")
     if end == -1:
         raise SyntaxError("Missing PEM postfix")
-    b = b[start+len(bytearray("-----BEGIN %s-----" % name, "ascii")) : end]
-    try:
-        retBytes = bytearray(binascii.a2b_base64(b))
-        return retBytes
-    except binascii.Error, e:
-        raise SyntaxError("base64 error: %s" % e)        
+    s = s[start+len("-----BEGIN %s-----" % name) : end]
+    retBytes = a2b_base64(s) # May raise SyntaxError
+    return retBytes
 
 def pem(b, name):
     """Encode a payload bytearray into a PEM bytearray.

@@ -118,3 +118,34 @@ class ASN1Parser:
 
         
 
+def testASN1():
+    assert(asn1Length(7) == bytearray([7]))
+    assert(asn1Length(0x7F) == bytearray([0x7F]))
+    assert(asn1Length(0x80) == bytearray([0x81,0x80]))
+    assert(asn1Length(0x81) == bytearray([0x81,0x81]))
+    assert(asn1Length(0xFF) == bytearray([0x81,0xFF]))
+    assert(asn1Length(0x0100) == bytearray([0x82,0x01,0x00]))
+    assert(asn1Length(0x0101) == bytearray([0x82,0x01,0x01]))
+    assert(asn1Length(0xFFFF) == bytearray([0x82,0xFF,0xFF]))    
+    
+    assert(toAsn1IntBytes(bytearray([0xFF])) == bytearray([0x00,0xFF]))
+    assert(toAsn1IntBytes(bytearray([0x7F])) == bytearray([0x7F]))
+    assert(toAsn1IntBytes(bytearray([0x00])) == bytearray([0x00]))
+    assert(toAsn1IntBytes(bytearray([0x00,0x00])) == bytearray([0x00]))
+    assert(toAsn1IntBytes(bytearray([0x00,0x01])) == bytearray([0x01]))
+    assert(toAsn1IntBytes(bytearray([0,0xFF])) == bytearray([0,0xFF]))
+    assert(toAsn1IntBytes(bytearray([0,0,0,0xFF])) == bytearray([0,0xFF]))
+    assert(toAsn1IntBytes(bytearray([0,0,0,1,1])) == bytearray([1,1]))    
+
+    assert(bytearray([0xFF]) == fromAsn1IntBytes(bytearray([0x00,0xFF]),1))
+    assert(bytearray([0x7F]) == fromAsn1IntBytes(bytearray([0x7F]),1))
+    assert(bytearray([0x00]) == fromAsn1IntBytes(bytearray([0x00]),1))
+    assert(bytearray([0x00,0x00]) == fromAsn1IntBytes(bytearray([0x00]),2))
+    assert(bytearray([0x00,0x01]) == fromAsn1IntBytes(bytearray([0x01]),2))
+    assert(bytearray([0,0xFF]) == fromAsn1IntBytes(bytearray([0,0xFF]),2))
+    assert(bytearray([0,0,0,0xFF]) == fromAsn1IntBytes(bytearray([0,0xFF]),4))
+    assert(bytearray([0,0,0,1,1]) == fromAsn1IntBytes(bytearray([1,1]),5))
+    
+    #!!! Add testing for ASN1Parser
+    
+    
