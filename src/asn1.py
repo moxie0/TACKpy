@@ -29,7 +29,8 @@ def toAsn1IntBytes(b):
     
     An ASN.1 integer is a big-endian sequence of bytes, with excess zero bytes
     at the beginning removed.  However, if the high bit of the first byte 
-    would be set, a zero byte is prepended.
+    would be set, a zero byte is prepended.  Note that the ASN.1 type/len
+    fields are NOT added by this function.
     """    
     # Strip leading zeros
     while b[0] == 0 and len(b)>1:
@@ -40,13 +41,26 @@ def toAsn1IntBytes(b):
     return b    
 
 def fromAsn1IntBytes(b, size):
+    """Return a bytearray of "size" bytes representing a big-endian integer 
+    by converting the input bytearray's ASN.1 integer.
+    
+    An ASN.1 integer is a big-endian sequence of bytes, with excess zero bytes
+    at the beginning removed.  However, if the high bit of the first byte 
+    would be set, a zero byte is prepended.  Note that the ASN.1 type/len
+    fields are NOT removed by this function.
+    
+    Raises SyntaxError.
+    """        
     if len(b) > size+1:
-        raise SyntaxError()
-    if len(b)==size+1:
-        if b[0] != 0 or ((b[1] & 0x80) == 0):
-            raise SyntaxError()
+        raise SyntaxError("ASN.1 integer is too big")
+    if len(b)==size+1: # This can occur if the integer's high bit was set
+        if b[0] != 0:
+            raise SyntaxError("ASN.1 integer too big")
+        if (b[1] & 0x80) == 0:
+            raise SyntaxError("ASN.1 integer has excess zero padding")
         return b[1:]
     else:
+        # Prepend zero bytes if needed to reach "size" bytes
         return bytearray([0]*(size-len(b))) + b
             
 #Takes a byte array which has a DER TLV field at its head
