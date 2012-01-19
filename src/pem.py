@@ -1,4 +1,5 @@
 from compat import *
+from time_funcs import *
 
 ################ PEM ###
 
@@ -49,4 +50,10 @@ def pem(b, name):
         ("-----END %s-----\n" % name)     
     return s
 
-
+def addPemComments(inStr):
+    """Add pre-PEM metadata/comments to PEM strings."""
+    versionStr = "V.V.V"
+    timeStr = posixTimeToStr(time.time(), True)
+    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % \
+                (versionStr, timeStr, inStr)
+    return outStr

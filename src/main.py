@@ -1,32 +1,45 @@
 #! /usr/bin/env python
 
-from numbertheory import *
-from ellipticcurve import *
-from ecdsa import *
-from rijndael import *
+
 from misc import *
 from compat import *
-from cryptomath import *
-from ecdsa_wrappers import *
 from time_funcs import *
 from pem import *
-from struct_parser import *
-from asn1 import *
 from constants import *
 from tack_structures import *
 from ssl_cert import *
-from tack_cert import *
 from keyfile import *
 
 ################ MAIN ###
 
 import sys, getpass, getopt
 
-def handleArgs(argv, argString, mandatoryString):
+def handleArgs(argv, argString, mandatoryString=""):
+    """Helper function for handling cmdline args.
+
+argv should be sys.argv[2:], i.e. the cmdline args minus "TACK <cmd>".
+argString is a string with each char indicating a supported arg.
+mandatoryString is a string with each char indicating a mandatory arg.
+
+Allowed chars in argString: "poickgdes"
+Allowed chars in mandatoryString: "ickd"
+
+Returns a list populated with an entry (or entries) for each char in 
+argString.  The list is populated in "poickgdes" order, regardless of 
+argString order.
+
+Even if a char is not used as an argument, it will still return a value, 
+usually None.  Note that the caller has to be careful to unpack the return 
+values in the correct order.
+"""
+    # Convert to getopt argstring format:
+    # Add ":" after each arg, ie "abc" -> "a:b:c:"
+    getOptArgString = ":".join(argString) + ":"
     try:
-        opts, argv = getopt.getopt(argv, argString)
+        opts, argv = getopt.getopt(argv, getOptArgString)
     except getopt.GetoptError, e:
-        printError(e)    
+        printError(e) 
+    # Default values if arg not present   
     password = None
     outputFile = sys.stdout
     inTack  = None
@@ -73,17 +86,18 @@ def handleArgs(argv, argString, mandatoryString):
                 printError("Error opening TACK Secret Key File: %s" % arg)            
         elif opt == "-g":
             try:
-                generation = int(arg)
+                generation = int(arg) # Could raise ValueError
                 if generation < 0 or generation>255:
                     raise ValueError()
             except ValueError:
-                printError("Bad sig_generation: %s" % arg)            
+                printError("Bad generation: %s" % arg)            
         elif opt == "-d":
             try:
                 duration = parseDurationArg(arg)
             except SyntaxError:
-                printError("Bad pin_duration: %s" % arg)       
+                printError("Bad duration: %s" % arg)       
         elif opt == "-e":
+            # parseTimeArg will error and exit if arg is malformed
             expiration = parseTimeArg(arg)
         elif opt == "-s":
             if arg == "v1_cert":
@@ -91,12 +105,13 @@ def handleArgs(argv, argString, mandatoryString):
             elif arg == "v1_key":
                 sigType = TACK_Sig_Type.v1_key
             else:
-                printError("Unknown sig_type: %s" % arg)  
+                printError("Unknown sig.type: %s" % arg)  
         else:
             assert(False)
     if argv:
         printError("Unknown arguments: %s" % argv)
 
+    # Check that mandatory args were present
     if "k" in mandatoryString and not keyPem:
         printError("-k missing (TACK_Key)")
     if "c" in mandatoryString and not inCert:
@@ -106,6 +121,7 @@ def handleArgs(argv, argString, mandatoryString):
     if "d" in mandatoryString and duration == None:
         printError("-d missing (duration)")        
 
+    # Load the key, prompting for password if not specified on cmdline
     if keyPem:
         try:
             inKey = TACK_KeyFile()
@@ -117,61 +133,58 @@ def handleArgs(argv, argString, mandatoryString):
                     password = getpass.getpass("Enter password for key file: ")
                     if inKey.parsePem(keyPem, password):
                         break
-                    sys.stderr.write("PASSWORD INCORRECT!")
+                    sys.stderr.write("PASSWORD INCORRECT!\n")
         except SyntaxError:
             printError("Error processing TACK Secret Key File")
-                    
+
+    # Populate the return list
     retList = []
-    if "p:" in argString:
+    if "p" in argString:
         retList.append(password)
-    if "o:" in argString:
+    if "o" in argString:
         retList.append(outputFile)
-    if "i:" in argString:
+    if "i" in argString:
         retList.append(inTack)
-    if "c:" in argString:
+    if "c" in argString:
         retList.append(inCert)
-    if "k:" in argString:
+    if "k" in argString:
         retList.append(inKey)
-    if "g:" in argString:
+    if "g" in argString:
         retList.append(generation)
-    if "d:" in argString:
+    if "d" in argString:
         retList.append(duration)
-    if "e:" in argString:
+    if "e" in argString:
         if not expiration:
             # round up to next minute
             expiration = int(math.ceil(inCert.notAfter / 60.0))
         retList.append(expiration) 
-    if "s:" in argString:
+    if "s" in argString:
         retList.append(sigType)
         if sigType == TACK_Sig_Type.v1_cert:
             retList.append(inCert.cert_sha256)
         else:
             retList.append(inCert.key_sha256)        
     return retList
-
-def addComments(inStr):
-    timeStr = posixTimeToStr(time.time(), True)
-    verStr = "V.V.V"
-    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % (verStr, timeStr, inStr)
-    return outStr
     
 def genkeyCmd(argv):
-    password, outputFile = handleArgs(argv, "p:o:")    
+    """Handle "TACK genkey <argv>" command."""
+    password, outputFile = handleArgs(argv, "po")    
     kf = TACK_KeyFile()
-    kf.generate()
+    kf.create() # EC key is generated here
     if not password:
         password, password2 = "this", "that"
         while password != password2:
             password = getpass.getpass("Choose password for key file: ")    
             password2 = getpass.getpass("Re-enter password for key file: ")  
             if password != password2:
-                sys.stderr.write("PASSWORDS DON'T MATCH!")      
-    outputFile.write(addComments(kf.writePem(password)))
+                sys.stderr.write("PASSWORDS DON'T MATCH!\n")      
+    outputFile.write(addPemComments(kf.writePem(password)))
 
 def createCmd(argv):
+    """Handle "TACK create <argv>" command."""
     password, outputFile, inCert, inKey, generation, \
     duration, expiration, sigType, hash = \
-        handleArgs(argv, "p:o:c:k:g:d:e:s:", "kc")
+        handleArgs(argv, "pockgdes", "kc")
     
     if generation == None:
         generation = 0
@@ -180,12 +193,13 @@ def createCmd(argv):
         
     tack = TACK()
     tack.create(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(addComments(tack.writePem()))
+    outputFile.write(addPemComments(tack.writePem()))
     
 def updateCmd(argv):
+    """Handle "TACK update <argv>" command."""    
     password, outputFile, tack, inCert, inKey, generation, \
     duration, expiration, sigType, hash = \
-        handleArgs(argv, "p:o:i:c:k:g:d:e:s:", "kci")
+        handleArgs(argv, "poickgdes", "kci")
 
     if generation == None:
         generation = tack.sig.generation
@@ -193,22 +207,25 @@ def updateCmd(argv):
         duration = tack.duration
         
     tack.update(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(addComments(tack.writePem()))    
+    outputFile.write(addPemComments(tack.writePem()))    
 
 def adjustCmd(argv):
-    outputFile, tack, duration, = handleArgs(argv, "o:i:d:", "id")
-    tack.pin_duration = duration
-    outputFile.write(addComments(tack.writePem()))    
+    """Handle "TACK adjust <argv>" command."""    
+    outputFile, tack, duration, = handleArgs(argv, "oid", "id")
+    tack.duration = duration
+    outputFile.write(addPemComments(tack.writePem()))    
     
 def breakCmd(argv):
+    """Handle "TACK break <argv>" command."""
     password, outputFile, tack, inKey = \
-        handleArgs(argv, "p:o:i:k:", "ki")
+        handleArgs(argv, "poik", "ki")
 
     breakSig = TACK_Break_Sig()   
-    breakSig.generate(tack.pin, inKey.sign(tack.pin.write()))
-    outputFile.write(addComments(breakSig.writePem()))    
+    breakSig.create(tack.pin, inKey.sign(tack.pin.write()))
+    outputFile.write(addPemComments(breakSig.writePem()))    
      
 def viewCmd(argv):
+    """Handle "TACK view <argv>" command."""    
     if len(argv) < 1:
         printError("Missing argument: object to view")
     if len(argv) > 1:
@@ -275,6 +292,7 @@ Commands (use "help <command>" to see optional args):
     sys.exit(-1)
     
 def helpCmd(argv):
+    """Handle "TACK help <argv>" command."""    
     if len(argv) == 0:
         printUsage()
     cmd = argv[0]
@@ -302,10 +320,10 @@ Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
   -g GENERATION      : Use this generation number (0-255)
-  -s SIG_TYPE        : Target signature to "v1_key" or "v1_cert"
+  -s SIG.TYPE        : Target signature to "v1_key" or "v1_cert"
   -d DURATION        : Use this duration for the pin:
                          ("5m", "30d", "1d12h5m", etc.)
-  -e EXPIRATION      : use this UTC time for sig_expiration
+  -e EXPIRATION      : use this UTC time for expiration
                         ("%s", "%sZ",
                          "%sZ", "%sZ" etc.)
                         (or, specify a duration from current time)
@@ -325,10 +343,10 @@ Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
   -g GENERATION      : Use this generation number (0-255)
-  -s SIG_TYPE        : Target signature to "v1_key" or "v1_cert"
+  -s SIG.TYPE        : Target signature to "v1_key" or "v1_cert"
   -d DURATION        : Use this duration for the pin:
                          ("5m", "30d", "1d12h5m", etc.)
-  -e EXPIRATION      : use this UTC time for sig_expiration
+  -e EXPIRATION      : use this UTC time for expiration
                         ("%s", "%sZ",
                          "%sZ", "%sZ" etc.)
                         (or, specify a duration from current time)
@@ -351,7 +369,7 @@ Optional arguments:
 
     elif cmd == "adjust"[:len(cmd)]:
         print( \
-"""Adjusts pin_duration.
+"""Adjusts duration.
 
   adjust -i TACK -d DURATION
   
@@ -369,10 +387,6 @@ Optional arguments:
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         printUsage("Missing command")
-    elif sys.argv[1] == "test":
-        testCert()
-        testStructures()
-        testKeyFile()
     elif sys.argv[1] == "genkey"[:len(sys.argv[1])]:
         genkeyCmd(sys.argv[2:])
     elif sys.argv[1] == "create"[:len(sys.argv[1])]:

@@ -128,7 +128,7 @@ class TACK_KeyFile:
         self.public_key = bytearray(64)
         self.iter_count = 0
         
-    def generate(self, extraRandBytes=None):
+    def create(self, extraRandBytes=None):
         self.version = 1
         self.private_key, self.public_key = ec256Generate(extraRandBytes)
         self.iter_count = 8192

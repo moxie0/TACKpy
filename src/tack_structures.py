@@ -9,19 +9,31 @@ from pem import *
 import os # for os.urandom
         
 class TACK_Pin:
-    length = 73
+    length = 73 # length of TACK_Pin in bytes
     
     def __init__(self):
-        self.type = 0
-        self.key = bytearray(64)
+        """Create an uninitialized TACK_Pin.  
+        
+        Use create() or parse() to populate."""
+        self.type = 0 # integer from TACK_Pin_Type
+        self.key = bytearray(64) # EC public key using NIST-P256
         self.label = bytearray(8)
     
-    def generate(self, key):
+    def create(self, key):
+        """Create a new TACK_Pin, based on the input key 32-byte bytearray.
+        
+        The label is randomized to distinguish this from other pins based
+        on the same key."""
         self.type = TACK_Pin_Type.v1
+        assert(len(key) == 64)
         self.key = key
         self.label = os.urandom(8)
             
     def parse(self, b):
+        """Parse a bytearray of 73 bytes to populate this TACK_Pin.
+        
+        Raise a SyntaxError if input is malformed.
+        """
         p = Parser(b)
         self.type = p.getInt(1)
         if self.type != TACK_Pin_Type.v1:
@@ -31,8 +43,8 @@ class TACK_Pin:
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):        
-        if self.type != TACK_Pin_Type.v1:
-            raise SyntaxError()        
+        """Return a 73-byte bytearray encoding of this TACK_Pin."""
+        assert(self.type == TACK_Pin_Type.v1)        
         w = Writer(TACK_Pin.length)
         w.add(self.type, 1)
         w.add(self.key, 64)
@@ -41,8 +53,10 @@ class TACK_Pin:
         return w.bytes  
 
     def writeText(self):
-        if self.type != TACK_Pin_Type.v1:
-            raise SyntaxError()
+        """Return a readable string describing this TACK_Pin.
+        
+        Used by the "TACK view" command to display TACK objects."""
+        assert(self.type == TACK_Pin_Type.v1)
         s = \
 """pin.type       = %s
 key            = 0x%s
@@ -54,17 +68,37 @@ writeBytes(self.label))
         
            
 class TACK_Sig:
-    length = 102
+    length = 102 # length of TACK_Sig in bytes
         
     def __init__(self):
-        self.type = 0
-        self.expiration = 0
-        self.generation = 0                
-        self.target_sha256 = bytearray(32)
-        self.signature = bytearray(64)
+        """Create an uninitialized TACK_Pin.  
         
-    def generate(self, type, expiration, generation,
+        Use create() or parse() to populate."""        
+        self.type = 0 # 8-bit value from TACK_Pin_Type (v1_cert or v1_key)
+        self.expiration = 0 # 32-bit unsigned integer encoding POSIX time
+        self.generation = 0 # 8-bit integer               
+        self.target_sha256 = bytearray(32) # 32-byte SHA256 result
+        self.signature = bytearray(64) # ECDSA signature using NIST-P256
+        
+    def create(self, type, expiration, generation,
                 target_sha256, pin, signFunc):
+        """Create a new TACK_Sig.
+
+        The input args are mostly used to set TACK_Sig fields directly.
+        However, the last two args contain a TACK_Pin object and an ECDSA
+        signing function, which are used to populate the "signature" value. 
+        
+        The signing function takes an input bytearray, and returns a
+        64-byte signature of the bytearray based on ECDSA-NIST-P256-SHA256.
+        
+        To calculate the signing function input, the TACK_Pin is written to a 
+        73-byte bytearray, then the 38 bytes of TACK_Sig fields prior to the 
+        "signature" are appended, yielding a 111-byte bytearray.
+        """
+        assert(type == TACK_Sig_Type.v1_cert or type == TACK_Sig_Type.v1_key)
+        assert(expiration >=0 and expiration <= 2**32-1)
+        assert(generation >= 0 and generation <= 255)
+        assert(len(target_sha256) == 32)                
         self.type = type
         self.expiration = expiration
         self.generation = generation                
@@ -72,6 +106,10 @@ class TACK_Sig:
         self.signature = signFunc(pin.write() + self.write()[:-64])
     
     def parse(self, b):
+        """Parse a bytearray of 102 bytes to populate this TACK_Sig.
+        
+        Raise a SyntaxError if input is malformed.
+        """        
         p = Parser(b)
         self.type = p.getInt(1)
         if self.type not in TACK_Sig_Type.all:
@@ -83,8 +121,8 @@ class TACK_Sig:
         assert(p.index == len(b)) # did we fully consume byte-array?
         
     def write(self):
-        if self.type not in TACK_Sig_Type.all:
-            raise SyntaxError()
+        """Return a 102-byte bytearray encoding of this TACK_Sig."""        
+        assert(self.type in TACK_Sig_Type.all)
         w = Writer(TACK_Sig.length)
         w.add(self.type, 1)
         w.add(self.expiration, 4)
@@ -95,8 +133,10 @@ class TACK_Sig:
         return w.bytes
 
     def writeText(self):
-        if self.type not in TACK_Sig_Type.all:
-            raise SyntaxError()
+        """Return a readable string describing this TACK_Sig.
+        
+        Used by the "TACK view" command to display TACK objects."""        
+        assert(self.type in TACK_Sig_Type.all)
         s = \
 """sig.type       = %s
 expiration     = %s
@@ -111,22 +151,27 @@ writeBytes(self.signature))
         return s
 
 class TACK:
+    length = 4 + TACK_Pin.length + TACK_Sig.length  # 179 bytes
+    
     def __init__(self):
-        self.pin = None
-        self.sig = None
-        self.duration = 0
+        """Create an uninitialized TACK.  
+        
+        Use create() or parsePem() to populate."""        
+        self.pin = None # class TACK_Pin
+        self.sig = None # class TACK_Sig
+        self.duration = 0 # 32-bit unsigned integer, counting minutes
 
     def create(self, keyFile, sigType, expiration, \
                 generation, target_sha256, duration):
         self.pin = TACK_Pin()
-        self.pin.generate(keyFile.public_key)
+        self.pin.create(keyFile.public_key)
         self.update(keyFile, sigType, expiration, \
                     generation, target_sha256, duration)
                 
     def update(self, keyFile, sigType, expiration, \
                 generation, target_sha256, duration):
         self.sig = TACK_Sig()
-        self.sig.generate(sigType, expiration, generation, 
+        self.sig.create(sigType, expiration, generation, 
                             target_sha256, self.pin, keyFile.sign)
         self.duration = duration
 
@@ -167,13 +212,13 @@ duration       = %s\n""" % durationToStr(self.duration)
         return s   
         
 class TACK_Break_Sig:
-    length = 64 + TACK_Pin.length
+    length = 64 + TACK_Pin.length  # 137
     
     def __init__(self):
         self.pin = None
         self.signature = bytearray(64)
         
-    def generate(self, pin, signature):
+    def create(self, pin, signature):
         self.pin = pin
         self.signature = signature
         

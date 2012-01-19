@@ -23,8 +23,8 @@ NUMBERTHEORY, ELLIPTICCURVE, and ECDSA sections for pure Python).
 The M2Crypto/OpenSSL versions are loaded and used if present, otherwise 
 the pure Python versions are loaded.
 
-Because M2Crypto operates on ASN.1-encoded signatures, and PEM-encoded
-public and private keys, there is a fair bit of data munging to
+Because M2Crypto operates on ASN.1-encoded signatures, and traditional OpenSSL
+PEM-encoded public and private keys, there is a fair bit of data munging to
 convert to/from M2Crypto formats.
 """
 
@@ -65,7 +65,8 @@ if m2cryptoLoaded:
         return pemPrivKeyBytes
     
     def _writeECPublicKey(publicKey):
-        bytes1 = a2b_hex("3059301306072a8648ce3d020106082a8648ce3d03010703420004")  
+        bytes1 = a2b_hex(\
+            "3059301306072a8648ce3d020106082a8648ce3d03010703420004")  
         asn1KeyBytes = bytes1 + publicKey
         pemPubKeyBytes = pem(asn1KeyBytes, "PUBLIC KEY")
         return pemPubKeyBytes

@@ -4,12 +4,15 @@ version_insert := sed -e 's/V.V.V/$(version)/g'
 dir := TACK-tool-$(version)
 TEST = test
 
-
+.PHONY : clean
 clean:
 	rm -rf $(dir)
 	rm -rf $(TEST)
+	rm -f src/*.pyc
+	rm -rf TACK-tool-*/	
 	rm -f TACK-tool-*.tar.gz
 
+.PHONY : release
 release:
 	mkdir $(dir)
 	./make_release.py | $(version_insert) > $(dir)/TACK
@@ -21,6 +24,7 @@ EXEC = src/main.py
 CERT1 = ~/godaddy/gd1.pem
 CERT2 = ~/godaddy/gd2.pem
 
+.PHONY: test
 test:
 	rm -rf $(TEST)
 	mkdir $(TEST)
