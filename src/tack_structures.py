@@ -20,7 +20,7 @@ class TACK_Pin:
         self.label = bytearray(8)
     
     def create(self, key):
-        """Create a new TACK_Pin, based on the input key 32-byte bytearray.
+        """Initialize a TACK_Pin, based on the input key 32-byte bytearray.
         
         The label is randomized to distinguish this from other pins based
         on the same key."""
@@ -71,7 +71,7 @@ class TACK_Sig:
     length = 102 # length of TACK_Sig in bytes
         
     def __init__(self):
-        """Create an uninitialized TACK_Pin.  
+        """Create an uninitialized TACK_Sig.  
         
         Use create() or parse() to populate."""        
         self.type = 0 # 8-bit value from TACK_Pin_Type (v1_cert or v1_key)
@@ -82,7 +82,7 @@ class TACK_Sig:
         
     def create(self, type, expiration, generation,
                 target_sha256, pin, signFunc):
-        """Create a new TACK_Sig.
+        """Initialize a TACK_Sig.
 
         The input args are mostly used to set TACK_Sig fields directly.
         However, the last two args contain a TACK_Pin object and an ECDSA
@@ -163,6 +163,11 @@ class TACK:
 
     def create(self, keyFile, sigType, expiration, \
                 generation, target_sha256, duration):
+        """Initialize a TACK.
+
+        The input args are passed to TACK_Pin.create() or TACK_Sig.create(),
+        except for duration which is applied directly to self.duration.
+        """        
         self.pin = TACK_Pin()
         self.pin.create(keyFile.public_key)
         self.update(keyFile, sigType, expiration, \
@@ -170,14 +175,23 @@ class TACK:
                 
     def update(self, keyFile, sigType, expiration, \
                 generation, target_sha256, duration):
+        """Create a new TACK_Sig for the TACK.
+
+        The existing TACK_Sig is replaced.  The existing TACK_Pin is 
+        unmodified.  The duration value is changed.
+        """                        
         self.sig = TACK_Sig()
         self.sig.create(sigType, expiration, generation, 
                             target_sha256, self.pin, keyFile.sign)
         self.duration = duration
 
-    def parsePem(self, b):
-        b = dePem(b, "TACK")                
-        assert(len(b) == TACK_Pin.length + TACK_Sig.length + 4)
+    def parsePem(self, s):
+        """Parse a string containing a PEM file for a TACK.
+        
+        Raise a SyntaxError if input is malformed.
+        """        
+        b = dePem(s, "TACK")
+        assert(len(b) == TACK.length)
         self.pin = TACK_Pin()
         self.sig = TACK_Sig()
         self.pin.parse(b[ : TACK_Pin.length])
@@ -189,13 +203,17 @@ class TACK:
         assert(p.index == len(b)) # did we fully consume bytearray?
 
     def writePem(self):
-        w = Writer(TACK_Pin.length + TACK_Sig.length + 4)
+        """Return a string containing a PEM file for the TACK."""        
+        w = Writer(TACK.length)
         w.add(self.pin.write(), TACK_Pin.length) 
         w.add(self.sig.write(), TACK_Sig.length)
         w.add(self.duration, 4)
         return pem(w.bytes, "TACK")
 
     def writeText(self):
+        """Return a readable string describing this TACK.
+        
+        Used by the "TACK view" command to display TACK objects."""        
         s =\
 """
 TACK_Pin
@@ -215,14 +233,24 @@ class TACK_Break_Sig:
     length = 64 + TACK_Pin.length  # 137
     
     def __init__(self):
-        self.pin = None
-        self.signature = bytearray(64)
+        """Create an uninitialized TACK_Break_Sig.  
+        
+        Use create() or parsePem() to populate."""        
+        self.pin = None # TACK_Pin
+        self.signature = bytearray(64) # ECDSA signature on TACK_Pin
         
     def create(self, pin, signature):
+        """Initialize a TACK_Break_Sig with a TACK_Pin and 64-byte bytearray.
+        """        
+        assert(len(signature) == 64)
         self.pin = pin
         self.signature = signature
         
     def parsePem(self, b):
+        """Parse a string containing a PEM file for a TACK_Break_Sig.
+        
+        Raise a SyntaxError if input is malformed.
+        """        
         b = dePem(b, "TACK BREAK SIG")
         p = Parser(b)
         self.pin = TACK_Pin()
@@ -233,6 +261,7 @@ class TACK_Break_Sig:
         assert(p.index == len(b)) # did we fully consume bytearray?
         
     def writePem(self):
+        """Return a string containing a PEM file for the TACK_Break_Sig."""        
         w = Writer(TACK_Break_Sig.length)
         w.add(self.pin.write(), TACK_Pin.length)
         w.add(self.signature, 64)
@@ -240,6 +269,9 @@ class TACK_Break_Sig:
         return pem(w.bytes, "TACK BREAK SIG")
 
     def writeText(self):
+        """Return a readable string describing this TACK_Break_Sig.
+        
+        Used by the "TACK view" command to display TACK objects."""        
         s = self.pin.writeText()
         s += "signature      = 0x%s\n" % (writeBytes(self.signature))
         return s

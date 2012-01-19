@@ -362,7 +362,7 @@ Optional arguments:
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)
     elif cmd == "view"[:len(cmd)]:
-        print("""Views a TACK certificate, SSL certificate, or Key File.
+        print("""Views a TACK, TACK Key, TACK Break Sig, or SSL certificate.
 
   view <file>
 """)        

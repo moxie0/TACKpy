@@ -46,9 +46,9 @@ class SSL_Cert:
     
     def writeText(self):
         s = \
-"""key_sha256             = 0x%s
-cert_sha256            = 0x%s
-notAfter               = %s
+"""key_sha256     = 0x%s
+cert_sha256    = 0x%s
+notAfter       = %s
 \n""" % (\
         writeBytes(self.key_sha256),
         writeBytes(self.cert_sha256),
