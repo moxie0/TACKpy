@@ -27,7 +27,11 @@ def dePem(b, name):
     if end == -1:
         raise SyntaxError("Missing PEM postfix")
     b = b[start+len(bytearray("-----BEGIN %s-----" % name, "ascii")) : end]
-    return bytearray(binascii.a2b_base64(b))
+    try:
+        retBytes = bytearray(binascii.a2b_base64(b))
+        return retBytes
+    except binascii.Error, e:
+        raise SyntaxError("base64 error: %s" % e)        
 
 def pem(b, name):
     """Encode a payload bytearray into a PEM bytearray.
@@ -50,6 +54,10 @@ def pem(b, name):
         ("-----END %s-----\n" % name)     
     return s
 
+def pemSniff(inStr, name):
+    searchStr = "-----BEGIN %s-----" % name
+    return searchStr in inStr    
+    
 def addPemComments(inStr):
     """Add pre-PEM metadata/comments to PEM strings."""
     versionStr = "V.V.V"

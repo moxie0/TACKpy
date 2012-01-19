@@ -3,6 +3,7 @@ from struct_parser import *
 from time_funcs import *
 from misc import *
 from pem import *
+from ecdsa_wrappers import *
 
 ################ TACK STRUCTURES ###
 
@@ -37,7 +38,7 @@ class TACK_Pin:
         p = Parser(b)
         self.type = p.getInt(1)
         if self.type != TACK_Pin_Type.v1:
-            raise SyntaxError()
+            raise SyntaxError("Bad pin.type")
         self.key = p.getBytes(64)
         self.label = p.getBytes(8)
         assert(p.index == len(b)) # did we fully consume bytearray?
@@ -113,7 +114,7 @@ class TACK_Sig:
         p = Parser(b)
         self.type = p.getInt(1)
         if self.type not in TACK_Sig_Type.all:
-            raise SyntaxError()
+            raise SyntaxError("Bad sig.type")
         self.expiration = p.getInt(4)
         self.generation = p.getInt(1)            
         self.target_sha256 = p.getBytes(32)
@@ -185,10 +186,15 @@ class TACK:
                             target_sha256, self.pin, keyFile.sign)
         self.duration = duration
 
+    def verifySignature(self):
+        bytesToVerify = self.pin.write() + self.sig.write()[:-64]
+        return ecdsa256Verify(self.pin.key, bytesToVerify, self.sig.signature)  
+
     def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK.
         
-        Raise a SyntaxError if input is malformed.
+        Raise a SyntaxError if input is malformed, including signature
+        validation failure.
         """        
         b = dePem(s, "TACK")
         assert(len(b) == TACK.length)
@@ -200,6 +206,8 @@ class TACK:
         b = b[TACK_Sig.length : ]
         p = Parser(b)
         self.duration = p.getInt(4)
+        if not self.verifySignature():
+            raise SyntaxError("Signature verification failure")
         assert(p.index == len(b)) # did we fully consume bytearray?
 
     def writePem(self):
@@ -217,15 +225,15 @@ class TACK:
         s =\
 """
 TACK_Pin
----------
+=========
 %s
 TACK_Sig
----------
+=========
 %s""" % \
             (self.pin.writeText(), self.sig.writeText())
         s += \
 """\nDuration
----------
+=========
 duration       = %s\n""" % durationToStr(self.duration)
         return s   
         
@@ -246,12 +254,12 @@ class TACK_Break_Sig:
         self.pin = pin
         self.signature = signature
         
-    def parsePem(self, b):
+    def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK_Break_Sig.
         
         Raise a SyntaxError if input is malformed.
         """        
-        b = dePem(b, "TACK BREAK SIG")
+        b = dePem(s, "TACK BREAK SIG")
         p = Parser(b)
         self.pin = TACK_Pin()
         self.pin.parse(b[ : TACK_Pin.length])

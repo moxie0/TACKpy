@@ -63,9 +63,6 @@ def aes_cbc_decrypt(key, IV, ciphertext):
 
 def aes_cbc_encrypt(key, IV, plaintext):
     cipher = rijndael(key, 16)
-    if len(plaintext) % 16 != 0:
-        # !!! Uh, this is triggering occasionally, probably a bug in my M2Crypto EC priv keys
-        print(len(plaintext), writeBytes(plaintext))
     assert(len(plaintext) % 16 == 0) # no padding
     chainBlock = IV
     ciphertext = bytearray() # not efficient, but doesn't matter here
@@ -85,11 +82,8 @@ class TACK_KeyFileViewer:
         self.public_key = bytearray(64)
         self.mac = bytearray(32)
         
-    def parse(self, b):
-        try:
-            b = dePem(b, "TACK SECRET KEY")
-        except SyntaxError:
-            pass        
+    def parse(self, s):
+        b = dePem(s, "TACK SECRET KEY")
         p = Parser(b)
         self.version = p.getInt(1)
         if self.version != 1:
@@ -137,8 +131,8 @@ class TACK_KeyFile:
         signature = ecdsa256Sign(self.private_key, self.public_key, bytesToSign)
         return signature
 
-    def parsePem(self, b, password):
-        b = dePem(b, "TACK SECRET KEY")
+    def parsePem(self, s, password):
+        b = dePem(s, "TACK SECRET KEY")
         p = Parser(b)
         self.version = p.getInt(1)
         if self.version != 1:

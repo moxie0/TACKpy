@@ -231,45 +231,39 @@ def viewCmd(argv):
     if len(argv) > 1:
         printError("Can only view one object")
     try:
+        # Read both binary (bytearray) and text (str) versions of the input
+        s = open(argv[0], "r").read()
         b = bytearray(open(argv[0], "rb").read())
     except IOError:
         printError("File not found: %s" % argv[0])
-        
-    # Is it a TACK SECRET KEY file?
+
+    fileType = None
     try:
-        kfv = TACK_KeyFileViewer()
-        kfv.parse(b)
-        print(kfv.writeText())
-        return
-    except SyntaxError:
-        pass
-        
-    # Is it a TACK BREAK SIG file?
-    try:
-        t = TACK_Break_Sig()
-        t.parsePem(b)
-        print(t.writeText())
-        return        
-    except SyntaxError:
-        pass
-            
-    # Is it a TACK file?
-    try:
-        t = TACK()
-        t.parsePem(b)
-        print(t.writeText())
-        return        
-    except SyntaxError:
-        pass
-        
-    # Is it an SSL certificate?        
-    try:
-        sslc = SSL_Cert()
-        sslc.parse(b)
-        print(sslc.writeText())
-        return      
-    except SyntaxError:
-        printError("Unrecognized file type")
+        if pemSniff(s, "TACK SECRET KEY"):
+            fileType = "Secret Key"
+            kfv = TACK_KeyFileViewer()
+            kfv.parse(s)
+            print(kfv.writeText())
+        elif pemSniff(s, "TACK"):
+            fileType = "TACK"
+            t = TACK()
+            t.parsePem(s)
+            print(t.writeText())
+        elif pemSniff(s, "TACK BREAK SIG"):
+            fileType = "Break Sig"
+            tbs = TACK_Break_Sig()
+            tbs.parsePem(s)
+            print(tbs.writeText())            
+        else:    
+        # Is it an SSL certificate?        
+            try:
+                sslc = SSL_Cert()
+                sslc.parse(bytearray(b))
+                print(sslc.writeText())
+            except SyntaxError:
+                printError("Unrecognized file type")
+    except SyntaxError, e:
+        printError("Error parsing %s: %s" % (fileType, e))
 
 def printUsage(s=None):
     if m2cryptoLoaded:
