@@ -277,6 +277,8 @@ def viewCmd(argv):
         printError("Error parsing %s: %s" % (fileType, e))
 
 def testCmd(argv):
+    testRijndael()
+    testAES()
     testASN1()
     testCompat()
     print("OK")

@@ -2,6 +2,7 @@ from ecdsa_wrappers import *
 from rijndael import *
 from struct_parser import *
 from pem import *
+from aes_wrappers import *
 
 ################ KEY FILE ###
 
@@ -34,10 +35,10 @@ def xorbytes(s1, s2):
     return bytearray([a^b for a,b in zip(s1,s2)])
 
 # Uses PBKDF2-HMAC-SHA256 to produce a 32-byte key
-def pbkdf2_hmac_sha256(password, salt, iterations):
+def pbkdf2_hmac_sha256(password, salt, iter_count):
     m = salt + bytearray([0,0,0,1])
     result = bytearray(32)
-    for c in range(iterations):
+    for c in range(iter_count):
         m = HMAC_SHA256(bytearray(password, "ascii"), m)
         result = xorbytes(m, result)
     return result
@@ -49,28 +50,7 @@ def deriveKeyFileKeys(password, salt, iter_count):
     encKey = HMAC_SHA256(masterKey, bytearray([1]))
     authKey = HMAC_SHA256(masterKey, bytearray([2]))
     return (encKey, authKey)
-
-def aes_cbc_decrypt(key, IV, ciphertext):
-    cipher = rijndael(key, 16)
-    assert(len(ciphertext) % 16 == 0) # no padding
-    chainBlock = IV
-    plaintext = bytearray() # not efficient, but doesn't matter here
-    for c in range(len(ciphertext)//16):
-        cipherBlock = ciphertext[c*16 : (c*16)+16]
-        plaintext += xorbytes(cipher.decrypt(cipherBlock), chainBlock)
-        chainBlock = cipherBlock
-    return plaintext
-
-def aes_cbc_encrypt(key, IV, plaintext):
-    cipher = rijndael(key, 16)
-    assert(len(plaintext) % 16 == 0) # no padding
-    chainBlock = IV
-    ciphertext = bytearray() # not efficient, but doesn't matter here
-    for c in range(len(plaintext)//16):
-        plainBlock = plaintext[c*16 : (c*16)+16]
-        chainBlock = cipher.encrypt(xorbytes(plainBlock, chainBlock))
-        ciphertext += chainBlock
-    return ciphertext     
+  
 
 class TACK_KeyFileViewer:
     def __init__(self):
@@ -149,8 +129,8 @@ class TACK_KeyFile:
         macData = IV + ciphertext + self.public_key
         calcMac = HMAC_SHA256(authKey, macData)
         if not constTimeCompare(calcMac, mac):
-            return False        
-        plaintext = aes_cbc_decrypt(encKey, IV, ciphertext)
+            return False   
+        plaintext = createAES(encKey, IV).decrypt(ciphertext)     
         self.private_key = plaintext
         return True
     
@@ -159,7 +139,7 @@ class TACK_KeyFile:
         IV = bytearray(os.urandom(16))
         encKey, authKey = deriveKeyFileKeys(password, salt, self.iter_count)
         plaintext = self.private_key
-        ciphertext = aes_cbc_encrypt(encKey, IV, plaintext)
+        ciphertext = createAES(encKey, IV).encrypt(plaintext)
         macData = IV + ciphertext + self.public_key
         mac = HMAC_SHA256(authKey, macData)        
         w = Writer(165)

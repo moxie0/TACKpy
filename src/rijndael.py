@@ -382,10 +382,10 @@ def encrypt(key, block):
 def decrypt(key, block):
     return rijndael(key, len(block)).decrypt(block)
 
-def test():
+def testRijndael():
     def t(kl, bl):
-        b = 'b' * bl
-        r = rijndael('a' * kl, bl)
+        b = bytearray(b'b') * bl
+        r = rijndael(bytearray(b'a') * kl, bl)
         assert r.decrypt(r.encrypt(b)) == b
     t(16, 16)
     t(16, 24)
@@ -396,5 +396,3 @@ def test():
     t(32, 16)
     t(32, 24)
     t(32, 32)
-
-

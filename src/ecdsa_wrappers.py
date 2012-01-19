@@ -3,6 +3,7 @@ from cryptomath import *
 from pem import *
 from asn1 import *
 from misc import *
+from m2crypto import *
 
 ################ ECDSA_WRAPPERS ###
 """The following three "wrapper" functions are used for working with ECDSA:
@@ -29,13 +30,6 @@ convert to/from M2Crypto formats.
 """
 
 import os
-
-try:
-    from M2Crypto import EC, BIO
-    m2cryptoLoaded = True
-
-except ImportError:
-    m2cryptoLoaded = False
     
 if m2cryptoLoaded:
 
