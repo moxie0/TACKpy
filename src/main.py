@@ -96,7 +96,10 @@ values in the correct order.
                 printError("Bad duration: %s" % arg)       
         elif opt == "-e":
             # parseTimeArg will error and exit if arg is malformed
-            expiration = parseTimeArg(arg)
+            try:
+                expiration = parseTimeArg(arg)
+            except SyntaxError as e:
+                printError(e)
         elif opt == "-s":
             if arg == "v1_cert":
                 sigType = TACK_Sig_Type.v1_cert
@@ -280,11 +283,15 @@ def testCmd(argv):
     assert(testNumberTheory() == 1)
     assert(testEllipticCurve() == 1)
     assert(testECDSA() == 1)
+    assert(testECDSAWrappers() == 1)
     assert(testRijndael() == 1)
     assert(testAES() == 1)
     assert(testOsUrandom() == 1)
     assert(testASN1() == 1)
     assert(testCompat() == 1)
+    assert(testTime() == 1)
+    assert(testTACKStructures() == 1)
+    assert(testSSLCert() == 1)
     print("OK")
 
 def printUsage(s=None):

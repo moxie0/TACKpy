@@ -95,7 +95,7 @@ if m2cryptoLoaded:
                             asn1Length(len(asn1R+asn1S)) + asn1R + asn1S
         return asn1ECSigBytes
 
-    def ec256Generate(extraRandBytes=None):
+    def ec256Generate():
         # Generate M2Crypto.EC.EC object
         m2EC = EC.gen_params(EC.NID_X9_62_prime256v1)
         m2EC.gen_key()
@@ -193,3 +193,20 @@ else:
                                 bytesToNumber(signature[32:]))
         return pubkey.verifies(hashNum, sig)
 
+def testECDSAWrappers():
+    print("Testing ECDSA WRAPPERS")
+    privateKey, publicKey = ec256Generate()
+    data = bytearray([0,1,2,3])
+    badData = bytearray([0,1,2,4])
+    signature = ecdsa256Sign(privateKey, publicKey, data)
+    assert(ecdsa256Verify(publicKey, data, signature))
+    assert(not ecdsa256Verify(publicKey, badData, signature)) 
+    if m2cryptoLoaded:
+        # See if M2Crypto can verify Python sigs
+        assert(ecdsa256Verify(publicKey, data, signature))
+        privateKey, publicKey = ec256Generate()
+        signature = ecdsa256Sign(privateKey, publicKey, data)
+        assert(ecdsa256Verify(publicKey, data, signature))
+        assert(not ecdsa256Verify(publicKey, badData, signature)) 
+    return 1
+        

@@ -322,7 +322,7 @@ def testECDSA():
     0xc58d61f88d905293bcd4cd0080bcb1b7f811f2ffa41979f6, \
     0x8804dc7a7c4c7f8b5d437f5156f3312ca7d6de8a0e11867f, \
     True )
-
+  """
   test_point_validity(
     p192, \
     0xcdf56c1aa3d8afc53c521adf3ffb96734a6a630a4a5b5a70, \
@@ -370,6 +370,7 @@ def testECDSA():
     0xe594d4a598046f3598243f50fd2c7bd7d380edb055802253, \
     0x509014c0c4d6b536e3ca750ec09066af39b4c8616a53a923, \
     False )
+  """
 
   #print("Trying signature-verification tests from ECDSAVS.pdf B.2.4:")
   #print("P-192:")
@@ -393,14 +394,14 @@ def testECDSA():
   R = 0x4141bd5d64ea36c5b0bd21ef28c02da216ed9d04522b1e91
   S = 0x159a6aa852bcc579e821b7bb0994c0861fb08280c38daa09
   test_signature_validity( Msg, Qx, Qy, R, S, False )
-
+  
   Msg = 0x16b5f93afd0d02246f662761ed8e0dd9504681ed02a253006eb36736b563097ba39f81c8e1bce7a16c1339e345efabbc6baa3efb0612948ae51103382a8ee8bc448e3ef71e9f6f7a9676694831d7f5dd0db5446f179bcb737d4a526367a447bfe2c857521c7f40b6d7d7e01a180d92431fb0bbd29c04a0c420a57b3ed26ccd8a
   Qx = 0xfd14cdf1607f5efb7b1793037b15bdf4baa6f7c16341ab0b
   Qy = 0x83fa0795cc6c4795b9016dac928fd6bac32f3229a96312c4
   R = 0x8dfdb832951e0167c5d762a473c0416c5c15bc1195667dc1
   S = 0x1720288a2dc13fa1ec78f763f8fe2ff7354a7e6fdde44520
   test_signature_validity( Msg, Qx, Qy, R, S, False )
-
+  """
   Msg = 0x08a2024b61b79d260e3bb43ef15659aec89e5b560199bc82cf7c65c77d39192e03b9a895d766655105edd9188242b91fbde4167f7862d4ddd61e5d4ab55196683d4f13ceb90d87aea6e07eb50a874e33086c4a7cb0273a8e1c4408f4b846bceae1ebaac1b2b2ea851a9b09de322efe34cebe601653efd6ddc876ce8c2f2072fb
   Qx = 0x674f941dc1a1f8b763c9334d726172d527b90ca324db8828
   Qy = 0x65adfa32e8b236cb33a3e84cf59bfb9417ae7e8ede57a7ff
@@ -477,12 +478,12 @@ def testECDSA():
   R = 0x9db679a3dafe48f7ccad122933acfe9da0970b71c94c21c1
   S = 0x984c2db99827576c0a41a5da41e07d8cc768bc82f18c9da9
   test_signature_validity( Msg, Qx, Qy, R, S, False )
-
+  """
   #print("Testing the example code:")
 
   # Building a public/private key pair from the NIST Curve P-192:
 
-  g = generator_192
+  g = generator_256
   n = g.order()
 
   # (random.SystemRandom is supposed to provide

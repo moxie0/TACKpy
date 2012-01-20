@@ -76,6 +76,7 @@ def testCompat():
         pass
 
     assert(isinstance(a2b_base64("0000"), bytearray))
+    assert(a2b_base64("Zm9vYg==") == bytearray(b"foob"))
     
     assert(b2a_hex(bytearray([0x01,0x02,0xcd,0xef])) == "0102cdef")
     assert(b2a_hex(bytearray([0x00])) == "00")

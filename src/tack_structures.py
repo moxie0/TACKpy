@@ -283,3 +283,47 @@ class TACK_Break_Sig:
         s = self.pin.writeText()
         s += "signature      = 0x%s\n" % (writeBytes(self.signature))
         return s
+
+def testTACKStructures():
+    print("Testing TACK STRUCTURES")
+    s = """
+-----BEGIN TACK-----
+AcXtBwiabuCnAgX+5AaL5Bku+yLj48GmWrT2CWwTOVFJOHW9ml2btOkBhgVqpza8
+8Izv6YH/cuUK176UFsKyzB/rmvvBFv9cLwIByHCTAgntbpkfwyc9j+oxfTOcAgQY
+YZc1Sc+m4VWPQR8RIRqj4DewzYA1QnWCBiDwojfe4XY7PeRNPGSlhgdvF9XFe8UB
++gsjLjUkqPJDk0fjDYHwspY2MiwlRITG51j/1vlhKQAAqMA=
+-----END TACK-----"""
+    t = TACK()
+    t.parsePem(s)
+    assert(t.pin.type == TACK_Pin_Type.v1)
+    assert(t.pin.key == a2b_hex("c5ed07089a6ee0a70205fee4068be4192efb22e3e3c1a65ab4f6096c13395149"+
+                       "3875bd9a5d9bb4e90186056aa736bcf08cefe981ff72e50ad7be9416c2b2cc1f"))
+    assert(t.pin.label == a2b_hex("eb9afbc116ff5c2f"))
+    assert(t.sig.type == TACK_Sig_Type.v1_cert)
+    assert(posixTimeToStr(t.sig.expiration*60) == "2026-11-16T01:55Z")
+    assert(t.sig.generation == 2)
+    assert(t.sig.target_sha256 == a2b_hex("09ed6e991fc3273d8fea317d339c0204"+
+                                       "1861973549cfa6e1558f411f11211aa3"))
+    assert(t.sig.signature == a2b_hex("e037b0cd80354275820620f0a237dee1" + 
+                                   "763b3de44d3c64a586076f17d5c57bc5" + 
+                                   "01fa0b232e3524a8f2439347e30d81f0" + 
+                                   "b29636322c254484c6e758ffd6f96129"))
+    s = """
+-----BEGIN TACK BREAK SIG-----
+AcXtBwiabuCnAgX+5AaL5Bku+yLj48GmWrT2CWwTOVFJOHW9ml2btOkBhgVqpza8
+8Izv6YH/cuUK176UFsKyzB+4EWiVTg109+XeXctHNIYr6ZsqM7MHR+ClMWYnM0De
+Nv4iPe0BhWHNV9x7KBMC+cE8pcGohrTXxiVTGjAO32k4vGQst4VQSgk=
+-----END TACK BREAK SIG-----"""
+    tbs = TACK_Break_Sig()
+    tbs.parsePem(s)
+    assert(tbs.pin.type == TACK_Pin_Type.v1)
+    assert(tbs.pin.key == a2b_hex("c5ed07089a6ee0a70205fee4068be419"+
+                       "2efb22e3e3c1a65ab4f6096c13395149"+
+                       "3875bd9a5d9bb4e90186056aa736bcf0"+
+                       "8cefe981ff72e50ad7be9416c2b2cc1f"))
+    assert(tbs.pin.label == a2b_hex("b81168954e0d74f7"))
+    assert(tbs.signature == a2b_hex("e5de5dcb4734862be99b2a33b30747e0"+
+                       "a53166273340de36fe223ded018561cd"+
+                       "57dc7b281302f9c13ca5c1a886b4d7c6"+
+                       "25531a300edf6938bc642cb785504a09"))
+    return 1

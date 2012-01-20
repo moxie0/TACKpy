@@ -1,5 +1,4 @@
 from compat import *
-from misc import *
 
 ################ TIME FUNCS ###
 
@@ -48,14 +47,14 @@ def parseTimeArg(arg):
             pass
     if not t:
         s = posixTimeToStr(time.time())
-        printError(\
+        raise SyntaxError(\
 '''Invalid time format, use e.g. "%s" (current time)
 or some prefix, such as: "%sZ", "%sZ", or "%sZ",
 *OR* some duration, such as "5m", "30d", "1d12h5m", etc."''' % 
             (s, s[:13], s[:10], s[:4]))    
     u = int(calendar.timegm(t)//60)
     if u < 0:
-        printError("Time too early, epoch starts at 1970.")
+        raise SyntaxError("Time too early, epoch starts at 1970.")
     return u
 
 def parseDurationArg(arg):
@@ -86,11 +85,6 @@ def parseDurationArg(arg):
             return mins
     except:
         raise SyntaxError()
-        
-
-def getDateStr():
-    now = datetime.datetime.now()
-    return now.strftime("%Y-%m-%d") 
 
 # Return UNIX time int
 def parseASN1UTCTime(b):
@@ -117,4 +111,38 @@ def parseASN1GeneralizedTime(b):
     t = time.strptime(bytesToStrAscii(b), "%Y%m%d%H%M%SZ")
     return int(calendar.timegm(t))
     
+def testTime():
+    print("Testing TIME FUNCS")
+    assert(posixTimeToStr(1234567890, True) == "2009-02-13T23:31:30Z")
+    assert(posixTimeToStr(1234567890) == "2009-02-13T23:31Z")
+    assert(durationToStr(0) == "0m")
+    assert(durationToStr(59) == "59m")
+    assert(durationToStr(60) == "1h")
+    assert(durationToStr(61) == "1h1m")
+    assert(durationToStr(1439) == "23h59m")
+    assert(durationToStr(1440) == "1d")
+    assert(durationToStr(1441) == "1d1m")
+    assert(durationToStr(1500) == "1d1h")
+    assert(durationToStr(1501) == "1d1h1m")
+    assert(durationToStr(1440*37+122) == "37d2h2m")
+    
+    assert(0 == parseDurationArg("0m"))
+    assert(59 == parseDurationArg("59m"))
+    assert(60 == parseDurationArg("1h"))
+    assert(61 == parseDurationArg("1h1m"))
+    assert(1439 == parseDurationArg("23h59m"))
+    assert(1440 == parseDurationArg("1d"))
+    assert(1441 == parseDurationArg("1d1m"))
+    assert(1500 == parseDurationArg("1d1h"))
+    assert(1501 == parseDurationArg("1d1h1m"))
+    assert(1440*37+122 == parseDurationArg("37d2h2m"))
+    
+    assert(parseTimeArg("2012-07-20T05:40Z")*60 == 1342762800)
+    assert(parseTimeArg("2012-07-20T05Z")*60 == 1342760400)
+    assert(parseTimeArg("2012-07-20Z")*60 == 1342742400)
+    assert(parseTimeArg("2012-07Z")*60 == 1341100800)
+    assert(parseTimeArg("2012Z")*60 == 1325376000)
+    # !!! Add tests for ASN1 times
+    
+    return 1
 
