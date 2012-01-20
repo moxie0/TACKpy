@@ -30,6 +30,24 @@ convert to/from M2Crypto formats.
 """
 
 import os
+
+def ec256Generate():
+    if m2cryptoLoaded:
+        return m2crypto_ec256Generate()
+    else:
+        return python_ec256Generate()
+
+def ecdsa256Sign(privateKey, publicKey, dataToSign):
+    if m2cryptoLoaded:
+        return m2crypto_ecdsa256Sign(privateKey, publicKey, dataToSign)
+    else:
+        return python_ecdsa256Sign(privateKey, publicKey, dataToSign) 
+        
+def ecdsa256Verify(publicKey, dataToVerify, signature):
+    if m2cryptoLoaded:
+        return m2crypto_ecdsa256Verify(publicKey, dataToVerify, signature)
+    else:
+        return python_ecdsa256Verify(publicKey, dataToVerify, signature) 
     
 if m2cryptoLoaded:
 
@@ -95,7 +113,7 @@ if m2cryptoLoaded:
                             asn1Length(len(asn1R+asn1S)) + asn1R + asn1S
         return asn1ECSigBytes
 
-    def ec256Generate():
+    def m2crypto_ec256Generate():
         # Generate M2Crypto.EC.EC object
         m2EC = EC.gen_params(EC.NID_X9_62_prime256v1)
         m2EC.gen_key()
@@ -108,7 +126,7 @@ if m2cryptoLoaded:
         (privateKey, publicKey) = _parseECPrivateKey(pemPrivKeyBytes)
         return (privateKey, publicKey)
 
-    def ecdsa256Sign(privateKey, publicKey, dataToSign):        
+    def m2crypto_ecdsa256Sign(privateKey, publicKey, dataToSign):        
         # Write the passed-in private key byte array into PEM form
         # Then create M2Crypto EC object from ASN.1 form        
         pemPrivKeyBytes = _writeECPrivateKey(privateKey, publicKey)
@@ -124,7 +142,7 @@ if m2cryptoLoaded:
         assert(ecdsa256Verify(publicKey, dataToSign, sigBytes))
         return sigBytes 
         
-    def ecdsa256Verify(publicKey, dataToVerify, signature):
+    def m2crypto_ecdsa256Verify(publicKey, dataToVerify, signature):
         # Write the passed-in public key byte array into PEM form
         # Then create M2Crypto EC_pub
         pemPubKeyBytes = _writeECPublicKey(publicKey)        
@@ -135,78 +153,78 @@ if m2cryptoLoaded:
         hash = SHA256(dataToVerify)  
         return m2ECpub.verify_dsa_asn1(hash, asn1SigBytes)
 
-else:
 
-    def ec256Generate(extraRandBytes=None):
-        # ECDSA key generation per FIPS 186-3 B.4.1
-        # (except we use 32 extra random bytes instead of 8 before reduction)
-        # Random bytes taken from /dev/urandom as well as any extraRandBytes
-        # REVIEW THIS CAREFULLY!  CHANGE AT YOUR PERIL!
-        randBytes0 = bytearray(os.urandom(64))
-        if extraRandBytes:
-            randBytes0 += bytearray(extraRandBytes)
-        randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
-        randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))
-        c = bytesToNumber(randBytes) 
-        n = generator_256.order()
-        d = (c % (n-1))+1        
-        privateKey = numberToBytes(d, 32)
-        publicKeyPoint = generator_256 * d        
-        publicKey = numberToBytes(publicKeyPoint.x(), 32) + \
-                    numberToBytes(publicKeyPoint.y(), 32)
-        return (privateKey, publicKey)
+# Always load the python functions, even if m2crypto loaded:
 
-    def ecdsa256Sign(privateKey, publicKey, dataToSign):
-        privateKeyNum = bytesToNumber(privateKey)
-        hash = SHA256(dataToSign)
-        g = generator_256
-        n = g.order()
-        x = bytesToNumber(publicKey[:32])
-        y = bytesToNumber(publicKey[32:])        
-        pubkey = Public_key(g, Point(g.curve(), x,y))    
-        privkey = Private_key(pubkey, privateKeyNum)    
+def python_ec256Generate(extraRandBytes=None):
+    # ECDSA key generation per FIPS 186-3 B.4.1
+    # (except we use 32 extra random bytes instead of 8 before reduction)
+    # Random bytes taken from /dev/urandom as well as any extraRandBytes
+    # REVIEW THIS CAREFULLY!  CHANGE AT YOUR PERIL!
+    randBytes0 = bytearray(os.urandom(64))
+    if extraRandBytes:
+        randBytes0 += bytearray(extraRandBytes)
+    randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
+    randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))
+    c = bytesToNumber(randBytes) 
+    n = generator_256.order()
+    d = (c % (n-1))+1        
+    privateKey = numberToBytes(d, 32)
+    publicKeyPoint = generator_256 * d        
+    publicKey = numberToBytes(publicKeyPoint.x(), 32) + \
+                numberToBytes(publicKeyPoint.y(), 32)
+    return (privateKey, publicKey)
 
-        # Generating random nonce k per FIPS 186-3 B.5.1:
-        # (except we use 32 extra bytes instead of 8 before reduction)
-        # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
-        # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
-        randBytes0 = bytearray(os.urandom(64))
-        randBytes0+= HMAC_SHA256(privateKey, hash)
-        randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
-        randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))                       
-        c = bytesToNumber(randBytes) 
-        k = (c % (n-1))+1                
-        hashNum = bytesToNumber(hash)
-        sig = privkey.sign(hashNum, k)
-        signature = numberToBytes(sig.r, 32) + numberToBytes(sig.s, 32)
-        # Double-check value before returning
-        assert(ecdsa256Verify(publicKey, dataToSign, signature))
-        return signature
+def python_ecdsa256Sign(privateKey, publicKey, dataToSign):
+    privateKeyNum = bytesToNumber(privateKey)
+    hash = SHA256(dataToSign)
+    g = generator_256
+    n = g.order()
+    x = bytesToNumber(publicKey[:32])
+    y = bytesToNumber(publicKey[32:])        
+    pubkey = Public_key(g, Point(g.curve(), x,y))    
+    privkey = Private_key(pubkey, privateKeyNum)    
 
-    def ecdsa256Verify(publicKey, dataToVerify, signature):
-        hashNum = bytesToNumber(SHA256(dataToVerify))
-        g = generator_256  
-        x = bytesToNumber(publicKey[:32])
-        y = bytesToNumber(publicKey[32:])        
-        pubkey = Public_key(g, Point(g.curve(), x,y))
-        sig = Signature(bytesToNumber(signature[:32]), 
-                                bytesToNumber(signature[32:]))
-        return pubkey.verifies(hashNum, sig)
+    # Generating random nonce k per FIPS 186-3 B.5.1:
+    # (except we use 32 extra bytes instead of 8 before reduction)
+    # Random bytes taken from /dev/urandom as well as HMAC(privkey,hash)
+    # REVIEW THIS CAREFULLY!!!  CHANGE AT YOUR PERIL!!!
+    randBytes0 = bytearray(os.urandom(64))
+    randBytes0+= HMAC_SHA256(privateKey, hash)
+    randBytes = HMAC_SHA256(randBytes0, bytearray([1]))
+    randBytes+= HMAC_SHA256(randBytes0, bytearray([2]))                       
+    c = bytesToNumber(randBytes) 
+    k = (c % (n-1))+1                
+    hashNum = bytesToNumber(hash)
+    sig = privkey.sign(hashNum, k)
+    signature = numberToBytes(sig.r, 32) + numberToBytes(sig.s, 32)
+    # Double-check value before returning
+    assert(ecdsa256Verify(publicKey, dataToSign, signature))
+    return signature
+
+def python_ecdsa256Verify(publicKey, dataToVerify, signature):
+    hashNum = bytesToNumber(SHA256(dataToVerify))
+    g = generator_256  
+    x = bytesToNumber(publicKey[:32])
+    y = bytesToNumber(publicKey[32:])        
+    pubkey = Public_key(g, Point(g.curve(), x,y))
+    sig = Signature(bytesToNumber(signature[:32]), 
+                            bytesToNumber(signature[32:]))
+    return pubkey.verifies(hashNum, sig)
 
 def testECDSAWrappers():
     print("Testing ECDSA WRAPPERS")
-    privateKey, publicKey = ec256Generate()
+    privateKey, publicKey = python_ec256Generate()
     data = bytearray([0,1,2,3])
     badData = bytearray([0,1,2,4])
-    signature = ecdsa256Sign(privateKey, publicKey, data)
-    assert(ecdsa256Verify(publicKey, data, signature))
-    assert(not ecdsa256Verify(publicKey, badData, signature)) 
+    signature = python_ecdsa256Sign(privateKey, publicKey, data)
+    assert(python_ecdsa256Verify(publicKey, data, signature))
+    assert(not python_ecdsa256Verify(publicKey, badData, signature)) 
     if m2cryptoLoaded:
-        # See if M2Crypto can verify Python sigs
-        assert(ecdsa256Verify(publicKey, data, signature))
-        privateKey, publicKey = ec256Generate()
-        signature = ecdsa256Sign(privateKey, publicKey, data)
-        assert(ecdsa256Verify(publicKey, data, signature))
-        assert(not ecdsa256Verify(publicKey, badData, signature)) 
+        # See if M2Crypto can verify Python sig
+        assert(m2crypto_ecdsa256Verify(publicKey, data, signature))
+        privateKey, publicKey = m2crypto_ec256Generate()
+        signature = m2crypto_ecdsa256Sign(privateKey, publicKey, data)
+        assert(m2crypto_ecdsa256Verify(publicKey, data, signature))
+        assert(not m2crypto_ecdsa256Verify(publicKey, badData, signature)) 
     return 1
-        
