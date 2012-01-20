@@ -292,6 +292,7 @@ def testCmd(argv):
     assert(testTime() == 1)
     assert(testTACKStructures() == 1)
     assert(testSSLCert() == 1)
+    assert(testKeyFile() == 1)
     print("OK")
 
 def printUsage(s=None):

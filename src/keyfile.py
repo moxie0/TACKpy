@@ -154,3 +154,27 @@ class TACK_KeyFile:
         b = pem(w.bytes, "TACK SECRET KEY")
         return b
 
+def testKeyFile():
+    print("Testing KEY FILE")
+    s = """
+-----BEGIN TACK SECRET KEY-----
+AQAAIAANLO3iLVTKinPS0vjiOWrKlRJs3h3suyLP0LlG4QuO7KCmbgylHWOh/xTl
+nUDNyuz7AI+cv7g9xRxTzovH+2B3ymX9NZy5NCTNIDwbTnclV6Oqt/CqQqiQQX/J
+aph9H6ECKAUddiSQsFAzVx321FScrXnjOheLQSMkpkhA5C3J+eAbqczO7JITVgUP
+RnFe/FSmrtFC6wC5udfQQT5PNfOw
+-----END TACK SECRET KEY-----"""
+    publicKey = a2b_hex("ca65fd359cb93424cd203c1b4e772557"+
+                       "a3aab7f0aa42a890417fc96a987d1fa1"
+                       "0228051d762490b05033571df6d4549c"
+                       "ad79e33a178b412324a64840e42dc9f9")
+    privateKey = a2b_hex("73e6ea5e33e4e591e1e4032bf8300e4c" +
+                         "10d4e452506d5c35894625325bcc155e")
+    kf = TACK_KeyFile()
+    assert(kf.parsePem(s, "asdf"))
+    assert(kf.public_key == publicKey)
+    assert(kf.private_key == privateKey)
+    kf2 = TACK_KeyFile()
+    assert(kf2.parsePem(kf.writePem("cdef"), "cdef"))    
+    assert(kf.public_key == publicKey)
+    assert(kf.private_key == privateKey)
+    return 1

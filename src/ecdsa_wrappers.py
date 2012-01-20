@@ -22,7 +22,7 @@ pure Python versions based on Peter Pearson's code (see the
 NUMBERTHEORY, ELLIPTICCURVE, and ECDSA sections for pure Python).
 
 The M2Crypto/OpenSSL versions are loaded and used if present, otherwise 
-the pure Python versions are loaded.
+the pure Python versions are used.
 
 Because M2Crypto operates on ASN.1-encoded signatures, and traditional OpenSSL
 PEM-encoded public and private keys, there is a fair bit of data munging to
