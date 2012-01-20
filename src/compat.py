@@ -60,6 +60,7 @@ else:
 
 
 def testCompat():
+    print("Testing COMPAT")    
     assert(isinstance(a2b_hex("00"), bytearray))
     assert(a2b_hex("0102cdef") == bytearray([0x01,0x02,0xcd,0xef]))
     assert(a2b_hex("0102CDEF") == bytearray([0x01,0x02,0xcd,0xef]))
@@ -85,4 +86,5 @@ def testCompat():
     assert(b2a_base64(bytearray(b"foobar")) == "Zm9vYmFy\n")
 
     assert(bytesToStrAscii(bytearray(b"abcd123")) == "abcd123") 
+    return 1
     

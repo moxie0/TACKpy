@@ -11,6 +11,8 @@ fnames = [\
 "src/time_funcs.py",
 "src/asn1.py",
 "src/pem.py",
+"src/m2crypto.py",
+"src/aes_wrappers.py",
 "src/ecdsa_wrappers.py",
 "src/struct_parser.py",
 "src/constants.py",
@@ -29,5 +31,7 @@ for fname in fnames:
     i = s2.find("################ ")
     assert(i != -1)
     s2 = s2[i:]
+    if s2[-1] != "\n":
+        s2 += "\n"
     s += s2
 print s

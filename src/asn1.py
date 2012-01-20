@@ -119,6 +119,7 @@ class ASN1Parser:
         
 
 def testASN1():
+    print("Testing ASN1")
     assert(asn1Length(7) == bytearray([7]))
     assert(asn1Length(0x7F) == bytearray([0x7F]))
     assert(asn1Length(0x80) == bytearray([0x81,0x80]))
@@ -145,7 +146,7 @@ def testASN1():
     assert(bytearray([0,0xFF]) == fromAsn1IntBytes(bytearray([0,0xFF]),2))
     assert(bytearray([0,0,0,0xFF]) == fromAsn1IntBytes(bytearray([0,0xFF]),4))
     assert(bytearray([0,0,0,1,1]) == fromAsn1IntBytes(bytearray([1,1]),5))
-    
     #!!! Add testing for ASN1Parser
+    return 1
     
     

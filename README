@@ -5,11 +5,11 @@ Installation
 The "TACK" file is a Python script.  It requires Python 2.7 or greater.
 
 Copy the file somewhere on your PATH, then test it via "TACK test".  If 
-you are having problems, try invoking it via "python TACK test".
+you are having problems, try "python TACK test".
 
-If you have M2Crypto installed, TACK-tool will use it to access OpenSSL 
-for elliptic curve and AES operations.  Otherwise, TACK-tool will use 
-its internal Python implementations.
+If you have M2Crypto installed, TACK-tool will use it for elliptic curve
+and AES operations.  Otherwise, TACK-tool will use its own Python 
+implementations.
 
 
 Quick start 

@@ -383,6 +383,7 @@ def decrypt(key, block):
     return rijndael(key, len(block)).decrypt(block)
 
 def testRijndael():
+    print("Testing RIJNDAEL")    
     def t(kl, bl):
         b = bytearray(b'b') * bl
         r = rijndael(bytearray(b'a') * kl, bl)
@@ -396,3 +397,4 @@ def testRijndael():
     t(32, 16)
     t(32, 24)
     t(32, 32)
+    return 1

@@ -277,10 +277,14 @@ def viewCmd(argv):
         printError("Error parsing %s: %s" % (fileType, e))
 
 def testCmd(argv):
-    testRijndael()
-    testAES()
-    testASN1()
-    testCompat()
+    assert(testNumberTheory() == 1)
+    assert(testEllipticCurve() == 1)
+    assert(testECDSA() == 1)
+    assert(testRijndael() == 1)
+    assert(testAES() == 1)
+    assert(testOsUrandom() == 1)
+    assert(testASN1() == 1)
+    assert(testCompat() == 1)
     print("OK")
 
 def printUsage(s=None):

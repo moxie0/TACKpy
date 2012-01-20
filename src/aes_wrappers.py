@@ -140,6 +140,7 @@ class Python_AES(AES):
         return plaintextBytes
 
 def testAES():
+    print("Testing AES WRAPPERS")    
     key = a2b_hex("c286696d887c9aa0611bbb3e2025a45a")
     IV = a2b_hex("562e17996d093d28ddb3ba695a2e6f58")
     plaintext = a2b_hex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
@@ -153,4 +154,5 @@ def testAES():
         assert(isinstance(OpenSSL_AES(key, IV).decrypt(ciphertext), bytearray))        
         assert(OpenSSL_AES(key, IV).encrypt(plaintext) == ciphertext)
         assert(OpenSSL_AES(key, IV).decrypt(ciphertext) == plaintext)
-    assert(createAES(key, IV).encrypt(plaintext) == ciphertext)    
+    assert(createAES(key, IV).encrypt(plaintext) == ciphertext) 
+    return 1   

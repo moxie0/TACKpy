@@ -73,14 +73,14 @@ class Point( object ):
     if self.__curve: assert self.__curve.contains_point( x, y )
     if order: assert self * order == INFINITY
  
-  def __cmp__( self, other ):
+  def __eq__( self, other ):
     """Return 0 if the points are identical, 1 otherwise."""
     if self.__curve == other.__curve \
        and self.__x == other.__x \
        and self.__y == other.__y:
-      return 0
-    else:
       return 1
+    else:
+      return 0
 
   def __add__( self, other ):
     """Add one point to another point."""
@@ -178,5 +178,97 @@ class Point( object ):
 # This one point is the Point At Infinity for all purposes:
 INFINITY = Point( None, None, None )  
 
+def testEllipticCurve():
 
+  print("Testing ELLIPTIC CURVE")
 
+  def test_add( c, x1, y1, x2,  y2, x3, y3 ):
+    """We expect that on curve c, (x1,y1) + (x2, y2 ) = (x3, y3)."""
+    p1 = Point( c, x1, y1 )
+    p2 = Point( c, x2, y2 )
+    p3 = p1 + p2
+    #print "%s + %s = %s" % ( p1, p2, p3 ),
+    if p3.x() != x3 or p3.y() != y3:
+      print(" Failure: should give (%d,%d)." % ( x3, y3 ))
+      assert()
+
+  def test_double( c, x1, y1, x3, y3 ):
+    """We expect that on curve c, 2*(x1,y1) = (x3, y3)."""
+    p1 = Point( c, x1, y1 )
+    p3 = p1.double()
+    #print "%s doubled = %s" % ( p1, p3 ),
+    if p3.x() != x3 or p3.y() != y3:
+      print(" Failure: should give (%d,%d)." % ( x3, y3 ))
+      assert()
+      
+  def test_multiply( c, x1, y1, m, x3, y3 ):
+    """We expect that on curve c, m*(x1,y1) = (x3,y3)."""
+    p1 = Point( c, x1, y1 )
+    p3 = p1 * m
+    #print "%s * %d = %s" % ( p1, m, p3 ),
+    if p3.x() != x3 or p3.y() != y3:
+      print(" Failure: should give (%d,%d)." % ( x3, y3 ))
+      assert()
+
+  # A few tests from X9.62 B.3:
+
+  c = CurveFp( 23, 1, 1 )
+  test_add( c, 3, 10, 9, 7, 17, 20 )
+  test_double( c, 3, 10, 7, 12 )
+  test_add( c, 3, 10, 3, 10, 7, 12 )	# (Should just invoke double.)
+  test_multiply( c, 3, 10, 2, 7, 12 )
+
+  # From X9.62 I.1 (p. 96):
+
+  g = Point( c, 13, 7, 7 )
+
+  check = INFINITY
+  for i in range( 7 + 1 ):
+    p = ( i % 7 ) * g
+    #print("%s * %d = %s, expected %s . . ." % ( g, i, p, check ))
+    if p == check:
+      #print(" Good.")
+      pass
+    else:
+      print(p.x(), p.y())
+      #print(check.x(), check.y())        
+      #print(" Bad. %s %s %s %s" % (p, check, type(p), type(check)))
+      assert()
+    check = check + g
+
+  # NIST Curve P-192:
+  p = 6277101735386680763835789423207666416083908700390324961279
+  r = 6277101735386680763835789423176059013767194773182842284081
+  s = 0x3045ae6fc8422f64ed579528d38120eae12196d5
+  c = 0x3099d2bbbfcb2538542dcd5fb078b6ef5f3d6fe2c745de65
+  b = 0x64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1
+  Gx = 0x188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012
+  Gy = 0x07192b95ffc8da78631011ed6b24cdd573f977a11e794811
+
+  c192 = CurveFp( p, -3, b )
+  p192 = Point( c192, Gx, Gy, r )
+
+  # Checking against some sample computations presented
+  # in X9.62:
+
+  d = 651056770906015076056810763456358567190100156695615665659
+  Q = d * p192
+  if Q.x() != 0x62B12D60690CDCF330BABAB6E69763B471F994DD702D16A5:
+    print("p192 * d came out wrong.")
+    assert()
+
+  k = 6140507067065001063065065565667405560006161556565665656654
+  R = k * p192
+  if R.x() != 0x885052380FF147B734C330C43D39B2C4A89F29B0F749FEAD \
+     or R.y() != 0x9CF9FA1CBEFEFB917747A3BB29C072B9289C2547884FD835:
+    print("k * p192 came out wrong.")
+    assert()
+
+  u1 = 2563697409189434185194736134579731015366492496392189760599
+  u2 = 6266643813348617967186477710235785849136406323338782220568
+  temp = u1 * p192 + u2 * Q
+  if temp.x() != 0x885052380FF147B734C330C43D39B2C4A89F29B0F749FEAD \
+     or temp.y() != 0x9CF9FA1CBEFEFB917747A3BB29C072B9289C2547884FD835:
+    print("u1 * p192 + u2 * Q came out wrong.")
+    assert()
+  return 1

@@ -1,7 +1,7 @@
 
 VERSION := 0.9.2
-VERSION_INSERT := sed -e 's/V.V.V/$(version)/g'
-RELDIR := TACK-tool-$(version)
+VERSION_INSERT := sed -e 's/V.V.V/$(VERSION)/g'
+RELDIR := TACK-tool-$(VERSION)
 TESTDIR = test
 PYTHON = python
 
@@ -18,7 +18,7 @@ release:
 	mkdir $(RELDIR)
 	./make_release.py | $(VERSION_INSERT) > $(RELDIR)/TACK
 	chmod +x $(RELDIR)/TACK
-	$(version_insert) README > $(RELDIR)/README
+	$(VERSION_INSERT) README > $(RELDIR)/README
 	tar czvf $(RELDIR).tar.gz $(RELDIR)
 
 EXEC = $(PYTHON) src/main.py

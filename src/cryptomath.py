@@ -74,3 +74,11 @@ def constTimeCompare(a, b):
         return False
     return True
 
+    import zlib
+
+def testOsUrandom():
+    import zlib, os
+    print("Testing OS_URANDOM")
+    length = len(zlib.compress(os.urandom(1000)))
+    assert(length > 900)
+    return 1
