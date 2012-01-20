@@ -1,3 +1,4 @@
+from misc import *
 from pem import *
 from asn1 import *
 from time_funcs import *
@@ -107,4 +108,5 @@ H4yTGzfDv+JLIICAIcCs
     assert(sslc.key_sha256 == a2b_hex("ffd30bcb84dbbc211a510875694354c58863d84fb7fc5853dfe36f4be2eb2e50"))
     assert(sslc.cert_sha256 == a2b_hex("1a50e3de3a153f33b314b67c1aacc2f59fc99c49b8449c33dcc3665663e2bff1"))
     assert(posixTimeToStr(sslc.notAfter, True) == "2012-07-08T00:19:57Z")
+    assert(isinstance(sslc.writeText(), str))
     return 1        

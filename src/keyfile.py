@@ -102,9 +102,9 @@ class TACK_KeyFile:
         self.public_key = bytearray(64)
         self.iter_count = 0
         
-    def create(self, extraRandBytes=None):
+    def create(self):
         self.version = 1
-        self.private_key, self.public_key = ec256Generate(extraRandBytes)
+        self.private_key, self.public_key = ec256Generate()
         self.iter_count = 8192
 
     def sign(self, bytesToSign):
@@ -177,4 +177,9 @@ RnFe/FSmrtFC6wC5udfQQT5PNfOw
     assert(kf2.parsePem(kf.writePem("cdef"), "cdef"))    
     assert(kf.public_key == publicKey)
     assert(kf.private_key == privateKey)
+    kf3 = TACK_KeyFile()
+    kf3.create()
+    kf4 = TACK_KeyFile()
+    assert(kf4.parsePem(kf3.writePem("123"), "123"))
+    assert(kf3.public_key == kf4.public_key)
     return 1
