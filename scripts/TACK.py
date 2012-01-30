@@ -1,18 +1,5 @@
 #! /usr/bin/env python
 
-
-#from misc import *
-#from compat import *
-#from time_funcs import *
-#from pem import *
-#from constants import *
-#from tack_structures import *
-#from ssl_cert import *
-#from keyfile import *
-#from version import __version__
-
-import time, math
-
 from TACKpy import TACK, TACK_Break_Sig, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
@@ -20,10 +7,14 @@ from TACKpy import TACK, TACK_Break_Sig, \
     posixTimeToStr, selfTest, pemSniff, \
     parseDurationArg, parseTimeArg
 
-
 ################ MAIN ###
 
-import sys, getpass, getopt
+import time, math, sys, getpass, getopt
+
+def printError(s):
+    """Print error message and exit"""
+    sys.stderr.write("ERROR: %s\n" % s)
+    sys.exit(-1)
 
 def handleArgs(argv, argString, mandatoryString=""):
     """Helper function for handling cmdline args.
@@ -182,7 +173,7 @@ def addPemComments(inStr):
     """Add pre-PEM metadata/comments to PEM strings."""
     versionStr = __version__
     timeStr = posixTimeToStr(time.time(), True)
-    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % \
+    outStr = "Created by TACK.py %s\nCreated at %s\n%s" % \
                 (versionStr, timeStr, inStr)
     return outStr
     

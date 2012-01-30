@@ -3,13 +3,6 @@ from compat import *
 
 ################ MISC ###
 
-import sys
-
-def printError(s):
-    """Print error message and exit"""
-    sys.stderr.write("ERROR: %s\n" % s)
-    sys.exit(-1)
-
 # Helper function used by structures to print out their binary elements
 def writeBytes(b):
     """Write hex-encoded byte array with 16 bytes (32 chars) per line"""
