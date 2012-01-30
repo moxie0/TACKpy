@@ -4,7 +4,7 @@ default:
 	@echo To install TACKpy run \"setup.py install\"
 
 VERSION := 0.9.2
-TOOLDIR := selfcontained
+SCDIR := selfcontained
 
 # Variables for testing
 TESTDIR = test
@@ -15,19 +15,18 @@ CERT2 = ~/godaddy/gd2.der
 
 .PHONY : clean
 clean:
-	rm -rf $(TOOLDIR)
-	rm -rf $(TESTDIR)
-	rm -rf dist
 	rm -f src/*.pyc
-	rm -rf TACK-tool-*/	
-	rm -f TACK-tool-*.tar.gz
+	rm -rf $(SCDIR)
+	rm -rf $(TESTDIR)
+	rm -rf build
+	rm -rf dist
 
 .PHONY: selfcontained
 selfcontained:
-	rm -rf $(TOOLDIR)
-	mkdir $(TOOLDIR)
-	./make_selfcontained.py > $(TOOLDIR)/TACK.py
-	chmod +x $(TOOLDIR)/TACK.py
+	rm -rf $(SCDIR)
+	mkdir $(SCDIR)
+	./make_selfcontained.py > $(SCDIR)/TACK.py
+	chmod +x $(SCDIR)/TACK.py
 
 dist:
 	./setup.py sdist

@@ -300,7 +300,7 @@ def printUsage(s=None):
         crypto = "Python crypto"        
     if s:
         print("ERROR: %s" % s)
-    print("""\nTACK-tool version %s (using %s)  
+    print("""\nTACK.py version %s (using %s)  
 
 Commands (use "help <command>" to see optional args):
   genkey

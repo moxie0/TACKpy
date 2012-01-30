@@ -1,4 +1,4 @@
-TACK-tool version 0.9.2
+TACK-tool version 0.9.3
 
 Installation
 =============
@@ -9,8 +9,7 @@ Run "python setup.py install".  This installs:
  - The "TACK.py" command for working with TACKs (see below).
 
 If you want to run TACK.py without installing TACKpy you can run "make
-selfcontained" which makes a self-contained version of "TACK.py" in the
-"selfcontained" directory.
+selfcontained" and then use "selfcontained/TACK.py".
 
 If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
 operations. Otherwise, TACKpy will use its own Python implementations.
