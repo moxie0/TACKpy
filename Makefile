@@ -1,4 +1,8 @@
 
+.PHONY : default
+default:
+	@echo To install TACKpy run \"setup.py install\"
+
 VERSION := 0.9.2
 TOOLDIR := TACK-tool-$(VERSION)
 
@@ -13,6 +17,7 @@ CERT2 = ~/godaddy/gd2.der
 clean:
 	rm -rf $(TOOLDIR)
 	rm -rf $(TESTDIR)
+	rm -rf dist
 	rm -f src/*.pyc
 	rm -rf TACK-tool-*/	
 	rm -f TACK-tool-*.tar.gz
@@ -25,6 +30,8 @@ tool:
 	cp README $(TOOLDIR)/README
 	tar czvf $(TOOLDIR).tar.gz $(TOOLDIR)
 
+dist:
+	./setup.py sdist
 
 .PHONY: test
 test:
