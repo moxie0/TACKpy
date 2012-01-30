@@ -1,6 +1,6 @@
 
-from struct_parser import *
-from cryptomath import *
+from .struct_parser import *
+from .cryptomath import *
 
 ################ ASN1 ###
 def asn1Length(x):

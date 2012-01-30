@@ -1,8 +1,8 @@
-from misc import *
-from pem import *
-from asn1 import *
-from time_funcs import *
-from cryptomath import *
+from .misc import *
+from .pem import *
+from .asn1 import *
+from .time_funcs import *
+from .cryptomath import *
 
 ################ SSL CERT ###
 

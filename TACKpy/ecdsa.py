@@ -1,5 +1,5 @@
-from numbertheory import *
-from ellipticcurve import *
+from .numbertheory import *
+from .ellipticcurve import *
 
 ################ ECDSA ###
 #! /usr/bin/env python

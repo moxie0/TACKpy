@@ -1,5 +1,5 @@
 
-from compat import *
+from .compat import *
 
 ################ MISC ###
 

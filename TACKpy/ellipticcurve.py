@@ -1,5 +1,5 @@
 
-from numbertheory import *
+from .numbertheory import *
 
 ################ ELLIPTIC CURVE ###
 

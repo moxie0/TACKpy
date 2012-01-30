@@ -1,18 +1,18 @@
 
-from numbertheory import testNumberTheory
-from ellipticcurve import testEllipticCurve
-from ecdsa import testECDSA
-from ecdsa_wrappers import testECDSAWrappers
-from rijndael import testRijndael
-from aes_wrappers import testAES
-from cryptomath import testOsUrandom
-from compat import testCompat
-from asn1 import testASN1
-from time_funcs import testTime
-from tack_structures import testTACKStructures
-from tackid import testTACKID
-from ssl_cert import testSSLCert
-from keyfile import testKeyFile
+from .numbertheory import testNumberTheory
+from .ellipticcurve import testEllipticCurve
+from .ecdsa import testECDSA
+from .ecdsa_wrappers import testECDSAWrappers
+from .rijndael import testRijndael
+from .aes_wrappers import testAES
+from .cryptomath import testOsUrandom
+from .compat import testCompat
+from .asn1 import testASN1
+from .time_funcs import testTime
+from .tack_structures import testTACKStructures
+from .tackid import testTACKID
+from .ssl_cert import testSSLCert
+from .keyfile import testKeyFile
 
 ################ TEST ###
 

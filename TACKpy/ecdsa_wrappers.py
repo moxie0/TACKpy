@@ -1,9 +1,9 @@
-from ecdsa import *
-from cryptomath import *
-from pem import *
-from asn1 import *
-from misc import *
-from m2crypto import *
+from .ecdsa import *
+from .cryptomath import *
+from .pem import *
+from .asn1 import *
+from .misc import *
+from .m2crypto import *
 
 ################ ECDSA_WRAPPERS ###
 """The following three "wrapper" functions are used for working with ECDSA:

@@ -1,10 +1,10 @@
-from constants import *
-from struct_parser import *
-from time_funcs import *
-from misc import *
-from pem import *
-from ecdsa_wrappers import *
-from tackid import *
+from .constants import *
+from .struct_parser import *
+from .time_funcs import *
+from .misc import *
+from .pem import *
+from .ecdsa_wrappers import *
+from .tackid import *
 
 ################ TACK STRUCTURES ###
 

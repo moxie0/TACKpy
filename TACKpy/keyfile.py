@@ -1,8 +1,8 @@
-from ecdsa_wrappers import *
-from rijndael import *
-from struct_parser import *
-from pem import *
-from aes_wrappers import *
+from .ecdsa_wrappers import *
+from .rijndael import *
+from .struct_parser import *
+from .pem import *
+from .aes_wrappers import *
 
 ################ KEY FILE ###
 

@@ -1,7 +1,7 @@
-from cryptomath import *
-from compat import *
-from m2crypto import *
-from rijndael import rijndael
+from .cryptomath import *
+from .compat import *
+from .m2crypto import *
+from .rijndael import rijndael
 
 ################ AES WRAPPERS ###
 

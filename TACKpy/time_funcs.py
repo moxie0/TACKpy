@@ -1,4 +1,4 @@
-from compat import *
+from .compat import *
 
 ################ TIME FUNCS ###
 

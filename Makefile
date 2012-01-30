@@ -3,12 +3,10 @@
 default:
 	@echo To install TACKpy run \"setup.py install\"
 
-VERSION := 0.9.2
 SCDIR := selfcontained
 
 # Variables for testing
 TESTDIR = test
-PYTHON = python
 EXEC = TACK.py
 CERT1 = ~/godaddy/gd1.pem
 CERT2 = ~/godaddy/gd2.der

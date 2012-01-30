@@ -1,6 +1,6 @@
-from compat import *
-from time_funcs import *
-from version import __version__
+from .compat import *
+from .time_funcs import *
+from .version import __version__
 
 ################ PEM ###
 
