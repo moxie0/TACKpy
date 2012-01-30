@@ -21,7 +21,7 @@ fnames = [\
 "TACKpy/ssl_cert.py",
 "TACKpy/keyfile.py",
 "TACKpy/test.py",
-"TACKpy/main.py"] 
+"scripts/TACK.py"] 
 
 # Stitch the source files together, ommitting anything before 
 # the ######... header (usually just import statements) necessary 

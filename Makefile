@@ -4,7 +4,7 @@ default:
 	@echo To install TACKpy run \"setup.py install\"
 
 VERSION := 0.9.2
-TOOLDIR := TACK-tool-$(VERSION)
+TOOLDIR := selfcontained
 
 # Variables for testing
 TESTDIR = test
@@ -22,13 +22,12 @@ clean:
 	rm -rf TACK-tool-*/	
 	rm -f TACK-tool-*.tar.gz
 
-.PHONY : tool
-tool:
+.PHONY: selfcontained
+selfcontained:
+	rm -rf $(TOOLDIR)
 	mkdir $(TOOLDIR)
-	./make_release.py > $(TOOLDIR)/TACK
-	chmod +x $(TOOLDIR)/TACK
-	cp README $(TOOLDIR)/README
-	tar czvf $(TOOLDIR).tar.gz $(TOOLDIR)
+	./make_selfcontained.py > $(TOOLDIR)/TACK.py
+	chmod +x $(TOOLDIR)/TACK.py
 
 dist:
 	./setup.py sdist

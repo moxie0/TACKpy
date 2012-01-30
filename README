@@ -2,23 +2,27 @@ TACK-tool version 0.9.2
 
 Installation
 =============
-The "TACK" file is a Python script.  It requires Python 2.7 or greater.
+TACKpy requires Python 2.7+ or Python 3.
 
-Copy the file somewhere on your PATH, then test it via "TACK test".  If 
-you are having problems, try "python TACK test".
+Run "python setup.py install".  This installs:
+ - The "TACKpy" library for use by other Python programs (such as TLS Lite).
+ - The "TACK.py" command for working with TACKs (see below).
 
-If you have M2Crypto installed, TACK-tool will use it for elliptic curve
-and AES operations.  Otherwise, TACK-tool will use its own Python 
-implementations.
+If you want to run TACK.py without installing TACKpy you can run "make
+selfcontained" which makes a self-contained version of "TACK.py" in the
+"selfcontained" directory.
+
+If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
+operations. Otherwise, TACKpy will use its own Python implementations.
 
 
 Quick start 
 ============
 
 To create a TACK based on a site's SSL certificate:
-  1) Run "TACK genkey > TACK_Key.pem" to create a new TACK key.  
+  1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK key.  
   2) Backup the TACK key in a place where it won't be lost or stolen.
-  3) Run "TACK create -k TACK_Key.pem -c CERT > TACK.pem" to create a 
+  3) Run "TACK.py create -k TACK_Key.pem -c CERT > TACK.pem" to create a 
      new TACK.
     - The resulting TACK has a 5 minute duration so clients encountering
       it will only remember it for 5 minutes.  This lets you test 
@@ -33,14 +37,14 @@ To create a TACK based on a site's SSL certificate:
       to a longer duration.
 
 Adjusting the TACK's duration:
-  1) Run "TACK -i TACK.pem adjust -d 30d > TACK2.pem" to set the 
+  1) Run "TACK.py -i TACK.pem adjust -d 30d > TACK2.pem" to set the 
      duration to 30 days.
     - Or, if you want clients to forget the TACK, use "-d 0".
   2) Replace the previous TACK with the new one in <!!!>.
 
 Changing your SSL certificate:
 (NOTE:  whenever you change your SSL cert, you *MUST* do the following)
-  1) Run "TACK up -k TACK_Key.pem -i TACKold.pem -c CERT > TACKnew.pem".
+  1) Run "TACK.py up -k TACK_Key.pem -i TACKold.pem -c CERT > TACKnew.pem".
   2) Replace the old TACK with the new TACK.
     - You MUST update the SSL cert and TACK at the same time.
 
@@ -80,7 +84,7 @@ In any case, once the ghost interval for a ghost TACK is elapsed, the
 corresponding break signature may be removed.
 
 To generate a break signature:
-  1) Run "TACK break -i TACK_ghost.pem > TACK_Break_Sig.pem"
+  1) Run "TACK.py break -i TACK_ghost.pem > TACK_Break_Sig.pem"
   2) Add the break signature to <!!!>.
   3) After the ghost interval has elapsed, remove the break signature.
 
@@ -120,10 +124,10 @@ then store them on a secure system and dole them out to webservers daily.
 
 Example of batch generation of TACKs:
 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_1_1.pem
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_1_2.pem 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_1_3.pem 
-TACK up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_1_4.pem 
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_1_1.pem
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_1_2.pem 
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_1_3.pem 
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_1_4.pem 
 ...
 
 !!!TODO - add --batchinc 2d
