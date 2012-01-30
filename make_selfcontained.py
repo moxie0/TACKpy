@@ -18,6 +18,7 @@ fnames = [\
 "TACKpy/struct_parser.py",
 "TACKpy/constants.py",
 "TACKpy/tack_structures.py",
+"TACKpy/tackid.py",
 "TACKpy/ssl_cert.py",
 "TACKpy/keyfile.py",
 "TACKpy/test.py",

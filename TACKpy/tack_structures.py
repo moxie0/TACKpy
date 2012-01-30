@@ -4,6 +4,7 @@ from time_funcs import *
 from misc import *
 from pem import *
 from ecdsa_wrappers import *
+from tackid import *
 
 ################ TACK STRUCTURES ###
 
@@ -29,6 +30,9 @@ class TACK_Pin:
         assert(len(key) == 64)
         self.key = key
         self.label = os.urandom(8)
+
+    def getTACKID(self):
+        return hashToTACKID(SHA256(self.write())[:15])    
             
     def parse(self, b):
         """Parse a bytearray of 73 bytes to populate this TACK_Pin.
@@ -60,10 +64,12 @@ class TACK_Pin:
         Used by the "TACK view" command to display TACK objects."""
         assert(self.type == TACK_Pin_Type.v1)
         s = \
-"""pin.type       = %s
+"""TACK ID        = %s 
+pin.type       = %s
 key            = 0x%s
 label          = 0x%s\n""" % \
-(TACK_Pin_Type.strings[self.type], 
+(self.getTACKID(),
+TACK_Pin_Type.strings[self.type], 
 writeBytes(self.key),
 writeBytes(self.label))
         return s
@@ -187,6 +193,9 @@ class TACK:
         self.sig.create(sigType, expiration, generation, 
                             target_sha256, self.pin, keyFile.sign)
         self.duration = duration
+
+    def getTACKID(self):
+        return self.pin.getTACKID()
 
     def verifySignature(self):
         bytesToVerify = self.pin.write() + self.sig.write()[:-64]

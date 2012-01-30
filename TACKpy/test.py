@@ -10,6 +10,7 @@ from compat import testCompat
 from asn1 import testASN1
 from time_funcs import testTime
 from tack_structures import testTACKStructures
+from tackid import testTACKID
 from ssl_cert import testSSLCert
 from keyfile import testKeyFile
 
@@ -27,6 +28,7 @@ def selfTest():
     assert(testCompat() == 1)
     assert(testTime() == 1)
     assert(testTACKStructures() == 1)
+    assert(testTACKID() == 1)
     assert(testSSLCert() == 1)
     assert(testKeyFile() == 1)
     return 1
