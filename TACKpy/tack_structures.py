@@ -18,17 +18,17 @@ class TACK_Pin:
         
         Use create() or parse() to populate."""
         self.type = 0 # integer from TACK_Pin_Type
-        self.key = bytearray(64) # EC public key using NIST-P256
+        self.public_key = bytearray(64) # EC public key using NIST-P256
         self.label = bytearray(8)
     
-    def create(self, key):
+    def create(self, public_key):
         """Initialize a TACK_Pin, based on the input key 32-byte bytearray.
         
         The label is randomized to distinguish this from other pins based
         on the same key."""
         self.type = TACK_Pin_Type.v1
-        assert(len(key) == 64)
-        self.key = key
+        assert(len(public_key) == 64)
+        self.public_key = public_key
         self.label = os.urandom(8)
 
     def getTACKID(self):
@@ -43,7 +43,7 @@ class TACK_Pin:
         self.type = p.getInt(1)
         if self.type != TACK_Pin_Type.v1:
             raise SyntaxError("Bad pin.type")
-        self.key = p.getBytes(64)
+        self.public_key = p.getBytes(64)
         self.label = p.getBytes(8)
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK_Pin")        
@@ -53,7 +53,7 @@ class TACK_Pin:
         assert(self.type == TACK_Pin_Type.v1)        
         w = Writer(TACK_Pin.length)
         w.add(self.type, 1)
-        w.add(self.key, 64)
+        w.add(self.public_key, 64)
         w.add(self.label, 8)  
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?            
         return w.bytes  
@@ -64,14 +64,10 @@ class TACK_Pin:
         Used by the "TACK view" command to display TACK objects."""
         assert(self.type == TACK_Pin_Type.v1)
         s = \
-"""TACK ID        = %s 
-pin.type       = %s
-key            = 0x%s
-label          = 0x%s\n""" % \
-(self.getTACKID(),
-TACK_Pin_Type.strings[self.type], 
-writeBytes(self.key),
-writeBytes(self.label))
+"""TACK ID        = %s
+public_key     = 0x%s\n""" % \
+(self.getTACKID(), 
+writeBytes(self.public_key))
         return s
         
            
@@ -150,13 +146,11 @@ class TACK_Sig:
 """sig.type       = %s
 expiration     = %s
 generation     = %d
-target_sha256  = 0x%s
-signature      = 0x%s\n""" % \
+target_sha256  = 0x%s\n""" % \
 (TACK_Sig_Type.strings[self.type], 
 posixTimeToStr(self.expiration*60),
 self.generation,
-writeBytes(self.target_sha256),
-writeBytes(self.signature))
+writeBytes(self.target_sha256))
         return s
 
 class TACK:
@@ -199,7 +193,8 @@ class TACK:
 
     def verifySignature(self):
         bytesToVerify = self.pin.write() + self.sig.write()[:-64]
-        return ecdsa256Verify(self.pin.key, bytesToVerify, self.sig.signature)  
+        return ecdsa256Verify(self.pin.public_key, bytesToVerify, 
+                                self.sig.signature)  
 
     def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK.
@@ -249,18 +244,10 @@ class TACK:
         
         Used by the "TACK view" command to display TACK objects."""        
         s =\
-"""
-TACK_Pin
-=========
-%s
-TACK_Sig
-=========
-%s""" % \
+"""%s%s""" % \
             (self.pin.writeText(), self.sig.writeText())
         s += \
-"""\nDuration
-=========
-duration       = %s\n""" % durationToStr(self.duration)
+"""duration       = %s\n""" % durationToStr(self.duration)
         return s   
         
 class TACK_Break_Sig:
@@ -317,8 +304,8 @@ class TACK_Break_Sig:
         """Return a readable string describing this TACK_Break_Sig.
         
         Used by the "TACK view" command to display TACK objects."""        
-        s = self.pin.writeText()
-        s += "signature      = 0x%s\n" % (writeBytes(self.signature))
+        #s = self.pin.writeText()
+        s = "Breaks TACK ID = %s\n" % self.pin.getTACKID()
         return s
 
 def testTACKStructures():
@@ -333,7 +320,7 @@ YZc1Sc+m4VWPQR8RIRqj4DewzYA1QnWCBiDwojfe4XY7PeRNPGSlhgdvF9XFe8UB
     t = TACK()
     t.parsePem(s)
     assert(t.pin.type == TACK_Pin_Type.v1)
-    assert(t.pin.key == a2b_hex("c5ed07089a6ee0a70205fee4068be4192efb22e3e3c1a65ab4f6096c13395149"+
+    assert(t.pin.public_key == a2b_hex("c5ed07089a6ee0a70205fee4068be4192efb22e3e3c1a65ab4f6096c13395149"+
                        "3875bd9a5d9bb4e90186056aa736bcf08cefe981ff72e50ad7be9416c2b2cc1f"))
     assert(t.pin.label == a2b_hex("eb9afbc116ff5c2f"))
     assert(t.sig.type == TACK_Sig_Type.v1_cert)
@@ -354,7 +341,7 @@ Nv4iPe0BhWHNV9x7KBMC+cE8pcGohrTXxiVTGjAO32k4vGQst4VQSgk=
     tbs = TACK_Break_Sig()
     tbs.parsePem(s)
     assert(tbs.pin.type == TACK_Pin_Type.v1)
-    assert(tbs.pin.key == a2b_hex("c5ed07089a6ee0a70205fee4068be419"+
+    assert(tbs.pin.public_key == a2b_hex("c5ed07089a6ee0a70205fee4068be419"+
                        "2efb22e3e3c1a65ab4f6096c13395149"+
                        "3875bd9a5d9bb4e90186056aa736bcf0"+
                        "8cefe981ff72e50ad7be9416c2b2cc1f"))
