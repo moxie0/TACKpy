@@ -5,7 +5,7 @@ TOOLDIR := TACK-tool-$(VERSION)
 # Variables for testing
 TESTDIR = test
 PYTHON = python
-EXEC = $(PYTHON) TACKpy/main.py
+EXEC = TACK.py
 CERT1 = ~/godaddy/gd1.pem
 CERT2 = ~/godaddy/gd2.der
 

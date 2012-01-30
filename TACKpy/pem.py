@@ -54,12 +54,4 @@ def pem(b, name):
 
 def pemSniff(inStr, name):
     searchStr = "-----BEGIN %s-----" % name
-    return searchStr in inStr    
-    
-def addPemComments(inStr):
-    """Add pre-PEM metadata/comments to PEM strings."""
-    versionStr = __version__
-    timeStr = posixTimeToStr(time.time(), True)
-    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % \
-                (versionStr, timeStr, inStr)
-    return outStr
+    return searchStr in inStr

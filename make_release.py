@@ -20,6 +20,7 @@ fnames = [\
 "TACKpy/tack_structures.py",
 "TACKpy/ssl_cert.py",
 "TACKpy/keyfile.py",
+"TACKpy/test.py",
 "TACKpy/main.py"] 
 
 # Stitch the source files together, ommitting anything before 

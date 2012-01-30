@@ -1,15 +1,25 @@
 #! /usr/bin/env python
 
 
-from misc import *
-from compat import *
-from time_funcs import *
-from pem import *
-from constants import *
-from tack_structures import *
-from ssl_cert import *
-from keyfile import *
-from version import __version__
+#from misc import *
+#from compat import *
+#from time_funcs import *
+#from pem import *
+#from constants import *
+#from tack_structures import *
+#from ssl_cert import *
+#from keyfile import *
+#from version import __version__
+
+import time, math
+
+from TACKpy import TACK, TACK_Break_Sig, \
+    TACK_KeyFile, TACK_KeyFileViewer, \
+    SSL_Cert, __version__, \
+    m2cryptoLoaded, TACK_Pin_Type, TACK_Sig_Type, \
+    posixTimeToStr, selfTest, pemSniff, \
+    parseDurationArg, parseTimeArg
+
 
 ################ MAIN ###
 
@@ -168,6 +178,14 @@ values in the correct order.
             retList.append(inCert.key_sha256)        
     return retList
     
+def addPemComments(inStr):
+    """Add pre-PEM metadata/comments to PEM strings."""
+    versionStr = __version__
+    timeStr = posixTimeToStr(time.time(), True)
+    outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % \
+                (versionStr, timeStr, inStr)
+    return outStr
+    
 def genkeyCmd(argv):
     """Handle "TACK genkey <argv>" command."""
     password, outputFile = handleArgs(argv, "po")    
@@ -281,19 +299,7 @@ def viewCmd(argv):
         printError("Error parsing %s: %s" % (fileType, e))
 
 def testCmd(argv):
-    assert(testNumberTheory() == 1)
-    assert(testEllipticCurve() == 1)
-    assert(testECDSA() == 1)
-    assert(testECDSAWrappers() == 1)
-    assert(testRijndael() == 1)
-    assert(testAES() == 1)
-    assert(testOsUrandom() == 1)
-    assert(testASN1() == 1)
-    assert(testCompat() == 1)
-    assert(testTime() == 1)
-    assert(testTACKStructures() == 1)
-    assert(testSSLCert() == 1)
-    assert(testKeyFile() == 1)
+    assert(selfTest() == 1)
     print("OK")
 
 def printUsage(s=None):
