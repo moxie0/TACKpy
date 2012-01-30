@@ -198,6 +198,14 @@ class TACK:
         """        
         b = dePem(s, "TACK")
         assert(len(b) == TACK.length)
+        self.parse(b)
+        
+    def parse(self, b):
+        """Parse a bytearray containing a TACK.
+        
+        Raise a SyntaxError if input is malformed, including signature
+        validation failure.
+        """        
         self.pin = TACK_Pin()
         self.sig = TACK_Sig()
         self.pin.parse(b[ : TACK_Pin.length])
@@ -212,11 +220,15 @@ class TACK:
 
     def writePem(self):
         """Return a string containing a PEM file for the TACK."""        
+        return pem(self.write(), "TACK")
+        
+    def write(self):
+        """Return a bytearray containing the TACK."""
         w = Writer(TACK.length)
         w.add(self.pin.write(), TACK_Pin.length) 
         w.add(self.sig.write(), TACK_Sig.length)
         w.add(self.duration, 4)
-        return pem(w.bytes, "TACK")
+        return w.bytes
 
     def writeText(self):
         """Return a readable string describing this TACK.

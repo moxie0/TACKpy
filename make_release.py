@@ -1,31 +1,32 @@
 #! /usr/bin/env python
 
 fnames = [\
-"src/numbertheory.py",
-"src/ellipticcurve.py",
-"src/ecdsa.py",
-"src/rijndael.py",
-"src/misc.py",
-"src/compat.py",
-"src/cryptomath.py",
-"src/time_funcs.py",
-"src/asn1.py",
-"src/pem.py",
-"src/m2crypto.py",
-"src/aes_wrappers.py",
-"src/ecdsa_wrappers.py",
-"src/struct_parser.py",
-"src/constants.py",
-"src/tack_structures.py",
-"src/ssl_cert.py",
-"src/keyfile.py",
-"src/main.py"] 
+"TACKpy/version.py",
+"TACKpy/numbertheory.py",
+"TACKpy/ellipticcurve.py",
+"TACKpy/ecdsa.py",
+"TACKpy/rijndael.py",
+"TACKpy/misc.py",
+"TACKpy/compat.py",
+"TACKpy/cryptomath.py",
+"TACKpy/time_funcs.py",
+"TACKpy/asn1.py",
+"TACKpy/pem.py",
+"TACKpy/m2crypto.py",
+"TACKpy/aes_wrappers.py",
+"TACKpy/ecdsa_wrappers.py",
+"TACKpy/struct_parser.py",
+"TACKpy/constants.py",
+"TACKpy/tack_structures.py",
+"TACKpy/ssl_cert.py",
+"TACKpy/keyfile.py",
+"TACKpy/main.py"] 
 
 # Stitch the source files together, ommitting anything before 
 # the ######... header (usually just import statements) necessary 
 # for when this is separate modules
 
-s = open("src/header.py").read()
+s = open("TACKpy/header.py").read()
 for fname in fnames:
     s2 = open(fname).read()
     i = s2.find("################ ")

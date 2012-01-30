@@ -1,29 +1,30 @@
 
 VERSION := 0.9.2
-VERSION_INSERT := sed -e 's/V.V.V/$(VERSION)/g'
-RELDIR := TACK-tool-$(VERSION)
+TOOLDIR := TACK-tool-$(VERSION)
+
+# Variables for testing
 TESTDIR = test
 PYTHON = python
+EXEC = $(PYTHON) TACKpy/main.py
+CERT1 = ~/godaddy/gd1.pem
+CERT2 = ~/godaddy/gd2.der
 
 .PHONY : clean
 clean:
-	rm -rf $(RELDIR)
+	rm -rf $(TOOLDIR)
 	rm -rf $(TESTDIR)
 	rm -f src/*.pyc
 	rm -rf TACK-tool-*/	
 	rm -f TACK-tool-*.tar.gz
 
-.PHONY : release
-release:
-	mkdir $(RELDIR)
-	./make_release.py | $(VERSION_INSERT) > $(RELDIR)/TACK
-	chmod +x $(RELDIR)/TACK
-	$(VERSION_INSERT) README > $(RELDIR)/README
-	tar czvf $(RELDIR).tar.gz $(RELDIR)
+.PHONY : tool
+tool:
+	mkdir $(TOOLDIR)
+	./make_release.py > $(TOOLDIR)/TACK
+	chmod +x $(TOOLDIR)/TACK
+	cp README $(TOOLDIR)/README
+	tar czvf $(TOOLDIR).tar.gz $(TOOLDIR)
 
-EXEC = $(PYTHON) src/main.py
-CERT1 = ~/godaddy/gd1.pem
-CERT2 = ~/godaddy/gd2.der
 
 .PHONY: test
 test:
@@ -55,3 +56,4 @@ test:
 	$(EXEC) v $(TESTDIR)/TACK_Break_Sig5_1.pem > $(TESTDIR)/TACK_View_Break_Sig5_1.txt
 	$(EXEC) v $(CERT1) > $(TESTDIR)/TACK_View_Cert1.txt
 	$(EXEC) v $(CERT2) > $(TESTDIR)/TACK_View_Cert2.txt
+	@echo OK

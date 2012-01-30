@@ -1,5 +1,6 @@
 from compat import *
 from time_funcs import *
+from version import __version__
 
 ################ PEM ###
 
@@ -57,7 +58,7 @@ def pemSniff(inStr, name):
     
 def addPemComments(inStr):
     """Add pre-PEM metadata/comments to PEM strings."""
-    versionStr = "V.V.V"
+    versionStr = __version__
     timeStr = posixTimeToStr(time.time(), True)
     outStr = "Created by TACK-tool %s\nCreated at %s\n%s" % \
                 (versionStr, timeStr, inStr)

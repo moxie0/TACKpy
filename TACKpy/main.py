@@ -9,6 +9,7 @@ from constants import *
 from tack_structures import *
 from ssl_cert import *
 from keyfile import *
+from version import __version__
 
 ################ MAIN ###
 
@@ -302,7 +303,7 @@ def printUsage(s=None):
         crypto = "Python crypto"        
     if s:
         print("ERROR: %s" % s)
-    print("""\nTACK-tool version V.V.V (using %s)  
+    print("""\nTACK-tool version %s (using %s)  
 
 Commands (use "help <command>" to see optional args):
   genkey
@@ -313,7 +314,7 @@ Commands (use "help <command>" to see optional args):
   view   FILE
   test  
   help   COMMAND
-""" % crypto)
+""" % (__version__, crypto))
     sys.exit(-1)
     
 def helpCmd(argv):
