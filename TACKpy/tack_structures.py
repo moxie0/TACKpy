@@ -41,7 +41,8 @@ class TACK_Pin:
             raise SyntaxError("Bad pin.type")
         self.key = p.getBytes(64)
         self.label = p.getBytes(8)
-        assert(p.index == len(b)) # did we fully consume bytearray?
+        if p.index != len(b):
+            raise SyntaxError("Excess bytes in TACK_Pin")        
         
     def write(self):        
         """Return a 73-byte bytearray encoding of this TACK_Pin."""
@@ -119,7 +120,8 @@ class TACK_Sig:
         self.generation = p.getInt(1)            
         self.target_sha256 = p.getBytes(32)
         self.signature = p.getBytes(64)
-        assert(p.index == len(b)) # did we fully consume bytearray?
+        if p.index != len(b):
+            raise SyntaxError("Excess bytes in TACK_Sig")
         
     def write(self):
         """Return a 102-byte bytearray encoding of this TACK_Sig."""        
@@ -197,7 +199,8 @@ class TACK:
         validation failure.
         """        
         b = dePem(s, "TACK")
-        assert(len(b) == TACK.length)
+        if len(b) != TACK.length:
+            raise SyntaxError("TACK is the wrong size")
         self.parse(b)
         
     def parse(self, b):
@@ -216,7 +219,9 @@ class TACK:
         self.duration = p.getInt(4)
         if not self.verifySignature():
             raise SyntaxError("Signature verification failure")
-        assert(p.index == len(b)) # did we fully consume bytearray?
+        if p.index != len(b):
+            raise SyntaxError("Excess bytes in TACK")
+        
 
     def writePem(self):
         """Return a string containing a PEM file for the TACK."""        
@@ -272,13 +277,24 @@ class TACK_Break_Sig:
         Raise a SyntaxError if input is malformed.
         """        
         b = dePem(s, "TACK BREAK SIG")
+        if len(b) != TACK_Break_Sig.length:
+            raise SyntaxError("TACK is the wrong size")        
+        self.parse(b)
+    
+    def parse(self, b):
+        """Parse a bytearray containing a TACK_Break_Sig.
+        
+        Raise a SyntaxError if input is malformed, including signature
+        validation failure.
+        """        
         p = Parser(b)
         self.pin = TACK_Pin()
         self.pin.parse(b[ : TACK_Pin.length])
         b = b[TACK_Pin.length : ]  
         p = Parser(b)      
         self.signature = p.getBytes(64)
-        assert(p.index == len(b)) # did we fully consume bytearray?
+        if p.index != len(b):
+            raise SyntaxError("Excess bytes in TACK_Break_Sig")
         
     def writePem(self):
         """Return a string containing a PEM file for the TACK_Break_Sig."""        
