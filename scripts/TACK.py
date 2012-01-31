@@ -332,7 +332,7 @@ Optional arguments:
     elif cmd == "create"[:len(cmd)]:
         s = posixTimeToStr(time.time())        
         print( \
-"""Creates a TACK based on a new pin for the target SSL certificate.
+"""Creates a TACK based on a target SSL certificate.
         
   create -k KEY -c CERT
   
@@ -354,7 +354,7 @@ Optional arguments:
     elif cmd == "update"[:len(cmd)]:
         s = posixTimeToStr(time.time())                
         print( \
-"""Updates a TACK for the target SSL certificate.
+"""Updates a TACK for a new target SSL certificate.
 
   update -k KEY -c CERT -i TACK
   
