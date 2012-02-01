@@ -251,7 +251,7 @@ class TACK:
         return s   
         
 class TACK_Break_Sig:
-    length = 64 + TACK_Pin.length  # 137
+    length = 64 + TACK_Pin.length  # totals 137
     
     def __init__(self):
         """Create an uninitialized TACK_Break_Sig.  
@@ -308,14 +308,18 @@ class TACK_Break_Sig:
         self.signature = p.getBytes(64)
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK_Break_Sig")
-        
-    def writePem(self):
-        """Return a string containing a PEM file for the TACK_Break_Sig."""        
+
+    def write(self):
+        """Return a bytearray containing the TACK_Break_Sig."""
         w = Writer(TACK_Break_Sig.length)
         w.add(self.pin.write(), TACK_Pin.length)
         w.add(self.signature, 64)
-        assert(w.index == len(w.bytes)) # did we fill entire bytearray?        
-        return pem(w.bytes, "TACK BREAK SIG")
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
+        return w.bytes        
+                
+    def writePem(self):
+        """Return a string containing a PEM file for the TACK_Break_Sig."""
+        return pem(self.write(), "TACK BREAK SIG")
 
     def writeText(self):
         """Return a readable string describing this TACK_Break_Sig.
