@@ -267,6 +267,9 @@ class TACK_Break_Sig:
         self.pin = pin
         self.signature = signature
         
+    def getTACKID(self):
+        return self.pin.getTACKID()
+
     def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK_Break_Sig.
         
@@ -276,6 +279,20 @@ class TACK_Break_Sig:
         if len(b) != TACK_Break_Sig.length:
             raise SyntaxError("TACK is the wrong size")        
         self.parse(b)
+
+    @staticmethod
+    def parsePemList(s):
+        """Parse a string containing a sequence of PEM Break Sigs.
+        
+        Raise a SyntaxError if input is malformed.
+        """        
+        breakSigs = []
+        bList = dePemList(s, "TACK BREAK SIG")
+        for b in bList:
+            breakSig = TACK_Break_Sig()
+            breakSig.parse(b)
+            breakSigs.append(breakSig)
+        return breakSigs 
     
     def parse(self, b):
         """Parse a bytearray containing a TACK_Break_Sig.
@@ -350,4 +367,24 @@ Nv4iPe0BhWHNV9x7KBMC+cE8pcGohrTXxiVTGjAO32k4vGQst4VQSgk=
                        "a53166273340de36fe223ded018561cd"+
                        "57dc7b281302f9c13ca5c1a886b4d7c6"+
                        "25531a300edf6938bc642cb785504a09"))
+    s = """                       
+Created by TACK.py 0.9.3
+Created at 2012-02-01T00:30:10Z
+-----BEGIN TACK BREAK SIG-----
+ATKhrz5C6JHJW8BF5fLVrnQss6JnWVyEaC0p89LNhKPswvcC9/s6+vWLd9snYTUv
+YMEBdw69PUP8JB4AdqA3K6Ap0Fgd9SSTOECeAKOUAym8zcYaXUwpk0+WuPYa7Zmm
+SkbOlK4ywqt+amhWbg9txSGUwFO5tWUHT3QrnRlE/e3PeNFXLx5Bckg=
+-----END TACK BREAK SIG-----
+Created by TACK.py 0.9.3
+Created at 2012-02-01T00:30:11Z
+-----BEGIN TACK BREAK SIG-----
+ATKhrz5C6JHJW8BF5fLVrnQss6JnWVyEaC0p89LNhKPswvcC9/s6+vWLd9snYTUv
+YMEBdw69PUP8JB4AdqA3K6BVCWfcjN36lx6JwxmZQncS6sww7DecFO/qjSePCxwM
++kdDqX/9/183nmjx6bf0ewhPXkA0nVXsDYZaydN8rJU1GaMlnjcIYxY=
+-----END TACK BREAK SIG-----
+"""
+    tbsList = TACK_Break_Sig.parsePemList(s)
+    assert(tbsList[0].getTACKID()  == "BHMXG.NIUGC.4D9EG.BRLP1.DTQBE")
+    assert(tbsList[1].getTACKID()  == "BWDJY.IDCEA.74IDQ.X4DG9.MRIMS")
+    assert(len(tbsList) == 2)
     return 1

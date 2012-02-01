@@ -269,9 +269,11 @@ def viewCmd(argv):
                 return
             elif pemSniff(s, "TACK BREAK SIG"):
                 fileType = "Break Sig"
-                tbs = TACK_Break_Sig()
-                tbs.parsePem(s)
-                print(tbs.writeText())  
+                tbsList = TACK_Break_Sig.parsePemList(s)
+                s = ""
+                for tbs in tbsList:
+                    s += tbs.writeText()
+                print s  
                 return
             elif pemSniff(s, "CERTIFICATE"):
                 fileType = "Certificate"

@@ -53,7 +53,7 @@ test:
 	$(EXEC) adjust -i $(TESTDIR)/TACK1_1.pem -d 8h30m > $(TESTDIR)/TACK1_2.pem
 	$(EXEC) a -i $(TESTDIR)/TACK2_1.pem -d 1095d1m -o $(TESTDIR)/TACK2_2.pem
 	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem > $(TESTDIR)/TACK_Break_Sig5_1.pem
-	$(EXEC) b -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem -o $(TESTDIR)/TACK_Break_Sig5_2.pem
+	$(EXEC) b -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK_Break_Sig6_1.pem
 	$(EXEC) view $(TESTDIR)/TACK_Key1.pem > $(TESTDIR)/TACK_View_Key1.txt
 	$(EXEC) view $(TESTDIR)/TACK1.pem > $(TESTDIR)/TACK_View1.txt
 	$(EXEC) v $(TESTDIR)/TACK_Break_Sig5_1.pem > $(TESTDIR)/TACK_View_Break_Sig5_1.txt
