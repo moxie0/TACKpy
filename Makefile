@@ -26,7 +26,7 @@ selfcontained:
 	./make_selfcontained.py > $(SCDIR)/TACK.py
 	chmod +x $(SCDIR)/TACK.py
 
-dist:
+dist: selfcontained
 	./setup.py sdist
 
 .PHONY: test

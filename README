@@ -8,8 +8,8 @@ Run "python setup.py install".  This installs:
  - The "TACKpy" library for use by other Python programs (such as TLS Lite).
  - The "TACK.py" command for working with TACKs (see below).
 
-If you want to run TACK.py without installing TACKpy you can run "make
-selfcontained" and then use "selfcontained/TACK.py".
+If you want to run TACK.py without installing TACKpy you can use the self-
+contained version of "TACK.py" under "./selfcontained".
 
 If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
 operations. Otherwise, TACKpy will use its own Python implementations.

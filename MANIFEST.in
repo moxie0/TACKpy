@@ -2,3 +2,4 @@ include README
 include Makefile
 include MANIFEST.in
 include make_selfcontained.py
+include selfcontained/TACK.py
