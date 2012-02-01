@@ -3,6 +3,8 @@ from .pem import *
 from .asn1 import *
 from .time_funcs import *
 from .cryptomath import *
+from .tack_structures import *
+from .constants import *
 
 ################ SSL CERT ###
 
@@ -24,6 +26,13 @@ class SSL_Cert:
             pass
         sslBytes = bytearray(open(filename, "rb").read()) # IOError            
         self.parse(sslBytes)  # SyntaxError
+
+    def matches(self, tack):
+        if tack.sig.type == TACK_Sig_Type.v1_cert:
+            return self.cert_sha256 == tack.sig.target_sha256
+        elif tack.sig.type == TACK_Sig_Type.v1_key:
+            return self.key_sha256 == tack.sig.target_sha256
+        return False 
     
     def parsePem(self, s):
         b = dePem(s, "CERTIFICATE")
