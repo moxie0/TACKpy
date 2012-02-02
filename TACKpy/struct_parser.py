@@ -47,7 +47,7 @@ class Parser:
         return x
 
     def getBytes(self, elementLength):
-        """Reads some number of bytes as determined by 'lengthBytes'"""
+        """Reads some number of bytes as determined by 'elementLength'"""
         bytes = self.bytes[self.index : self.index + elementLength]
         self.index += elementLength
         return bytes

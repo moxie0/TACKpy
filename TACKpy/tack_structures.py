@@ -280,20 +280,6 @@ class TACK_Break_Sig:
             raise SyntaxError("TACK is the wrong size")        
         self.parse(b)
 
-    @staticmethod
-    def parsePemList(s):
-        """Parse a string containing a sequence of PEM Break Sigs.
-        
-        Raise a SyntaxError if input is malformed.
-        """        
-        breakSigs = []
-        bList = dePemList(s, "TACK BREAK SIG")
-        for b in bList:
-            breakSig = TACK_Break_Sig()
-            breakSig.parse(b)
-            breakSigs.append(breakSig)
-        return breakSigs 
-    
     def parse(self, b):
         """Parse a bytearray containing a TACK_Break_Sig.
         
@@ -328,6 +314,55 @@ class TACK_Break_Sig:
         #s = self.pin.writeText()
         s = "Breaks TACK ID = %s\n" % self.pin.getTACKID()
         return s
+
+
+    @staticmethod
+    def parsePemList(s):
+        """Parse a string containing a sequence of PEM Break Sigs.
+
+        Raise a SyntaxError if input is malformed.
+        """        
+        breakSigs = []
+        bList = dePemList(s, "TACK BREAK SIG")
+        for b in bList:
+            breakSig = TACK_Break_Sig()
+            breakSig.parse(b)
+            breakSigs.append(breakSig)
+        return breakSigs 
+
+    @staticmethod
+    def parseBinaryList(b):
+        """Parse a TACK_Break_Sigs bytearray into a list of TACK_Break_Sig.
+
+
+        Raise a SyntaxError if input is malformed.
+        """        
+        breakSigs = []
+        p = Parser(b)
+        sigsLen = p.getInt(2)
+        if sigsLen % TACK_Break_Sig.length != 0:
+            raise SyntaxError("Bad length in TACK_Break_Sig")
+        if sigsLen // TACK_Break_Sig.length > 10:
+            raise SyntaxError("Too many Break Sigs")
+        while sigsLen:
+            b2 = p.getBytes(TACK_Break_Sig.length)
+            breakSig = TACK_Break_Sig()
+            breakSig.parse(b2)
+            breakSigs.append(breakSig)
+            sigsLen -= TACK_Break_Sig.length
+        return breakSigs
+
+    @staticmethod
+    def writeBinaryList(breakSigs):        
+        sigsLen = TACK_Break_Sig.length * len(breakSigs)
+        w = Writer(sigsLen+2)
+        w.add(sigsLen, 2)
+        for breakSig in breakSigs:
+            b = breakSig.write()
+            assert(len(b) == TACK_Break_Sig.length)
+            w.add(b, TACK_Break_Sig.length)
+        return w.bytes
+        
 
 def testTACKStructures():
     print("Testing TACK STRUCTURES")
