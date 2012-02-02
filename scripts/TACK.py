@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from TACKpy import TACK, TACK_Break_Sig, \
+from TACKpy import TACK, TACK_Break_Sig, TACK_Cert, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
     m2cryptoLoaded, TACK_Pin_Type, TACK_Sig_Type, \
@@ -23,7 +23,7 @@ argv should be sys.argv[2:], i.e. the cmdline args minus "TACK <cmd>".
 argString is a string with each char indicating a supported arg.
 mandatoryString is a string with each char indicating a mandatory arg.
 
-Allowed chars in argString: "poickgdes"
+Allowed chars in argString: "poickgdesb"
 Allowed chars in mandatoryString: "ickd"
 
 Returns a list populated with an entry (or entries) for each char in 
@@ -53,6 +53,7 @@ values in the correct order.
     duration = None
     expiration = None
     sigType = TACK_Sig_Type.v1_cert
+    breakSigs = None
     for opt, arg in opts:
         if opt == "-p":
             password = arg
@@ -108,7 +109,16 @@ values in the correct order.
             elif arg == "v1_key":
                 sigType = TACK_Sig_Type.v1_key
             else:
-                printError("Unknown sig.type: %s" % arg)  
+                printError("Unknown sig.type: %s" % arg)
+        elif opt == "-b":
+            try:
+                breakSigsPem = open(arg, "rU").read()
+            except IOError:
+                printError("Error opening Break Sigs file: %s" % arg)                        
+            try:
+                breakSigs = TACK_Break_Sig.parsePemList(breakSigsPem)
+            except SyntaxError:
+                printError("Break Sigs malformed: %s" % arg)              
         else:
             assert(False)
     if argv:
@@ -166,7 +176,9 @@ values in the correct order.
         if sigType == TACK_Sig_Type.v1_cert:
             retList.append(inCert.cert_sha256)
         else:
-            retList.append(inCert.key_sha256)        
+            retList.append(inCert.key_sha256)  
+    if "b" in argString:
+        retList.append(breakSigs)      
     return retList
     
 def addPemComments(inStr):
@@ -234,7 +246,14 @@ def breakCmd(argv):
     breakSig = TACK_Break_Sig()   
     breakSig.create(tack.pin, inKey.sign(tack.pin.write()))
     outputFile.write(addPemComments(breakSig.writePem()))    
-     
+
+def makecertCmd(argv):
+    """Handle "TACK makecert <argv>" command."""    
+    outputFile, tack, breakSigs = handleArgs(argv, "oib", "i")
+    tc = TACK_Cert()
+    tc.create(tack, breakSigs)
+    outputFile.write(tc.writePem())     
+
 def viewCmd(argv):
     """Handle "TACK view <argv>" command."""    
     if len(argv) < 1:
@@ -273,14 +292,13 @@ def viewCmd(argv):
                 s = ""
                 for tbs in tbsList:
                     s += tbs.writeText()
-                print s  
+                print(s)  
                 return
             elif pemSniff(s, "CERTIFICATE"):
                 fileType = "Certificate"
                 sslc = SSL_Cert() 
                 sslc.parsePem(s)
                 print(sslc.writeText())
-                return
         # Is it an SSL certificate?
         try:
             sslc = SSL_Cert()
@@ -310,6 +328,7 @@ Commands (use "help <command>" to see optional args):
   update -k KEY -c CERT -i TACK
   adjust -i TACK -d DURATION
   break  -k KEY -i TACK
+  makecert -i TACK
   view   FILE
   test  
   help   COMMAND
@@ -405,6 +424,16 @@ Optional arguments:
 Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
 """)
+    elif cmd == "makecert"[:len(cmd)]:
+        print( \
+"""Creates a TACK certificate with the input TACK and optional Break Sigs.
+
+  makecert -i TACK 
+
+Optional arguments:
+  -b BREAKSIGS       : Include these Break Signatures in the output.
+  -o FILE            : Write the output to this file (instead of stdout)
+""")
     elif cmd == "test"[:len(cmd)]:
         print( \
 """Runs self-tests.
@@ -426,6 +455,8 @@ if __name__ == '__main__':
         adjustCmd(sys.argv[2:])
     elif sys.argv[1] == "break"[:len(sys.argv[1])]:
         breakCmd(sys.argv[2:])
+    elif sys.argv[1] == "makecert"[:len(sys.argv[1])]:
+        makecertCmd(sys.argv[2:])        
     elif sys.argv[1] == "view"[:len(sys.argv[1])]:
         viewCmd(sys.argv[2:])
     elif sys.argv[1] == "test"[:len(sys.argv[1])]:

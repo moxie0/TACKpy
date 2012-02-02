@@ -34,16 +34,16 @@ Example:
   # Verifying a signature for a hash value:
 
   if pubkey.verifies( hash, signature ):
-    print "Demo verification succeeded."
+    print("Demo verification succeeded.")
   else:
-    print "*** Demo verification failed."
+    print("*** Demo verification failed.")
 
   # Verification fails if the hash value is modified:
 
   if pubkey.verifies( hash-1, signature ):
-    print "**** Demo verification failed to reject tampered hash."
+    print("**** Demo verification failed to reject tampered hash.")
   else:
-    print "Demo verification correctly rejected tampered hash."
+    print("Demo verification correctly rejected tampered hash.")
 
 Version of 2009.05.16.
 

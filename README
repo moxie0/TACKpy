@@ -24,12 +24,21 @@ To create a TACK based on a site's SSL certificate:
     - The resulting TACK has a 5 minute duration, so clients will only
       remember it for 5 minutes. This lets you test the TACK without fear of
       long-lasting problems.
-  4) Add the TACK to your web server.
+  4) Add the TACK to your website (see next section).
   5) Test the site
-    - If there are problems, adjust the TACK's duration to zero (see following
+    - If there are problems, adjust the TACK's duration to zero (see later
       section). Put this new TACK up for 5 minutes, then remove it. All
       clients will have forgotten the TACK, so problems should disappear.
   6) Follow the next step to adjust the TACK to a longer duration.
+
+Adding the TACK to your website:
+  1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
+    - TLS Extensions require web server support
+    - TACK Certificates have a small risk of client compatibility problems
+  2) For TLS Extensions, follow your web server's documentation.
+  3) For TACK Certificates, run "TACK.py makecert -i TACK", then add the
+     resulting certificate to your SSL certificate chain.
+    - In Apache, append it to your "SSLCertificateChainFile".
 
 Adjusting the TACK's duration:
   1) Run "TACK.py adjust -i TACK.pem -d 30d > TACK2.pem" to set the 
