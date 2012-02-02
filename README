@@ -8,11 +8,10 @@ Run "python setup.py install".  This installs:
  - The "TACKpy" library for use by other Python programs (such as TLS Lite).
  - The "TACK.py" command for working with TACKs (see below).
 
-If you want to run TACK.py without installing TACKpy you can use the self-
-contained version of "TACK.py" under "./selfcontained".
+To run TACK.py without installation you can use the self-contained version in
+"selfcontained/".
 
-If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
-operations. Otherwise, TACKpy will use its own Python implementations.
+If you have M2Crypto installed, TACKpy will use it to accelerate EC and AES.
 
 
 Quick start 
@@ -20,32 +19,28 @@ Quick start
 
 To create a TACK based on a site's SSL certificate:
   1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK key.  
-  2) Backup the TACK key in a place where it won't be lost or stolen.
-  3) Run "TACK.py create -k TACK_Key.pem -c CERT > TACK.pem" to create a 
-     new TACK.
-    - The resulting TACK has a 5 minute duration so clients encountering
-      it will only remember it for 5 minutes.  This lets you test 
-      the TACK without fear of long-lasting problems.
-  4) Add the TACK to <!!!>.
+  2) Backup the TACK key where it won't be lost or stolen.
+  3) Run "TACK.py create -k TACK_Key.pem -c CERT > TACK.pem".
+    - The resulting TACK has a 5 minute duration, so clients will only
+      remember it for 5 minutes. This lets you test the TACK without fear of
+      long-lasting problems.
+  4) Add the TACK to your web server.
   5) Test the site
-    - If there are problems, follow the next step to adjust the TACK's
-      duration to zero.  Put this new TACK up for 5 minutes, and then
-      remove it.  At this point, all clients will have forgotten about 
-      the TACK, so any problems should disappear.
-    - If there are no problems, follow the next step to adjust the TACK
-      to a longer duration.
+    - If there are problems, adjust the TACK's duration to zero (see following
+      section). Put this new TACK up for 5 minutes, then remove it. All
+      clients will have forgotten the TACK, so problems should disappear.
+  6) Follow the next step to adjust the TACK to a longer duration.
 
 Adjusting the TACK's duration:
-  1) Run "TACK.py -i TACK.pem adjust -d 30d > TACK2.pem" to set the 
+  1) Run "TACK.py adjust -i TACK.pem -d 30d > TACK2.pem" to set the 
      duration to 30 days.
     - Or, if you want clients to forget the TACK, use "-d 0".
-  2) Replace the previous TACK with the new one in <!!!>.
+  2) Replace the previous TACK with the new one on your web server.
 
 Changing your SSL certificate:
-(NOTE:  whenever you change your SSL cert, you *MUST* do the following)
-  1) Run "TACK.py up -k TACK_Key.pem -i TACKold.pem -c CERT > TACKnew.pem".
+  1) Run "TACK.py update -k TACK_Key.pem -i TACKold.pem -c CERT >TACKnew.pem".
   2) Replace the old TACK with the new TACK.
-    - You MUST update the SSL cert and TACK at the same time.
+    - You MUST update the TACK whenever you update the SSL cert.
 
 
 Advanced uses
@@ -53,73 +48,69 @@ Advanced uses
 
 Key reuse
 ----------
-You may use a single TACK key to create different TACKs.  Just be 
-careful to update the correct TACK for new SSL certificates.
+You may use a single TACK key to create different TACKs. Just be careful to
+update the correct TACK for new SSL certificates.
 
 
 Halting use of a TACK, and "break signatures"
 ----------------------------------------------
-If you wish to stop using a TACK, you must consider that some clients
-may have stored the TACK, and will be expecting it (or an updated 
-version) for the remainder of the stored TACK's duration.  This time 
-interval during which clients may be expecting an old TACK is known as 
-the "ghost interval".
+If you wish to stop using a TACK, you must consider that some clients may have
+stored the TACK, and will be expecting it (or an updated version) for the
+remainder of the stored TACK's duration. This time interval during which
+clients may be expecting an old TACK is known as the "ghost interval".
 
-An easy way to handle this is to set the TACK's duration to zero for the
-ghost interval.  This will cause any clients contacting the site to 
-forget about the TACK.  Once the ghost interval expires, the TACK can be 
-safely removed.
+An easy way to handle this is to set the TACK's duration to zero for the ghost
+interval. This will cause any clients contacting the site to forget about the
+TACK. Once the ghost interval expires, the TACK can be safely removed.
 
-However, there may be situations where you need to remove or replace a
-TACK during a ghost interval.  In this case, the site must provide a
-"break" signature from the "ghost TACK" during the ghost interval.  
-Otherwise, clients storing the "ghost TACK" will reject the site.
+However, there may be situations where you need to remove or replace a TACK
+during a ghost interval. In this case, the site must provide a "break"
+signature from the "ghost TACK" during the ghost interval. Otherwise, clients
+storing the "ghost TACK" will reject the site.
 
 At any point in time, a site can have up to ten break signatures from
-different ghost TACKs.  However, keep in mind that break signatures
-add to TLS handshake overhead, so are best avoided.
+different ghost TACKs. However, keep in mind that break signatures add to TLS
+handshake overhead, so are best avoided.
 
-In any case, once the ghost interval for a ghost TACK is elapsed, the 
+In any case, once the ghost interval for a ghost TACK is elapsed, the
 corresponding break signature may be removed.
 
-To generate a break signature:
+To generate a break signature for a TACK:
   1) Run "TACK.py break -i TACK_ghost.pem > TACK_Break_Sig.pem"
-  2) Add the break signature to <!!!>.
+  2) Add the break signature to your web server.
   3) After the ghost interval has elapsed, remove the break signature.
 
 
 Revoking older versions of a TACK 
 ----------------------------------
-If an SSL cert has been compromised and you are switching to a new SSL 
-cert, you may revoke all older versions of the TACK by "-g <new_generation>" 
-in the "update" command.  <new_generation> is a number from 0-255 that is 
-larger than the generations of all previous versions of the TACK.
+If an SSL cert has been compromised and you are switching to a new SSL cert,
+you may revoke all older versions of the TACK by "-g <new_generation>" in the
+"update" command. <new_generation> is a number from 0-255 that is larger than
+the generations of all previous versions of the TACK.
 
-Clients who encounter the new TACK will reject older generations from 
-then on.
+Clients who encounter the new TACK will reject older generations from then on.
 
-For example:  The initial TACK has generation=0, so the first time you 
-use this capability you will want to set "-g1".  If you have to use it 
-a second time, you will set "-g2", and so on. 
+For example: The initial TACK has generation=0, so the first time you use this
+capability you will want to set "-g1". If you have to use it a second time,
+you will set "-g2", and so on.
 
-Security Consideration:  This revocation capability only provides 
-protection if clients receive the new generation value.  For a more 
-robust defense against SSL certificate compromise, consider using 
-short-lived TACKs.
+Security Consideration: This revocation capability only provides protection if
+clients receive the new generation value. For a more robust defense against
+SSL certificate compromise, consider using short-lived TACKs.
 
 
 Short-lived TACKs
 ------------------
-Every TACK contains a signature covering some SSL certificate.  By 
-default the TACK will expire at the same time as the certificate, and
-must be replaced by an updated version after that point.
+Every TACK contains a signature covering some SSL certificate. By default the
+TACK will expire at the same time as the certificate, and must be replaced by
+an updated version after that point.
 
-If you shorten the TACK's expiration time, then a compromised SSL 
-certificate will become unusable to an attacker once the TACK expires.  
+If you shorten the TACK's expiration time, then a compromised SSL certificate
+will become unusable to an attacker once the TACK expires.
 
-For example, every day at midnight you could deploy a new TACK that 
-expires within 48 hours.  You could generate all these TACKs in a batch,
-then store them on a secure system and dole them out to webservers daily.  
+For example, every day at midnight you could deploy a new TACK that expires
+within 48 hours. You could generate all these TACKs in a batch, then store
+them on a secure system and dole them out to webservers daily.
 
 Example of batch generation of TACKs:
 
@@ -129,4 +120,3 @@ TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_1_3.pem
 TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_1_4.pem 
 ...
 
-!!!TODO - add --batchinc 2d
