@@ -299,6 +299,7 @@ def viewCmd(argv):
                 sslc = SSL_Cert() 
                 sslc.parsePem(s)
                 print(sslc.writeText())
+                return
         # Is it an SSL certificate?
         try:
             sslc = SSL_Cert()
