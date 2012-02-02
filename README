@@ -4,7 +4,7 @@ Installation
 =============
 TACKpy requires Python 2.7+ or Python 3.
 
-Run "python setup.py install".  This installs:
+Run "python setup.py install" or "make install".  This installs:
  - The "TACKpy" library for use by other Python programs (such as TLS Lite).
  - The "TACK.py" command for working with TACKs (see below).
 

@@ -1,7 +1,7 @@
 
 .PHONY : default
 default:
-	@echo To install TACKpy run \"setup.py install\"
+	@echo To install TACKpy run \"./setup.py install\" or \"make install\"
 
 SCDIR := selfcontained
 
@@ -10,6 +10,10 @@ TESTDIR = test
 EXEC = TACK.py
 CERT1 = ~/godaddy/gd1.pem
 CERT2 = ~/godaddy/gd2.der
+
+.PHONY: install
+install:
+	./setup.py install
 
 .PHONY : clean
 clean:
