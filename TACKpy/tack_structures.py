@@ -362,7 +362,20 @@ class TACK_Break_Sig:
             assert(len(b) == TACK_Break_Sig.length)
             w.add(b, TACK_Break_Sig.length)
         return w.bytes
-        
+
+
+def writeTextTACKStructures(tack, breakSigs, tackidOnly=False):        
+    s = ""
+    if tack:
+        if not tackidOnly:
+            s += tack.writeText()
+        else:
+            s += tack.getTACKID()+"\n"
+    if breakSigs:
+        s += ("\n")
+        for breakSig in breakSigs:
+            s += breakSig.writeText()
+    return s
 
 def testTACKStructures():
     print("Testing TACK STRUCTURES")
