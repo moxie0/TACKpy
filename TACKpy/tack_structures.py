@@ -330,40 +330,67 @@ class TACK_Break_Sig:
             breakSigs.append(breakSig)
         return breakSigs 
 
-    @staticmethod
-    def parseBinaryList(b):
-        """Parse a TACK_Break_Sigs bytearray into a list of TACK_Break_Sig.
 
+class TACK_Extension:
 
-        Raise a SyntaxError if input is malformed.
-        """        
-        breakSigs = []
+    def __init__(self):
+        self.tack = None
+        self.break_sigs = None # aka []
+        
+    def create(self, tack=None, break_sigs=None):
+        self.tack = tack
+        self.break_sigs = break_sigs        
+    
+    def isEmpty():
+        return (not self.tack and not self.break_sigs)
+
+    def parse(self, b):
         p = Parser(b)
+        tackLen = p.getInt(2)
+        if tackLen:
+            if tackLen != TACK.length:
+                raise SyntaxError("Only supports v1 TACKs")
+            self.tack = TACK()
+            self.tack.parse(p.getBytes(tackLen))
         sigsLen = p.getInt(2)
         if sigsLen % TACK_Break_Sig.length != 0:
             raise SyntaxError("Bad length in TACK_Break_Sig")
         if sigsLen // TACK_Break_Sig.length > 10:
             raise SyntaxError("Too many Break Sigs")
+        self.break_sigs = []            
         while sigsLen:
             b2 = p.getBytes(TACK_Break_Sig.length)
             breakSig = TACK_Break_Sig()
             breakSig.parse(b2)
-            breakSigs.append(breakSig)
+            self.break_sigs.append(breakSig)
             sigsLen -= TACK_Break_Sig.length
-        return breakSigs
+        if p.index != len(b):
+            raise SyntaxError("Excess bytes in TACK_Extension")
 
-    @staticmethod
-    def writeBinaryList(breakSigs):        
-        sigsLen = TACK_Break_Sig.length * len(breakSigs)
-        w = Writer(sigsLen+2)
-        w.add(sigsLen, 2)
-        for breakSig in breakSigs:
-            b = breakSig.write()
-            assert(len(b) == TACK_Break_Sig.length)
-            w.add(b, TACK_Break_Sig.length)
+    def write(self):
+        length = 0
+        if self.tack:
+            length += TACK.length
+        if self.break_sigs:
+            length += len(self.break_sigs) * TACK_Break_Sig.length
+        w = Writer(length+4)
+        if self.tack:
+            w.add(TACK.length, 2)
+            w.add(self.tack.write(), TACK.length)
+        else:
+            w.add(0, 2)
+        if self.break_sigs:
+            w.add(len(self.break_sigs) * TACK_Break_Sig.length, 2)
+            for break_sig in self.break_sigs:
+                w.add(break_sig.write(), TACK_Break_Sig.length)
+        else:
+            w.add(0, 2)
+        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
         return w.bytes
-
-
+            
+        
+            
+    
 def writeTextTACKStructures(tack, breakSigs, tackidOnly=False):        
     s = ""
     if tack:

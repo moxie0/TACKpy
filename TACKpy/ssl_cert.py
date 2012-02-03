@@ -10,7 +10,6 @@ from .constants import *
 
 # NOTE!: lengths are hardcoded in write(), be aware if changing...
 oid_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
-oid_TACK_Break_Sigs = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
         
 class SSL_Cert:
     def __init__(self):
@@ -18,16 +17,14 @@ class SSL_Cert:
         self.cert_sha256 = bytearray(32)
         self.notAfter = 0
         # Below values are populated for TACK certs
-        self.tack = None
-        self.breakSigs = None
+        self.tackExt = None
         # Below values hold cert contents excluding TACK stuff
         self.preExtBytes = None 
         self.extBytes = None
         self.postExtBytes = None        
         
-    def create(self, tack=None, breakSigs=None):
-        self.tack = tack
-        self.breakSigs = breakSigs
+    def create(self, tackExt = None):
+        self.tackExt = tackExt
         self.preExtBytes = a2b_hex(
 "a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
 "3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
@@ -128,20 +125,12 @@ class SSL_Cert:
             # Check the extnID and parse out TACK if present
             extnIDP = extFieldP.getChild(0)            
             if extnIDP.value == oid_TACK:
-                if self.tack:
-                    raise SyntaxError("More than one TACK") 
+                if self.tackExt:
+                    raise SyntaxError("More than one TACK Extension") 
 
                 # OK! We found a TACK, parse it..               
-                self.tack = TACK()
-                self.tack.parse(extFieldP.getChild(1).value)       
-
-            elif extnIDP.value == oid_TACK_Break_Sigs:
-                if self.breakSigs:
-                    raise SyntaxError("More than one TACK_Break_Sigs") 
-
-                # OK! We found Break Sigs, parse them..
-                b = extFieldP.getChild(1).value
-                self.breakSigs = TACK_Break_Sig.parseBinaryList(b)
+                self.tackExt = TACK_Extension()
+                self.tackExt.parse(extFieldP.getChild(1).value) 
             else:  
                 # Collect all non-TACK extensions:
                 self.extBytes += b[extFieldP.offset : \
@@ -153,19 +142,13 @@ class SSL_Cert:
 
     def write(self):                
         b = bytearray(0)
-        if self.tack:
+        if self.tackExt:
             # type=SEQ,len=?,type=6,len=9(for OID),
             # type=4,len=?,TACK
-            TACKBytes = self.tack.write()            
+            TACKBytes = self.tackExt.write()            
             b = bytearray([4]) + asn1Length(len(TACKBytes)) + TACKBytes
             b = bytearray([6,9]) + oid_TACK + b
             b = bytearray([0x30]) + asn1Length(len(b)) + b
-        if self.breakSigs:
-            breakBytes = TACK_Break_Sig.writeBinaryList(self.breakSigs)
-            b2 = bytearray([4]) + asn1Length(len(breakBytes)) + breakBytes
-            b2 = bytearray([6,9]) + oid_TACK_Break_Sigs + b2
-            b2 = bytearray([0x30]) + asn1Length(len(b2)) + b2
-            b += b2
 
         b = b + self.extBytes # add non-TACK extensions after TACK
         # Add length fields for extensions and its enclosing tag
@@ -192,8 +175,9 @@ notAfter       = %s
         writeBytes(self.key_sha256),
         writeBytes(self.cert_sha256),
         posixTimeToStr(self.notAfter, True))
-        if self.tack or self.breakSigs:
-            s += "\n"+writeTextTACKStructures(self.tack, self.breakSigs)
+        if self.tackExt:        
+            s += "\n" + writeTextTACKStructures(self.tackExt.tack, 
+                                                self.tackExt.break_sigs)
         return s
 
 def testSSLCert():

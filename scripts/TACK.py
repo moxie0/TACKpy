@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from TACKpy import TACK, TACK_Break_Sig, \
+from TACKpy import TACK, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
     m2cryptoLoaded, TACK_Pin_Type, TACK_Sig_Type, \
@@ -81,8 +81,9 @@ values in the correct order.
                     # via the "inTack" variable in the tackcertFlag=True
                     # case...
                     inTack = inCert
-                except SyntaxError:
+                except AssertionError:#SyntaxError:
                     printError("TACK Certificate malformed: %s" % arg)
+                    raise
             else:
                 printError("Input must be either TACK or TACK certificate.")
         elif opt == "-c":
@@ -265,19 +266,22 @@ def tackcertCmd(argv):
     outputFile, X, breakSigs = handleArgs(argv, "oib", "i", tackcertFlag=True)
     if isinstance(X, TACK):
         tack = X
+        tackExt = TACK_Extension()
+        tackExt.create(tack, breakSigs)
         tc = SSL_Cert()
-        tc.create(tack, breakSigs)
+        tc.create(tackExt)
         outputFile.write(tc.writePem())
     elif isinstance(X, SSL_Cert):
         if breakSigs:
             printError("invalid arguments: Break Sigs with TACK Cert.")
         sslCert = X
         s = ""
-        if sslCert.tack:
-            s += sslCert.tack.writePem()
-        if sslCert.breakSigs:
-            for bs in sslCert.breakSigs:
-                s += bs.writePem()
+        if sslCert.tackExt:
+            if sslCert.tackExt.tack:
+                s += sslCert.tackExt.tack.writePem()
+            if sslCert.tackExt.break_sigs:
+                for bs in sslCert.tackExt.break_sigs:
+                    s += bs.writePem()
         print(s)
 
 def viewCmd(argv):
