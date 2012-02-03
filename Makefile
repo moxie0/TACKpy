@@ -56,11 +56,16 @@ test:
 	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -g 255 -c $(CERT1) -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK6_1.pem
 	$(EXEC) adjust -i $(TESTDIR)/TACK1_1.pem -d 8h30m > $(TESTDIR)/TACK1_2.pem
 	$(EXEC) a -i $(TESTDIR)/TACK2_1.pem -d 1095d1m -o $(TESTDIR)/TACK2_2.pem
-	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem > $(TESTDIR)/TACK_Break_Sig5_1.pem
-	$(EXEC) b -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK_Break_Sig6_1.pem
+	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem > $(TESTDIR)/TACK_Break_Sig5.pem
+	$(EXEC) b -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK_Break_Sig6.pem
+	cat $(TESTDIR)/TACK_Break_Sig5.pem $(TESTDIR)/TACK_Break_Sig6.pem > $(TESTDIR)/TACK_Break_Sigs.pem
+	$(EXEC) tackcert -i $(TESTDIR)/TACK3.pem > $(TESTDIR)/TACK_Cert3.pem
+	$(EXEC) tackcert -i $(TESTDIR)/TACK4.pem -b $(TESTDIR)/TACK_Break_Sigs.pem > $(TESTDIR)/TACK_Cert4.pem
+	$(EXEC) tackcert -i $(TESTDIR)/TACK_Cert3.pem > $(TESTDIR)/TACK3_FromCert.pem
 	$(EXEC) view $(TESTDIR)/TACK_Key1.pem > $(TESTDIR)/TACK_View_Key1.txt
 	$(EXEC) view $(TESTDIR)/TACK1.pem > $(TESTDIR)/TACK_View1.txt
-	$(EXEC) v $(TESTDIR)/TACK_Break_Sig5_1.pem > $(TESTDIR)/TACK_View_Break_Sig5_1.txt
+	$(EXEC) v $(TESTDIR)/TACK_Break_Sigs.pem > $(TESTDIR)/TACK_View_Break_Sigs.txt
 	$(EXEC) v $(CERT1) > $(TESTDIR)/TACK_View_Cert1.txt
 	$(EXEC) v $(CERT2) > $(TESTDIR)/TACK_View_Cert2.txt
+	$(EXEC) v $(TESTDIR)/TACK_Cert3.pem > $(TESTDIR)/TACK_View_TACK_Cert3.txt 
 	@echo OK

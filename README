@@ -29,27 +29,27 @@ To create a TACK based on a site's SSL certificate:
     - If there are problems, adjust the TACK's duration to zero (see later
       section). Put this new TACK up for 5 minutes, then remove it. All
       clients will have forgotten the TACK, so problems should disappear.
-  6) Follow the next step to adjust the TACK to a longer duration.
+  6) Adjust the TACK to a longer duration (see later section).
 
 Adding the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
     - TLS Extensions require web server support
     - TACK Certificates have a small risk of client compatibility problems
   2) For TLS Extensions, follow your web server's documentation.
-  3) For TACK Certificates, run "TACK.py makecert -i TACK", then add the
+  3) For TACK Certificates, run "TACK.py tackcert -i TACK", then add the
      resulting certificate to your SSL certificate chain.
     - In Apache, append it to your "SSLCertificateChainFile".
 
 Adjusting the TACK's duration:
-  1) Run "TACK.py adjust -i TACK.pem -d 30d > TACK2.pem" to set the 
+  1) Run "TACK.py adjust -i TACKold.pem -d 30d > TACKnew.pem" to set the 
      duration to 30 days.
     - Or, if you want clients to forget the TACK, use "-d 0".
-  2) Replace the previous TACK with the new one on your web server.
+  2) Replace the old TACK with the new one.
 
 Changing your SSL certificate:
   1) Run "TACK.py update -k TACK_Key.pem -i TACKold.pem -c CERT >TACKnew.pem".
-  2) Replace the old TACK with the new TACK.
-    - You MUST update the TACK whenever you update the SSL cert.
+  2) Replace the old TACK with the new one.
+    - You MUST update the TACK whenever you change the SSL cert.
 
 
 Advanced uses

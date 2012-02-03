@@ -17,8 +17,28 @@ class SSL_Cert:
         self.key_sha256 = bytearray(32)
         self.cert_sha256 = bytearray(32)
         self.notAfter = 0
+        # Below values are populated for TACK certs
         self.tack = None
         self.breakSigs = None
+        # Below values hold cert contents excluding TACK stuff
+        self.preExtBytes = None 
+        self.extBytes = None
+        self.postExtBytes = None        
+        
+    def create(self, tack=None, breakSigs=None):
+        self.tack = tack
+        self.breakSigs = breakSigs
+        self.preExtBytes = a2b_hex(
+"a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
+"3045441434b301e170d3031303730353138303534385a170d33343037303431383035"
+"34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
+"10500030e00300b0204010203040203010001")
+        # Below is BasicConstraints, saving space by omitting
+        #self.extBytes = binascii.a2b_hex(\
+#"300c0603551d13040530030101ff")
+        self.extBytes = bytearray()
+        self.postExtBytes = a2b_hex(
+"300d06092a864886f70d01010505000303003993")
         
     def open(self, filename):
         # May raise IOError or SyntaxError
@@ -94,6 +114,9 @@ class SSL_Cert:
                 break
             x += 1
 
+        self.preExtBytes = b[versionP.offset : certFieldP.offset]
+        self.extBytes = bytearray()
+
         # Iterate through extensions
         x = 0
         certFieldPP = certFieldP.getTagged()
@@ -101,27 +124,65 @@ class SSL_Cert:
             extFieldP = certFieldPP.getChild(x)
             if not extFieldP:
                 break
-                    
+
             # Check the extnID and parse out TACK if present
             extnIDP = extFieldP.getChild(0)            
             if extnIDP.value == oid_TACK:
                 if self.tack:
                     raise SyntaxError("More than one TACK") 
-                    
+
                 # OK! We found a TACK, parse it..               
                 self.tack = TACK()
                 self.tack.parse(extFieldP.getChild(1).value)       
-             
+
             elif extnIDP.value == oid_TACK_Break_Sigs:
                 if self.breakSigs:
                     raise SyntaxError("More than one TACK_Break_Sigs") 
-                
+
                 # OK! We found Break Sigs, parse them..
                 b = extFieldP.getChild(1).value
                 self.breakSigs = TACK_Break_Sig.parseBinaryList(b)
-            x += 1
+            else:  
+                # Collect all non-TACK extensions:
+                self.extBytes += b[extFieldP.offset : \
+                                extFieldP.offset + extFieldP.getTotalLength()]
+            x += 1                
 
-    
+        # Finish copying the tail of the certificate
+        self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength():]
+
+    def write(self):                
+        b = bytearray(0)
+        if self.tack:
+            # type=SEQ,len=?,type=6,len=9(for OID),
+            # type=4,len=?,TACK
+            TACKBytes = self.tack.write()            
+            b = bytearray([4]) + asn1Length(len(TACKBytes)) + TACKBytes
+            b = bytearray([6,9]) + oid_TACK + b
+            b = bytearray([0x30]) + asn1Length(len(b)) + b
+        if self.breakSigs:
+            breakBytes = TACK_Break_Sig.writeBinaryList(self.breakSigs)
+            b2 = bytearray([4]) + asn1Length(len(breakBytes)) + breakBytes
+            b2 = bytearray([6,9]) + oid_TACK_Break_Sigs + b2
+            b2 = bytearray([0x30]) + asn1Length(len(b2)) + b2
+            b += b2
+
+        b = b + self.extBytes # add non-TACK extensions after TACK
+        # Add length fields for extensions and its enclosing tag
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        b = bytearray([0xA3]) + asn1Length(len(b)) + b
+        # Add prefix of tbsCertificate, then its type/length fields
+        b = self.preExtBytes + b
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        # Add postfix of Certificate (ie SignatureAlgorithm, SignatureValue)
+        # then its prefix'd type/length fields
+        b = b + self.postExtBytes
+        b = bytearray([0x30]) + asn1Length(len(b)) + b
+        return b
+
+    def writePem(self):
+        b = self.write()
+        return pem(b, "CERTIFICATE")    
     def writeText(self):
         s = \
 """key_sha256     = 0x%s

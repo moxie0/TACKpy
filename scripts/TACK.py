@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from TACKpy import TACK, TACK_Break_Sig, TACK_Cert, \
+from TACKpy import TACK, TACK_Break_Sig, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
     m2cryptoLoaded, TACK_Pin_Type, TACK_Sig_Type, \
@@ -16,7 +16,7 @@ def printError(s):
     sys.stderr.write("ERROR: %s\n" % s)
     sys.exit(-1)
 
-def handleArgs(argv, argString, mandatoryString=""):
+def handleArgs(argv, argString, mandatoryString="", tackcertFlag=False):
     """Helper function for handling cmdline args.
 
 argv should be sys.argv[2:], i.e. the cmdline args minus "TACK <cmd>".
@@ -64,14 +64,27 @@ values in the correct order.
                 printError("Error opening output file: %s" % arg)
         elif opt == "-i":
             try:
-                tackPem = open(arg, "rU").read()
+                s = open(arg, "rU").read()
             except IOError:
-                printError("Error opening TACK file: %s" % arg)                        
-            try:
-                inTack = TACK()
-                inTack.parsePem(tackPem)
-            except SyntaxError:
-                printError("TACK malformed: %s" % arg)
+                printError("Error opening TACK file: %s" % arg)
+            if not tackcertFlag or pemSniff(s, "TACK"):
+                try:
+                    inTack = TACK()
+                    inTack.parsePem(s)
+                except SyntaxError:
+                    printError("TACK malformed: %s" % arg)
+            elif pemSniff(s, "CERTIFICATE"):
+                try:
+                    inCert = SSL_Cert()
+                    inCert.parsePem(s)
+                    # OK, this is ugly, but we're returning the SSL_Cert
+                    # via the "inTack" variable in the tackcertFlag=True
+                    # case...
+                    inTack = inCert
+                except SyntaxError:
+                    printError("TACK Certificate malformed: %s" % arg)
+            else:
+                printError("Input must be either TACK or TACK certificate.")
         elif opt == "-c":
             try:
                 inCert = SSL_Cert()
@@ -247,12 +260,25 @@ def breakCmd(argv):
     breakSig.create(tack.pin, inKey.sign(tack.pin.write()))
     outputFile.write(addPemComments(breakSig.writePem()))    
 
-def makecertCmd(argv):
-    """Handle "TACK makecert <argv>" command."""    
-    outputFile, tack, breakSigs = handleArgs(argv, "oib", "i")
-    tc = TACK_Cert()
-    tc.create(tack, breakSigs)
-    outputFile.write(tc.writePem())     
+def tackcertCmd(argv):
+    """Handle "TACK tackcert <argv>" command."""    
+    outputFile, X, breakSigs = handleArgs(argv, "oib", "i", tackcertFlag=True)
+    if isinstance(X, TACK):
+        tack = X
+        tc = SSL_Cert()
+        tc.create(tack, breakSigs)
+        outputFile.write(tc.writePem())
+    elif isinstance(X, SSL_Cert):
+        if breakSigs:
+            printError("invalid arguments: Break Sigs with TACK Cert.")
+        sslCert = X
+        s = ""
+        if sslCert.tack:
+            s += sslCert.tack.writePem()
+        if sslCert.breakSigs:
+            for bs in sslCert.breakSigs:
+                s += bs.writePem()
+        print(s)
 
 def viewCmd(argv):
     """Handle "TACK view <argv>" command."""    
@@ -329,7 +355,7 @@ Commands (use "help <command>" to see optional args):
   update -k KEY -c CERT -i TACK
   adjust -i TACK -d DURATION
   break  -k KEY -i TACK
-  makecert -i TACK
+  tackcert -i TACK
   view   FILE
   test  
   help   COMMAND
@@ -425,14 +451,17 @@ Optional arguments:
 Optional arguments:
   -o FILE            : Write the output to this file (instead of stdout)
 """)
-    elif cmd == "makecert"[:len(cmd)]:
+    elif cmd == "tackcert"[:len(cmd)]:
         print( \
 """Creates a TACK certificate with the input TACK and optional Break Sigs.
 
-  makecert -i TACK 
+(Alternatively, if input is a TACK certificate, writes out the TACK and/or
+Break Signatures as PEM files).
+
+  tackcert -i (TACK or CERT) 
 
 Optional arguments:
-  -b BREAKSIGS       : Include these Break Signatures in the output.
+  -b BREAKSIGS       : Include Break Signatures from this file.
   -o FILE            : Write the output to this file (instead of stdout)
 """)
     elif cmd == "test"[:len(cmd)]:
@@ -456,8 +485,8 @@ if __name__ == '__main__':
         adjustCmd(sys.argv[2:])
     elif sys.argv[1] == "break"[:len(sys.argv[1])]:
         breakCmd(sys.argv[2:])
-    elif sys.argv[1] == "makecert"[:len(sys.argv[1])]:
-        makecertCmd(sys.argv[2:])        
+    elif sys.argv[1] == "tackcert"[:len(sys.argv[1])]:
+        tackcertCmd(sys.argv[2:])        
     elif sys.argv[1] == "view"[:len(sys.argv[1])]:
         viewCmd(sys.argv[2:])
     elif sys.argv[1] == "test"[:len(sys.argv[1])]:
