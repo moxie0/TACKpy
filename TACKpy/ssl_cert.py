@@ -8,11 +8,17 @@ from .constants import *
 
 ################ SSL CERT ###
 
+# NOTE!: lengths are hardcoded in write(), be aware if changing...
+oid_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
+oid_TACK_Break_Sigs = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
         
 class SSL_Cert:
     def __init__(self):
         self.key_sha256 = bytearray(32)
         self.cert_sha256 = bytearray(32)
+        self.notAfter = 0
+        self.tack = None
+        self.breakSigs = None
         
     def open(self, filename):
         # May raise IOError or SyntaxError
@@ -63,19 +69,70 @@ class SSL_Cert:
         elif notAfterP.type == 0x18: # GeneralizedTime
             self.notAfter = parseASN1GeneralizedTime(notAfterP.value)
         else:
-            raise SyntaxError()            
+            raise SyntaxError()
+            
+        # Get the hash values            
         self.cert_sha256 = SHA256(b)
         self.key_sha256 = SHA256(spkiP.getTotalBytes())
+        
+        # Check if this is a TACK certificate:
+        #Get the tbsCertificate
+        versionP = tbsCertificateP.getChild(0)        
+        if versionP.type != 0xA0: # i.e. tag of [0], version
+            return # X.509 version field not present
+        versionPP = versionP.getTagged()
+        if versionPP.value != bytearray([0x02]):
+            return # X.509 version field does not equal v3
+
+        # Find extensions element
+        x = 0
+        while 1:
+            certFieldP = tbsCertificateP.getChild(x)
+            if not certFieldP:
+                raise SyntaxError("X.509 extensions not present")
+            if certFieldP.type == 0xA3: # i.e. tag of [3], extensions
+                break
+            x += 1
+
+        # Iterate through extensions
+        x = 0
+        certFieldPP = certFieldP.getTagged()
+        while 1:
+            extFieldP = certFieldPP.getChild(x)
+            if not extFieldP:
+                break
+                    
+            # Check the extnID and parse out TACK if present
+            extnIDP = extFieldP.getChild(0)            
+            if extnIDP.value == oid_TACK:
+                if self.tack:
+                    raise SyntaxError("More than one TACK") 
+                    
+                # OK! We found a TACK, parse it..               
+                self.tack = TACK()
+                self.tack.parse(extFieldP.getChild(1).value)       
+             
+            elif extnIDP.value == oid_TACK_Break_Sigs:
+                if self.breakSigs:
+                    raise SyntaxError("More than one TACK_Break_Sigs") 
+                
+                # OK! We found Break Sigs, parse them..
+                b = extFieldP.getChild(1).value
+                self.breakSigs = TACK_Break_Sig.parseBinaryList(b)
+            x += 1
+
     
     def writeText(self):
         s = \
 """key_sha256     = 0x%s
 cert_sha256    = 0x%s
 notAfter       = %s
-\n""" % (\
+""" % (\
         writeBytes(self.key_sha256),
         writeBytes(self.cert_sha256),
         posixTimeToStr(self.notAfter, True))
+        if self.tack or self.breakSigs:
+            s += "\n"+writeTextTACKStructures(self.tack, self.breakSigs)
         return s
 
 def testSSLCert():

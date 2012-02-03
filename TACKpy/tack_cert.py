@@ -6,11 +6,10 @@ from tack_structures import *
 
 ################ TACK CERT ###
 
+from .ssl_cert import oid_TACK, oid_TACK_Break_Sigs 
+
 class TACK_Cert:
-    # NOTE!: lengths are hardcoded in write(), be aware if changing...
-    oid_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
-    oid_TACK_Break_Sigs = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x02")
-    
+
     def __init__(self):
         self.tack = None
         self.break_sigs = None
@@ -34,6 +33,9 @@ class TACK_Cert:
 "300d06092a864886f70d01010505000303003993")
     
     def parse(self, b):
+        """Parses a cert so that it could be rewritten with 
+        injected TACK objects.
+        """
         try:
             b = dePem(b, "CERTIFICATE")
         except SyntaxError:
@@ -73,7 +75,7 @@ class TACK_Cert:
                     
             # Check the extnID and parse out TACK if present
             extnIDP = extFieldP.getChild(0)            
-            if extnIDP.value == TACK_Cert.oid_TACK:
+            if extnIDP.value == oid_TACK:
                 if self.tack:
                     raise SyntaxError("More than one TACK") 
                     
@@ -81,7 +83,7 @@ class TACK_Cert:
                 self.tack = TACK()
                 self.tack.parse(extFieldP.getChild(1).value)       
              
-            elif extnIDP.value == TACK_Cert.oid_TACK_Break_Sigs:
+            elif extnIDP.value == oid_TACK_Break_Sigs:
                 if self.break_sigs:
                     raise SyntaxError("More than one TACK_Break_Sigs") 
                 
@@ -104,12 +106,12 @@ class TACK_Cert:
             # type=4,len=?,TACK
             TACKBytes = self.tack.write()            
             b = bytearray([4]) + asn1Length(len(TACKBytes)) + TACKBytes
-            b = bytearray([6,9]) + self.oid_TACK + b
+            b = bytearray([6,9]) + oid_TACK + b
             b = bytearray([0x30]) + asn1Length(len(b)) + b
         if self.break_sigs:
             breakBytes = TACK_Break_Sig.writeBinaryList(self.break_sigs)
             b2 = bytearray([4]) + asn1Length(len(breakBytes)) + breakBytes
-            b2 = bytearray([6,9]) + self.oid_TACK_Break_Sigs + b2
+            b2 = bytearray([6,9]) + oid_TACK_Break_Sigs + b2
             b2 = bytearray([0x30]) + asn1Length(len(b2)) + b2
             b += b2
         
