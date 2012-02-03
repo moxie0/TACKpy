@@ -1,6 +1,6 @@
 ################ CONSTANTS ###
 
-class TACK_Pin_Type:
+class TACK_Key_Type:
     v1 = 1
     strings = (None, "v1")
 

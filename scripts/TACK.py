@@ -3,7 +3,7 @@
 from TACKpy import TACK, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
-    m2cryptoLoaded, TACK_Pin_Type, TACK_Sig_Type, \
+    m2cryptoLoaded, TACK_Key_Type, TACK_Sig_Type, \
     posixTimeToStr, selfTest, pemSniff, \
     parseDurationArg, parseTimeArg
 
@@ -258,7 +258,7 @@ def breakCmd(argv):
         handleArgs(argv, "poik", "ki")
 
     breakSig = TACK_Break_Sig()   
-    breakSig.create(tack.pin, inKey.sign(tack.pin.write()))
+    breakSig.create(tack.key, inKey.sign(tack.key.write()))
     outputFile.write(addPemComments(breakSig.writePem()))    
 
 def tackcertCmd(argv):
