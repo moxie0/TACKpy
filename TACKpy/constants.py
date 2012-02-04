@@ -9,5 +9,7 @@ class TACK_Sig_Type:
     v1_cert = 2
     all = (v1_key, v1_cert)
     strings = (None, "v1_key", "v1_cert")
-        
-
+    
+class TACK_Extension_Type:
+    v1 = 1
+    strings = (None, "v1")

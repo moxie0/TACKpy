@@ -334,10 +334,12 @@ class TACK_Break_Sig:
 class TACK_Extension:
 
     def __init__(self):
+        self.type = 0 # 8-bit type from TACK_Extension_Type
         self.tack = None
         self.break_sigs = None # aka []
         
     def create(self, tack=None, break_sigs=None):
+        self.type = TACK_Extension_Type.v1
         self.tack = tack
         self.break_sigs = break_sigs        
     
@@ -346,7 +348,10 @@ class TACK_Extension:
 
     def parse(self, b):
         p = Parser(b)
-        tackLen = p.getInt(2)
+        self.type = p.getInt(1)
+        if self.type != TACK_Extension_Type.v1:
+            raise SyntaxError("Bad TACK_Extension type")
+        tackLen = p.getInt(1)
         if tackLen:
             if tackLen != TACK.length:
                 raise SyntaxError("Only supports v1 TACKs")
@@ -374,8 +379,9 @@ class TACK_Extension:
         if self.break_sigs:
             length += len(self.break_sigs) * TACK_Break_Sig.length
         w = Writer(length+4)
+        w.add(self.type, 1)
         if self.tack:
-            w.add(TACK.length, 2)
+            w.add(TACK.length, 1)
             w.add(self.tack.write(), TACK.length)
         else:
             w.add(0, 2)
