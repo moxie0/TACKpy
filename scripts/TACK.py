@@ -256,8 +256,11 @@ def breakCmd(argv):
     """Handle "TACK break <argv>" command."""
     password, outputFile, tack, inKey = \
         handleArgs(argv, "poik", "ki")
+        
+    if tack.key.public_key != inKey.public_key:
+        printError("TACK Key File does not match TACK's public key")    
 
-    breakSig = TACK_Break_Sig()   
+    breakSig = TACK_Break_Sig()
     breakSig.create(tack.key, inKey.sign(tack.key.write()))
     outputFile.write(addPemComments(breakSig.writePem()))    
 
