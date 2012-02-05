@@ -391,7 +391,7 @@ class TACK_Extension:
             w.add(TACK.length, 1)
             w.add(self.tack.write(), TACK.length)
         else:
-            w.add(0, 2)
+            w.add(0, 1)
         if self.break_sigs:
             w.add(len(self.break_sigs) * TACK_Break_Sig.length, 2)
             for break_sig in self.break_sigs:
