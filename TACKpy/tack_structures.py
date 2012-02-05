@@ -350,7 +350,7 @@ class TACK_Extension:
         self.tack = tack
         self.break_sigs = break_sigs        
     
-    def isEmpty():
+    def isEmpty(self):
         return (not self.tack and not self.break_sigs)
 
     def parse(self, b):
