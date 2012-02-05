@@ -269,6 +269,11 @@ class TACK_Break_Sig:
         
     def getTACKID(self):
         return self.key.getTACKID()
+        
+    def verifySignature(self):
+        bytesToVerify = self.key.write()
+        return ecdsa256Verify(self.key.public_key, bytesToVerify, 
+                                self.signature)         
 
     def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK_Break_Sig.
@@ -292,6 +297,8 @@ class TACK_Break_Sig:
         b = b[TACK_Key.length : ]  
         p = Parser(b)      
         self.signature = p.getBytes(64)
+        if not self.verifySignature():
+            raise SyntaxError("Signature verification failure")        
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK_Break_Sig")
 
