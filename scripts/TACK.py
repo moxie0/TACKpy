@@ -16,7 +16,8 @@ def printError(s):
     sys.stderr.write("ERROR: %s\n" % s)
     sys.exit(-1)
 
-def handleArgs(argv, argString, mandatoryString="", tackcertFlag=False):
+def handleArgs(argv, argString, mandatoryString="", flags="", 
+                tackcertFlag=False):
     """Helper function for handling cmdline args.
 
 argv should be sys.argv[2:], i.e. the cmdline args minus "TACK <cmd>".
@@ -25,6 +26,7 @@ mandatoryString is a string with each char indicating a mandatory arg.
 
 Allowed chars in argString: "poickgdesb"
 Allowed chars in mandatoryString: "ickd"
+Allowed chars in flags: "v"
 
 Returns a list populated with an entry (or entries) for each char in 
 argString.  The list is populated in "poickgdes" order, regardless of 
@@ -37,6 +39,7 @@ values in the correct order.
     # Convert to getopt argstring format:
     # Add ":" after each arg, ie "abc" -> "a:b:c:"
     getOptArgString = ":".join(argString) + ":"
+    getOptArgString += flags
     try:
         opts, argv = getopt.getopt(argv, getOptArgString)
     except getopt.GetoptError as e:
@@ -54,6 +57,7 @@ values in the correct order.
     expiration = None
     sigType = TACK_Sig_Type.v1_cert
     breakSigs = None
+    verbose = False
     for opt, arg in opts:
         if opt == "-p":
             password = arg
@@ -132,7 +136,9 @@ values in the correct order.
             try:
                 breakSigs = TACK_Break_Sig.parsePemList(breakSigsPem)
             except SyntaxError:
-                printError("Break Sigs malformed: %s" % arg)              
+                printError("Break Sigs malformed: %s" % arg)   
+        elif opt == "-v":
+            verbose = True           
         else:
             assert(False)
     if argv:
@@ -193,6 +199,8 @@ values in the correct order.
             retList.append(inCert.key_sha256)  
     if "b" in argString:
         retList.append(breakSigs)      
+    if "v" in flags:
+        retList.append(verbose)
     return retList
     
 def addPemComments(inStr):
@@ -205,7 +213,7 @@ def addPemComments(inStr):
     
 def genkeyCmd(argv):
     """Handle "TACK genkey <argv>" command."""
-    password, outputFile = handleArgs(argv, "po")    
+    password, outputFile, verbose = handleArgs(argv, "po", flags="v")    
     kf = TACK_KeyFile()
     kf.create() # EC key is generated here
     if not password:
@@ -216,12 +224,14 @@ def genkeyCmd(argv):
             if password != password2:
                 sys.stderr.write("PASSWORDS DON'T MATCH!\n")      
     outputFile.write(addPemComments(kf.writePem(password)))
+    if verbose:
+        sys.stderr.write(kf.writeText()+"\n")
 
 def createCmd(argv):
     """Handle "TACK create <argv>" command."""
     password, outputFile, inCert, inKey, generation, \
-    duration, expiration, sigType, hash = \
-        handleArgs(argv, "pockgdes", "kc")
+    duration, expiration, sigType, hash, verbose = \
+        handleArgs(argv, "pockgdes", "kc", flags="v")
     
     if generation == None:
         generation = 0
@@ -231,12 +241,14 @@ def createCmd(argv):
     tack = TACK()
     tack.create(inKey, sigType, expiration, generation, hash, duration)
     outputFile.write(addPemComments(tack.writePem()))
+    if verbose:
+        sys.stderr.write(tack.writeText()+"\n")    
     
 def updateCmd(argv):
     """Handle "TACK update <argv>" command."""    
     password, outputFile, tack, inCert, inKey, generation, \
-    duration, expiration, sigType, hash = \
-        handleArgs(argv, "poickgdes", "kci")
+    duration, expiration, sigType, hash, verbose = \
+        handleArgs(argv, "poickgdes", "kci", flags="v")
 
     if generation == None:
         generation = tack.sig.generation
@@ -244,29 +256,37 @@ def updateCmd(argv):
         duration = tack.duration
         
     tack.update(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(addPemComments(tack.writePem()))    
+    outputFile.write(addPemComments(tack.writePem()))
+    if verbose:
+        sys.stderr.write(tack.writeText()+"\n")    
 
 def adjustCmd(argv):
     """Handle "TACK adjust <argv>" command."""    
-    outputFile, tack, duration, = handleArgs(argv, "oid", "id")
+    outputFile, tack, duration, verbose = \
+        handleArgs(argv, "oid", "id", flags="v")
     tack.duration = duration
-    outputFile.write(addPemComments(tack.writePem()))    
+    outputFile.write(addPemComments(tack.writePem()))
+    if verbose:
+        sys.stderr.write(tack.writeText()+"\n") 
     
 def breakCmd(argv):
     """Handle "TACK break <argv>" command."""
-    password, outputFile, tack, inKey = \
-        handleArgs(argv, "poik", "ki")
+    password, outputFile, tack, inKey, verbose = \
+        handleArgs(argv, "poik", "ki", flags="v")
         
     if tack.key.public_key != inKey.public_key:
         printError("TACK Key File does not match TACK's public key")    
 
     breakSig = TACK_Break_Sig()
     breakSig.create(tack.key, inKey.sign(tack.key.write()))
-    outputFile.write(addPemComments(breakSig.writePem()))    
+    outputFile.write(addPemComments(breakSig.writePem()))
+    if verbose:
+        sys.stderr.write(breakSig.writeText()+"\n")        
 
 def tackcertCmd(argv):
     """Handle "TACK tackcert <argv>" command."""    
-    outputFile, X, breakSigs = handleArgs(argv, "oib", "i", tackcertFlag=True)
+    outputFile, X, breakSigs, verbose = \
+        handleArgs(argv, "oib", "i", tackcertFlag=True, flags="v")
     if isinstance(X, TACK):
         tack = X
         tackExt = TACK_Extension()
@@ -274,6 +294,8 @@ def tackcertCmd(argv):
         tc = SSL_Cert()
         tc.create(tackExt)
         outputFile.write(tc.writePem())
+        if verbose:
+            sys.stderr.write(tackExt.writeText()+"\n")        
     elif isinstance(X, SSL_Cert):
         if breakSigs:
             printError("invalid arguments: Break Sigs with TACK Cert.")
@@ -286,6 +308,9 @@ def tackcertCmd(argv):
                 for bs in sslCert.tackExt.break_sigs:
                     s += bs.writePem()
         print(s)
+        if verbose:
+            sys.stderr.write(sslCert.writeText()+"\n")        
+        
 
 def viewCmd(argv):
     """Handle "TACK view <argv>" command."""    
@@ -381,6 +406,7 @@ def helpCmd(argv):
   genkey
 
 Optional arguments:
+  -v                 : Verbose
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)        
@@ -395,6 +421,7 @@ Optional arguments:
   -c CERT            : Sign this SSL certificate
 
 Optional arguments:
+  -v                 : Verbose
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
   -g GENERATION      : Use this generation number (0-255)
@@ -418,6 +445,7 @@ Optional arguments:
   -i TACK            : Read this TACK file
 
 Optional arguments:
+  -v                 : Verbose
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
   -g GENERATION      : Use this generation number (0-255)
@@ -436,6 +464,7 @@ Optional arguments:
   break -k KEY -i TACK 
 
 Optional arguments:
+  -v                 : Verbose
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)
@@ -456,6 +485,7 @@ Optional arguments:
                            ("5m", "30d", "1d12h5m", etc.)
 
 Optional arguments:
+  -v                 : Verbose
   -o FILE            : Write the output to this file (instead of stdout)
 """)
     elif cmd == "tackcert"[:len(cmd)]:
@@ -468,6 +498,7 @@ Break Signatures as PEM files).
   tackcert -i (TACK or CERT) 
 
 Optional arguments:
+  -v                 : Verbose
   -b BREAKSIGS       : Include Break Signatures from this file.
   -o FILE            : Write the output to this file (instead of stdout)
 """)

@@ -121,7 +121,13 @@ class TACK_KeyFile:
         plaintext = createAES(encKey, bytearray(16)).decrypt(ciphertext)     
         self.private_key = plaintext
         return True
-    
+
+    def writeText(self):
+        s = \
+"""public_key     = 0x%s\n""" % \
+        (writeBytes(self.public_key))
+        return s  
+
     def writePem(self, password):
         salt = bytearray(os.urandom(16))
         IV = bytearray(os.urandom(16))

@@ -400,7 +400,9 @@ class TACK_Extension:
             w.add(0, 2)
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?
         return w.bytes
-            
+    
+    def writeText(self):
+        return writeTextTACKStructures(self.tack, self.break_sigs)
         
             
     

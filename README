@@ -43,7 +43,7 @@ Adding the TACK to your website:
 Adjusting the TACK's duration:
   1) Run "TACK.py adjust -i TACKold.pem -d 30d > TACKnew.pem" to set the 
      duration to 30 days.
-    - Or, if you want clients to forget the TACK, use "-d 0".
+    - Or, if you want clients to forget the TACK, use "-d 0m".
   2) Replace the old TACK with the new one.
 
 Changing your SSL certificate:
