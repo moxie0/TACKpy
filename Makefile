@@ -6,10 +6,10 @@ default:
 SCDIR := selfcontained
 
 # Variables for testing
-TESTDIR = test
+TESTDIR = testoutput
 EXEC = TACK.py
-CERT1 = ~/godaddy/gd1.pem
-CERT2 = ~/godaddy/gd2.der
+CERT1 = ./testdata/serverX509Cert.pem
+CERT2 = ./testdata/serverX509Cert.der
 
 .PHONY: install
 install:
