@@ -254,6 +254,9 @@ def updateCmd(argv):
         generation = tack.sig.generation
     if duration == None:
         duration = tack.duration
+
+    if tack.key.public_key != inKey.public_key:
+        printError("TACK Key File does not match TACK's public key")  
         
     tack.update(inKey, sigType, expiration, generation, hash, duration)
     outputFile.write(addPemComments(tack.writePem()))
