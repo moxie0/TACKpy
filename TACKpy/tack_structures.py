@@ -412,7 +412,6 @@ def writeTextTACKStructures(tack, breakSigs, tackidOnly=False):
         else:
             s += tack.getTACKID()+"\n"
     if breakSigs:
-        s += ("\n")
         for breakSig in breakSigs:
             s += breakSig.writeText()
     return s
