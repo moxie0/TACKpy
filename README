@@ -18,7 +18,7 @@ Run "python setup.py install" or "make install".  This installs:
  - The "TACKpy" library for use by other Python programs (such as TLS Lite).
  - The "TACK.py" command for working with TACKs (see below).
 
-To run TACK.py without installation you can use the self-contained version in
+To use TACK.py without installation you can use the self-contained version in
 "selfcontained/".
 
 If you have M2Crypto installed, TACKpy will use it to accelerate EC and AES.
@@ -45,7 +45,9 @@ Adding the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
     - TLS Extensions require web server support
     - TACK Certificates have a small risk of client compatibility problems
-  2) For TLS Extensions, follow your web server's documentation.
+  2) For TLS Extensions, follow your web server's documentation.  
+    - For Apache with TACK support, set "SSLTackExtension On" and set
+      "SSLTackFile" to your TACK file.
   3) For TACK Certificates, run "TACK.py tackcert -i TACK", then add the
      resulting certificate to your SSL certificate chain.
     - In Apache, append it to your "SSLCertificateChainFile".
