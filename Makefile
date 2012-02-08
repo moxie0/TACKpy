@@ -54,6 +54,7 @@ test:
 	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_cert -d 30d -g 2 -c $(CERT1) -i $(TESTDIR)/TACK4.pem -o $(TESTDIR)/TACK4_1.pem			
 	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -d 1d12h5m -e 2030-06-06Z -c $(CERT1) -i $(TESTDIR)/TACK5.pem -o $(TESTDIR)/TACK5_1.pem	
 	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -g 255 -c $(CERT1) -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK6_1.pem
+	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/T6 -e 2013-01-02Z -n 3@1d
 	$(EXEC) adjust -i $(TESTDIR)/TACK1_1.pem -d 8h30m > $(TESTDIR)/TACK1_2.pem
 	$(EXEC) a -i $(TESTDIR)/TACK2_1.pem -d 1095d1m -o $(TESTDIR)/TACK2_2.pem
 	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem > $(TESTDIR)/TACK_Break_Sig5.pem
