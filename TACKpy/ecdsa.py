@@ -7,6 +7,7 @@
 
 from .numbertheory import *
 from .ellipticcurve import *
+from .compat import *
 
 ################ ECDSA ###
 #! /usr/bin/env python

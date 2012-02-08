@@ -1,6 +1,8 @@
 # Author: Trevor Perrin
 # See the LICENSE file for legal information regarding use of this file.
 
+from .compat import *
+
 ################ CRYPTOMATH ###
 
 import math, hashlib, hmac
