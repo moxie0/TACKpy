@@ -1,3 +1,6 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from .ecdsa import *
 from .cryptomath import *
 from .pem import *

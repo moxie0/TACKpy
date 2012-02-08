@@ -1,3 +1,6 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from .ecdsa_wrappers import *
 from .rijndael import *
 from .struct_parser import *

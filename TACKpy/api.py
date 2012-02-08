@@ -1,3 +1,5 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
 
 from .version import __version__
 

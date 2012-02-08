@@ -1,3 +1,10 @@
+# Authors:
+#   Peter Pearson - main author
+#   Trevor Perrin - minor changes for Python compatibility
+#
+# See the LICENSE file for legal information regarding use of this file.
+# Also see Peter Pearson's statement below
+
 ################ NUMBER THEORY ###
 #! /usr/bin/env python
 #

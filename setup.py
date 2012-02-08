@@ -2,6 +2,9 @@
 
 from distutils.core import setup
 
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 setup(name="TACKpy",
       version="0.9.3",
       author="Trevor Perrin",

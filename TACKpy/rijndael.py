@@ -1,3 +1,10 @@
+# Authors:
+#   Bram Cohen - main author
+#   Trevor Perrin - minor changes for Python compatibility
+#
+# See the LICENSE file for legal information regarding use of this file.
+# Also see Bram Cohen's statement below
+
 ################ RIJNDAEL ###
 # Trevor edited below code for python 3, and ease of packaging
 

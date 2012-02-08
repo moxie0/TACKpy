@@ -1,3 +1,6 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from .cryptomath import *
 from .compat import *
 from .m2crypto import *

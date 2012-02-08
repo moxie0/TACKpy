@@ -1,3 +1,6 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from .compat import *
 from .time_funcs import *
 from .version import __version__

@@ -1,3 +1,6 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from .misc import *
 from .pem import *
 from .asn1 import *

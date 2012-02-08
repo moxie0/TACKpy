@@ -1,3 +1,5 @@
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
 
 """ 
 A custom base32 alphabet is used consisting of the uppercase letters

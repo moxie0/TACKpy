@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+# Author: Trevor Perrin
+# See the LICENSE file for legal information regarding use of this file.
+
 from TACKpy import TACK, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \

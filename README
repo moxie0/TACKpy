@@ -1,5 +1,15 @@
 TACKpy version 0.9.3
 
+
+Licenses/Acknowledgements
+==========================
+TACKpy is written (mostly) by Trevor Perrin. It includes some excellent Python
+crypto code from Peter Pearson (ECDSA) and Bram Cohen (AES).
+
+All code in TACKpy has been dedicated to the public domain by its authors. See
+the LICENSE file for details.
+
+
 Installation
 =============
 TACKpy requires Python 2.7+ or Python 3.
@@ -123,9 +133,10 @@ them on a secure system and dole them out to webservers daily.
 
 Example of batch generation of TACKs:
 
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_3Z > TACK_1_1.pem
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_4Z > TACK_1_2.pem 
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_5Z > TACK_1_3.pem 
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -e 2013_01_6Z > TACK_1_4.pem 
-...
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -b 365@1d -o TACK_
 
+Produces:
+  TACK_000.pem
+  TACK_001.pem
+  TACK_002.pem
+  ...
