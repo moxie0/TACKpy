@@ -1,4 +1,5 @@
 recursive-include testdata *
+include LICENSE
 include README
 include Makefile
 include MANIFEST.in

@@ -3,7 +3,7 @@ TACKpy version 0.9.3
 
 Licenses/Acknowledgements
 ==========================
-TACKpy is written (mostly) by Trevor Perrin. It includes some excellent Python
+TACKpy is written (mostly) by Trevor Perrin. It includes excellent Python
 crypto code from Peter Pearson (ECDSA) and Bram Cohen (AES).
 
 All code in TACKpy has been dedicated to the public domain by its authors. See
@@ -35,7 +35,7 @@ To create a TACK based on a site's SSL certificate:
       remember it for 5 minutes. This lets you test the TACK without fear of
       long-lasting problems.
   4) Add the TACK to your website (see next section).
-  5) Test the site
+  5) Test the site.
     - If there are problems, adjust the TACK's duration to zero (see later
       section). Put this new TACK up for 5 minutes, then remove it. All
       clients will have forgotten the TACK, so problems should disappear.
@@ -43,8 +43,9 @@ To create a TACK based on a site's SSL certificate:
 
 Adding the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
-    - TLS Extensions require web server support
-    - TACK Certificates have a small risk of client compatibility problems
+    - TLS Extensions require web server support.
+    - TACK Certificates may cause browser compatibility problems on some 
+      old mobile phone browsers.
   2) For TLS Extensions, follow your web server's documentation.  
     - For Apache with TACK support, set "SSLTackExtension On" and set
       "SSLTackFile" to your TACK file.
@@ -67,8 +68,8 @@ Changing your SSL certificate:
 Advanced uses
 ==============
 
-Key reuse
-----------
+One key, many TACKs
+--------------------
 You may use a single TACK key to create different TACKs. Just be careful to
 update the correct TACK for new SSL certificates.
 
@@ -127,18 +128,25 @@ TACK will expire at the same time as the certificate, and must be replaced by
 an updated version after that point.
 
 If you shorten the TACK's expiration time, then a compromised SSL certificate
-will become unusable to an attacker once the TACK expires.
+will become unusable to an attacker once the TACK expires. For example, every
+day at midnight you could deploy a new TACK that expires within 48 hours.
 
-For example, every day at midnight you could deploy a new TACK that expires
-within 48 hours. You could generate all these TACKs in a batch, then store
-them on a secure system and dole them out to webservers daily.
+A good way to handle short-lived TACKs is to generate a batch of them, then
+store the TACKs on a secure system that distributes them to webservers. This
+way, you do not have to use your TACK key to sign new TACKs frequently.
 
-Example of batch generation of TACKs:
+You can generate a batch of TACKs with the "-n NUM@INTERVAL" argument to
+"TACK.py update", specifying the number of TACKs and the interval between
+their expiration times. The "-o" argument is taken as a filename prefix, and
+the "-e" time is used as the expiration time for the first file.
 
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -b 365@1d -o TACK_
+Example:
 
-Produces:
-  TACK_000.pem
-  TACK_001.pem
-  TACK_002.pem
+TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -n 365@1d -e 2013-01-02Z -o T1
+
+produces 365 TACKs, one expiring at midnight (UTC) each day of 2013:
+  T1_0000.pem
+  T1_0001.pem
+  T1_0002.pem
   ...
+  T1_0364.pem

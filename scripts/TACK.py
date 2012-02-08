@@ -27,7 +27,7 @@ argv should be sys.argv[2:], i.e. the cmdline args minus "TACK <cmd>".
 argString is a string with each char indicating a supported arg.
 mandatoryString is a string with each char indicating a mandatory arg.
 
-Allowed chars in argString: "poickgdesb"
+Allowed chars in argString: "poickgdesbn"
 Allowed chars in mandatoryString: "ickd"
 Allowed chars in flags: "v"
 
@@ -49,7 +49,7 @@ values in the correct order.
         printError(e) 
     # Default values if arg not present   
     password = None
-    outputFile = sys.stdout
+    outputFile = (sys.stdout, None)
     inTack  = None
     inCert = None
     inKey = None
@@ -61,14 +61,13 @@ values in the correct order.
     sigType = TACK_Sig_Type.v1_cert
     breakSigs = None
     verbose = False
+    numArg = None
     for opt, arg in opts:
         if opt == "-p":
             password = arg
         elif opt == "-o":
-            try:
-                outputFile = open(arg, "w")
-            except IOError:
-                printError("Error opening output file: %s" % arg)
+            # Defer opening it because -n might be set
+            outputFile = (None, arg) 
         elif opt == "-i":
             try:
                 s = open(arg, "rU").read()
@@ -141,7 +140,17 @@ values in the correct order.
             except SyntaxError:
                 printError("Break Sigs malformed: %s" % arg)   
         elif opt == "-v":
-            verbose = True           
+            verbose = True
+        elif opt == "-n":
+            try:
+                leftArg, rightArg = arg.split("@") # could raise ValueError
+                numTacks = int(leftArg) # could raise ValueError
+                interval = parseDurationArg(rightArg) # SyntaxError
+                if numTacks < 1 or numTacks >= 10000:
+                    raise ValueError()
+                numArg = (numTacks, interval)
+            except (ValueError, SyntaxError):
+                printError("Bad -n NUMTACKS: %s:" % arg)                
         else:
             assert(False)
     if argv:
@@ -173,6 +182,14 @@ values in the correct order.
         except SyntaxError:
             printError("Error processing TACK Secret Key File")
 
+    # If -o and not -n, then open the output file
+    if outputFile[1]:
+        try:
+            if not numArg:
+                outputFile = (open(outputFile[1], "w"), outputFile[1])
+        except IOError:
+            printError("Error opening output file: %s" % arg)
+
     # Populate the return list
     retList = []
     if "p" in argString:
@@ -191,8 +208,10 @@ values in the correct order.
         retList.append(duration)
     if "e" in argString:
         if not expiration:
-            # round up to next minute
-            expiration = int(math.ceil(inCert.notAfter / 60.0))
+            # If not specified and not -n,
+            #   round up to next minute from certificate
+            if not numArg:
+                expiration = int(math.ceil(inCert.notAfter / 60.0))
         retList.append(expiration) 
     if "s" in argString:
         retList.append(sigType)
@@ -201,7 +220,9 @@ values in the correct order.
         else:
             retList.append(inCert.key_sha256)  
     if "b" in argString:
-        retList.append(breakSigs)      
+        retList.append(breakSigs)
+    if "n" in argString:
+        retList.append(numArg)      
     if "v" in flags:
         retList.append(verbose)
     return retList
@@ -216,7 +237,7 @@ def addPemComments(inStr):
     
 def genkeyCmd(argv):
     """Handle "TACK genkey <argv>" command."""
-    password, outputFile, verbose = handleArgs(argv, "po", flags="v")    
+    password, (outputFile,_), verbose = handleArgs(argv, "po", flags="v")    
     kf = TACK_KeyFile()
     kf.create() # EC key is generated here
     if not password:
@@ -232,7 +253,7 @@ def genkeyCmd(argv):
 
 def createCmd(argv):
     """Handle "TACK create <argv>" command."""
-    password, outputFile, inCert, inKey, generation, \
+    password, (outputFile,_), inCert, inKey, generation, \
     duration, expiration, sigType, hash, verbose = \
         handleArgs(argv, "pockgdes", "kc", flags="v")
     
@@ -249,10 +270,11 @@ def createCmd(argv):
     
 def updateCmd(argv):
     """Handle "TACK update <argv>" command."""    
-    password, outputFile, tack, inCert, inKey, generation, \
-    duration, expiration, sigType, hash, verbose = \
-        handleArgs(argv, "poickgdes", "kci", flags="v")
+    password, (outputFile,outputFilename), tack, inCert, inKey, generation, \
+    duration, expiration, sigType, hash, numArg, verbose = \
+        handleArgs(argv, "poickgdesn", "kci", flags="v")
 
+    # -g and -d default to existing TACK values
     if generation == None:
         generation = tack.sig.generation
     if duration == None:
@@ -260,15 +282,30 @@ def updateCmd(argv):
 
     if tack.key.public_key != inKey.public_key:
         printError("TACK Key File does not match TACK's public key")  
-        
-    tack.update(inKey, sigType, expiration, generation, hash, duration)
-    outputFile.write(addPemComments(tack.writePem()))
-    if verbose:
-        sys.stderr.write(tack.writeText()+"\n")    
+
+    if not numArg:  # No -n
+        tack.update(inKey, sigType, expiration, generation, hash, duration)
+        outputFile.write(addPemComments(tack.writePem()))
+        if verbose:
+            sys.stderr.write(tack.writeText()+"\n")
+    else:
+        (numTacks, interval) = numArg
+        if not outputFilename:
+            printError("-o required with -n")
+        if not expiration:
+            printError("-e required with -n")
+        for x in range(numTacks):
+            tack.update(inKey, sigType, expiration, generation, hash, duration)
+            outputFile = open(outputFilename+"_%04d.pem" % x, "w")
+            outputFile.write(addPemComments(tack.writePem()))
+            outputFile.close()
+            if verbose:
+                sys.stderr.write(tack.writeText()+"\n")            
+            expiration += interval
 
 def adjustCmd(argv):
     """Handle "TACK adjust <argv>" command."""    
-    outputFile, tack, duration, verbose = \
+    (outputFile,_), tack, duration, verbose = \
         handleArgs(argv, "oid", "id", flags="v")
     tack.duration = duration
     outputFile.write(addPemComments(tack.writePem()))
@@ -277,7 +314,7 @@ def adjustCmd(argv):
     
 def breakCmd(argv):
     """Handle "TACK break <argv>" command."""
-    password, outputFile, tack, inKey, verbose = \
+    password, (outputFile,_), tack, inKey, verbose = \
         handleArgs(argv, "poik", "ki", flags="v")
         
     if tack.key.public_key != inKey.public_key:
@@ -291,7 +328,7 @@ def breakCmd(argv):
 
 def tackcertCmd(argv):
     """Handle "TACK tackcert <argv>" command."""    
-    outputFile, X, breakSigs, verbose = \
+    (outputFile,_), X, breakSigs, verbose = \
         handleArgs(argv, "oib", "i", tackcertFlag=True, flags="v")
     if isinstance(X, TACK):
         tack = X
@@ -433,8 +470,8 @@ Optional arguments:
   -g GENERATION      : Use this generation number (0-255)
   -s SIG.TYPE        : Target signature to "v1_key" or "v1_cert"
   -d DURATION        : Use this duration for the pin:
-                         ("5m", "30d", "1d12h5m", etc.)
-  -e EXPIRATION      : use this UTC time for expiration
+                         ("5m", "30d", "1d12h5m", "0m", etc.)
+  -e EXPIRATION      : Use this UTC time for expiration
                         ("%s", "%sZ",
                          "%sZ", "%sZ" etc.)
                         (or, specify a duration from current time)
@@ -457,11 +494,15 @@ Optional arguments:
   -g GENERATION      : Use this generation number (0-255)
   -s SIG.TYPE        : Target signature to "v1_key" or "v1_cert"
   -d DURATION        : Use this duration for the pin:
-                         ("5m", "30d", "1d12h5m", etc.)
-  -e EXPIRATION      : use this UTC time for expiration
+                         ("5m", "30d", "1d12h5m", "0m", etc.)
+  -e EXPIRATION      : Use this UTC time for expiration
                         ("%s", "%sZ",
                          "%sZ", "%sZ" etc.)
                         (or, specify a duration from current time)
+ - n NUM@INTERVAL    : Generate NUM updates, with expiration times spaced 
+                       out by INTERVAL (see -d for INTERVAL syntax).  The 
+                       -o argument is used as a filename prefix, and the
+                       -e argument is used as the starting expiration time.                          
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
         print( \
@@ -488,7 +529,7 @@ Optional arguments:
   
   -i TACK            : Update this TACK file
   -d DURATION        : Use this duration for the pin:
-                           ("5m", "30d", "1d12h5m", etc.)
+                           ("5m", "30d", "1d12h5m", "0m", etc.)
 
 Optional arguments:
   -v                 : Verbose
