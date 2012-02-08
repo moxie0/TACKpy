@@ -6,7 +6,7 @@ from distutils.core import setup
 # See the LICENSE file for legal information regarding use of this file.
 
 setup(name="TACKpy",
-      version="0.9.3",
+      version="0.9.4",
       author="Trevor Perrin",
       author_email="takckpy@trevp.net",
       url="http://trevp.net/TACK/",
