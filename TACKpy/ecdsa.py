@@ -184,7 +184,7 @@ def digest_integer( m ):
   #
   #import sha
   from hashlib import sha1
-  return string_to_int( bytearray(sha1( int_to_string( m ) ).digest()))
+  return string_to_int( bytearray(sha1( compat26Str(int_to_string( m )) ).digest()))
 
 
 def point_is_valid( generator, x, y ):

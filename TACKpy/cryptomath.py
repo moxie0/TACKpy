@@ -55,7 +55,7 @@ def numBytes(n):
 
 def SHA256(b):
     "Return a 32-byte bytearray which is the SHA256 of input bytearray."
-    return bytearray(hashlib.sha256(b).digest())
+    return bytearray(hashlib.sha256(compat26Str(b)).digest())
 
 def HMAC_SHA256(k, b):
     """Return a 32-byte bytearray which is HMAC-SHA256 of key and input."""    
