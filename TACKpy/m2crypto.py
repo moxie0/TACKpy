@@ -9,4 +9,10 @@ try:
 
 except ImportError:
     m2cryptoLoaded = False
-        
+except:
+    # Most likely ImportError, but I've seen AttributeError from what 
+    # might've been an incorrectly installed M2Crypto (on AWS), so
+    # let's just swallow everything...    
+    m2cryptoLoaded = False
+    import sys
+    sys.stderr.write("Error importing M2Crypto?! \n")
