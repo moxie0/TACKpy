@@ -57,7 +57,6 @@ values in the correct order.
     outBreak = None
     generation = None
     min_generation = None
-    duration = None
     expiration = None
     sigType = TACK_Sig_Type.v1
     breakSigs = None
@@ -120,11 +119,6 @@ values in the correct order.
                     raise ValueError()                
             except ValueError:
                 printError("Bad min_generation: %s" % arg)        
-        elif opt == "-d":
-            try:
-                duration = parseDurationArg(arg)
-            except SyntaxError:
-                printError("Bad duration: %s" % arg)       
         elif opt == "-e":
             # parseTimeArg will error and exit if arg is malformed
             try:
@@ -164,8 +158,6 @@ values in the correct order.
         printError("-c missing (SSL certificate)")
     if "i" in mandatoryString and not inTack:
         printError("-i missing (TACK)")
-    if "d" in mandatoryString and duration == None:
-        printError("-d missing (duration)")        
 
     # Load the key, prompting for password if not specified on cmdline
     if keyPem:
@@ -216,8 +208,6 @@ values in the correct order.
         retList.append(generation)
     if "m" in argString:
         retList.append(min_generation)
-    if "d" in argString:
-        retList.append(duration)
     if "e" in argString:
         if not expiration:
             # If not specified and not -n,
@@ -260,14 +250,14 @@ def genkeyCmd(argv):
 def signCmd(argv):
     """Handle "TACK sign <argv>" command."""
     (password, (outputFile,outputFilename), inCert, hash, inKey, 
-    generation, min_generation, duration, expiration,
+    generation, min_generation, expiration,
     numArg, verbose) = \
-        handleArgs(argv, "pockgmden", "kcd", flags="v")
+        handleArgs(argv, "pockgmen", "kcd", flags="v")
     
     if not numArg: # No -n
         tack = TACK()
         tack.create(inKey, TACK_Sig_Type.v1, min_generation, generation, 
-                    expiration, duration,  hash)
+                    expiration, hash)
         outputFile.write(addPemComments(tack.writePem()))
         if verbose:
             sys.stderr.write(tack.writeText()+"\n")    
@@ -280,7 +270,7 @@ def signCmd(argv):
         for x in range(numTacks):
             tack = TACK()
             tack.create(inKey, TACK_Sig_Type.v1, min_generation, generation, 
-                        expiration, duration, hash)
+                        expiration, hash)
             outputFile = open(outputFilename+"_%04d.pem" % x, "w")
             outputFile.write(addPemComments(tack.writePem()))
             outputFile.close()
@@ -401,7 +391,7 @@ def printUsage(s=None):
 
 Commands (use "help <command>" to see optional args):
   genkey
-  sign   -k KEY -c CERT -d DURATION
+  sign   -k KEY -c CERT
   break  -k KEY
   tackcert -i TACK
   view   FILE
@@ -431,12 +421,10 @@ Optional arguments:
         print( \
 """Creates a TACK based on a target SSL certificate.
         
-  sign -k KEY -c CERT -d DURATION
+  sign -k KEY -c CERT
   
   -k KEY             : Use this TACK SecretKey file
   -c CERT            : Sign this SSL certificate's public key
-  -d DURATION        : Use this duration for the pin:
-                         ("5m", "30d", "1d12h5m", "0m", etc.)
 
 Optional arguments:
   -v                 : Verbose
@@ -447,7 +435,8 @@ Optional arguments:
   -e EXPIRATION      : Use this UTC time for expiration
                          ("%s", "%sZ",
                           "%sZ", "%sZ" etc.)
-                         (or, specify a duration from current time)
+                       Or, specify a duration from current time:
+                         ("5m", "30d", "1d12h5m", "0m", etc.)                         
   - n NUM@INTERVAL   : Generate NUM TACKs, with expiration times spaced 
                        out by INTERVAL (see -d for INTERVAL syntax).  The 
                        -o argument is used as a filename prefix, and the

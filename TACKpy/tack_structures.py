@@ -60,15 +60,13 @@ class TACK_Key:
         Used by the "TACK view" command to display TACK objects."""
         assert(self.type == TACK_Key_Type.v1)
         s = \
-"""TACK ID        = %s
-public_key     = 0x%s\n""" % \
-(self.getTACKID(), 
-writeBytes(self.public_key))
+"""TACK ID        = %s\n""" % \
+(self.getTACKID())
         return s
         
            
 class TACK_Sig:
-    length = 107 # length of TACK_Sig in bytes
+    length = 103 # length of TACK_Sig in bytes
         
     def __init__(self):
         """Create an uninitialized TACK_Sig.  
@@ -78,11 +76,10 @@ class TACK_Sig:
         self.min_generation = 0 # 8-bit integer
         self.generation = 0 # 8-bit integer               
         self.expiration = 0 # 32-bit unsigned integer encoding POSIX time
-        self.duration = 0 # 32-bit unsigned integer counting minutes
         self.target_sha256 = bytearray(32) # 32-byte SHA256 result
         self.signature = bytearray(64) # ECDSA signature using NIST-P256
         
-    def create(self, type, min_generation, generation, expiration, duration,
+    def create(self, type, min_generation, generation, expiration,
                 target_sha256, key, signFunc):
         """Initialize a TACK_Sig.
 
@@ -102,13 +99,11 @@ class TACK_Sig:
         assert(generation >= 0 and generation <= 255 and 
                 generation >= min_generation)
         assert(expiration >=0 and expiration <= 2**32-1)
-        assert(duration >= 0 and duration <= 2**32-1)
         assert(len(target_sha256) == 32)                
         self.type = type
         self.min_generation = min_generation
         self.generation = generation                
         self.expiration = expiration        
-        self.duration = duration
         self.target_sha256 = target_sha256
         self.signature = signFunc(key.write() + self.write()[:-64])
     
@@ -124,7 +119,6 @@ class TACK_Sig:
         self.min_generation = p.getInt(1)
         self.generation = p.getInt(1)            
         self.expiration = p.getInt(4)
-        self.duration = p.getInt(4)
         self.target_sha256 = p.getBytes(32)
         self.signature = p.getBytes(64)
         if p.index != len(b):
@@ -138,7 +132,6 @@ class TACK_Sig:
         w.add(self.min_generation, 1)
         w.add(self.generation, 1)
         w.add(self.expiration, 4)
-        w.add(self.duration, 4)
         w.add(self.target_sha256, 32)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?
@@ -153,17 +146,15 @@ class TACK_Sig:
 """min_generation = %d
 generation     = %d
 expiration     = %s
-duration       = %s
 target_sha256  = 0x%s\n""" % \
 (self.min_generation,
 self.generation,
 posixTimeToStr(self.expiration*60),
-durationToStr(self.duration),
 writeBytes(self.target_sha256))
         return s
 
 class TACK:
-    length =  TACK_Key.length + TACK_Sig.length  # 172 bytes
+    length =  TACK_Key.length + TACK_Sig.length  # 168 bytes
     
     def __init__(self):
         """Create an uninitialized TACK.  
@@ -173,29 +164,26 @@ class TACK:
         self.sig = None # class TACK_Sig
 
     def create(self, keyFile, sigType, min_generation, generation, 
-                expiration, duration, target_sha256):
+                expiration, target_sha256):
         """Initialize a TACK.
 
-        The input args are passed to TACK_Key.create() or TACK_Sig.create(),
-        except for duration which is applied directly to self.duration.
+        The input args are passed to TACK_Key.create() or TACK_Sig.create()
         """        
         self.key = TACK_Key()
         self.key.create(keyFile.public_key)
         self.update(keyFile, sigType, min_generation, generation, 
-                    expiration, duration, target_sha256)
+                    expiration, target_sha256)
                 
     def update(self, keyFile, sigType, min_generation, generation, 
-                expiration, duration, target_sha256):
+                expiration, target_sha256):
         """Create a new TACK_Sig for the TACK.
 
         The existing TACK_Sig is replaced.  The existing TACK_Key is 
-        unmodified.  The duration value is changed.
-        """                        
+        unmodified.        """                        
         self.sig = TACK_Sig()
         self.sig.create(sigType, min_generation, generation,  
-                        expiration, duration, target_sha256, 
+                        expiration, target_sha256, 
                         self.key, keyFile.sign)
-        self.duration = duration
 
     def getTACKID(self):
         return self.key.getTACKID()

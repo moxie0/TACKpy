@@ -4,8 +4,8 @@ Trevor Perrin <tackpy at trevp.net>
 
 Licenses/Acknowledgements
 ==========================
-TACKpy is written (mostly) by Trevor Perrin. It includes excellent Python
-crypto code from Peter Pearson (ECDSA) and Bram Cohen (AES).
+TACKpy is written (mostly) by Trevor Perrin. It includes Python crypto code
+from Peter Pearson (ECDSA) and Bram Cohen (AES).
 
 All code in TACKpy has been dedicated to the public domain by its authors. See
 the LICENSE file for details.
@@ -29,25 +29,17 @@ Quick start
 ============
 
 To create a TACK based on a site's SSL certificate:
-  1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK key.  
-  2) Backup the TACK key where it won't be lost or stolen.
-  3) Run "TACK.py sign -k TACK_Key.pem -c CERT -d5m > TACK.pem".
-    - The resulting TACK has a 5 minute duration, so clients will only
-      remember it for 5 minutes. This lets you test the TACK without fear of
-      long-lasting problems.
+  1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK secret key.  
+  2) Backup the secret key where it won't be lost or stolen.
+  3) Run "TACK.py sign -k TACK_Key.pem -c CERT > TACK.pem".
   4) Add the TACK to your website (see next section).
-  5) Test the site.
-    - If there are problems, change the TACK's duration to zero minutes   
-      ("-d0m"). Put this new TACK up for 5 minutes, then remove it. All
-      clients will have forgotten the TACK, so problems should disappear.
-  6) Once testing is complete, create a TACK with a longer duration ("-d30d"
-      for the recommended 30 days) and add that to your website.
+  5) Test the site (if there are problems, see "break signatures").
+  6) Whenever you change the site's certificate, re-sign and replace the TACK.
 
 Adding the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
     - TLS Extensions require web server support.
-    - TACK Certificates may cause browser compatibility problems on some 
-      old mobile phone browsers.
+    - TACK Certificates have a small risk of browser compatibility problems
   2) For TLS Extensions, follow your web server's documentation.  
     - For Apache with TACK support, set "SSLTackExtension On" and set
       "SSLTackFile" to your TACK file.
@@ -59,10 +51,17 @@ Adding the TACK to your website:
 Advanced uses
 ==============
 
-One key, many TACKs
+One key, many sites
 --------------------
-You may use a single TACK key to create different TACKs. Just be careful to
-update the correct TACK for new SSL certificates.
+You may use a single TACK key for different sites. This is beneficial in
+several ways, since it reduces the number of keys you have to manage, allows
+the sites to share "secure" cookies, and means all the sites will benefit from
+"break signatures" or "min_generation" updates published by any one of them.
+
+However, note that all sites sharing the same TACK key are considered
+"equivalent" by a TACK client - any of the sites could impersonate any other.
+Thus, you should only use the same TACK key for sites with similar security
+properties.
 
 
 Halting use of a TACK, and "break signatures"
