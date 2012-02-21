@@ -42,21 +42,13 @@ test:
 	$(EXEC) genkey > $(TESTDIR)/TACK_Key1.pem 
 	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key2.pem 
 	$(EXEC) genkey -p asdf -o $(TESTDIR)/TACK_Key3.pem 
-	$(EXEC) create -k $(TESTDIR)/TACK_Key1.pem -c $(CERT1) > $(TESTDIR)/TACK1.pem	
-	$(EXEC) c -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT2) -o $(TESTDIR)/TACK2.pem		
-	$(EXEC) c -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -c $(CERT1) -o $(TESTDIR)/TACK3.pem			
-	$(EXEC) c -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_cert -d 30d -c $(CERT1) -o $(TESTDIR)/TACK4.pem			
-	$(EXEC) c -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -d 1d12h5m -e 2030-06-06Z -c $(CERT1) -o $(TESTDIR)/TACK5.pem
-	$(EXEC) c -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -g 1 -c $(CERT1) -o $(TESTDIR)/TACK6.pem
-	$(EXEC) update -k $(TESTDIR)/TACK_Key1.pem -c $(CERT1) -i $(TESTDIR)/TACK1.pem > $(TESTDIR)/TACK1_1.pem	
-	$(EXEC) up -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT2) -i $(TESTDIR)/TACK2.pem -o $(TESTDIR)/TACK2_1.pem		
-	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -c $(CERT1) -i $(TESTDIR)/TACK3.pem -o $(TESTDIR)/TACK3_1.pem			
-	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_cert -d 30d -g 2 -c $(CERT1) -i $(TESTDIR)/TACK4.pem -o $(TESTDIR)/TACK4_1.pem			
-	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -d 1d12h5m -e 2030-06-06Z -c $(CERT1) -i $(TESTDIR)/TACK5.pem -o $(TESTDIR)/TACK5_1.pem	
-	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -s v1_key -g 255 -c $(CERT1) -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK6_1.pem
-	$(EXEC) u -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/T6 -e 2013-01-02Z -n 3@1d
-	$(EXEC) adjust -i $(TESTDIR)/TACK1_1.pem -d 8h30m > $(TESTDIR)/TACK1_2.pem
-	$(EXEC) a -i $(TESTDIR)/TACK2_1.pem -d 1095d1m -o $(TESTDIR)/TACK2_2.pem
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -c $(CERT1) -d5m > $(TESTDIR)/TACK1.pem	
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT2) -d5m -o $(TESTDIR)/TACK2.pem		
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -m2 -d30d -o $(TESTDIR)/TACK3.pem			
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -d 30d -c $(CERT1) -o $(TESTDIR)/TACK4.pem			
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -d 1d12h5m -e 2030-06-06Z -c $(CERT1) -o $(TESTDIR)/TACK5.pem
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -g2 -m2 -c $(CERT1) -d8h30m -o $(TESTDIR)/TACK6.pem
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -m250 -g251 -c $(CERT1) -d24h -o $(TESTDIR)/T6 -e 2013-01-02Z -n 3@1d
 	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK5.pem > $(TESTDIR)/TACK_Break_Sig5.pem
 	$(EXEC) b -k $(TESTDIR)/TACK_Key1.pem -p asdf -i $(TESTDIR)/TACK6.pem -o $(TESTDIR)/TACK_Break_Sig6.pem
 	cat $(TESTDIR)/TACK_Break_Sig5.pem $(TESTDIR)/TACK_Break_Sig6.pem > $(TESTDIR)/TACK_Break_Sigs.pem

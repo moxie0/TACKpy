@@ -31,16 +31,17 @@ Quick start
 To create a TACK based on a site's SSL certificate:
   1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK key.  
   2) Backup the TACK key where it won't be lost or stolen.
-  3) Run "TACK.py create -k TACK_Key.pem -c CERT > TACK.pem".
+  3) Run "TACK.py sign -k TACK_Key.pem -c CERT -d5m > TACK.pem".
     - The resulting TACK has a 5 minute duration, so clients will only
       remember it for 5 minutes. This lets you test the TACK without fear of
       long-lasting problems.
   4) Add the TACK to your website (see next section).
   5) Test the site.
-    - If there are problems, adjust the TACK's duration to zero (see later
-      section). Put this new TACK up for 5 minutes, then remove it. All
+    - If there are problems, change the TACK's duration to zero minutes   
+      ("-d0m"). Put this new TACK up for 5 minutes, then remove it. All
       clients will have forgotten the TACK, so problems should disappear.
-  6) Adjust the TACK to a longer duration (see later section).
+  6) Once testing is complete, create a TACK with a longer duration ("-d30d"
+      for the recommended 30 days) and add that to your website.
 
 Adding the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
@@ -53,17 +54,6 @@ Adding the TACK to your website:
   3) For TACK Certificates, run "TACK.py tackcert -i TACK", then add the
      resulting certificate to your SSL certificate chain.
     - In Apache, append it to your "SSLCertificateChainFile".
-
-Adjusting the TACK's duration:
-  1) Run "TACK.py adjust -i TACKold.pem -d 30d > TACKnew.pem" to set the 
-     duration to 30 days.
-    - Or, if you want clients to forget the TACK, use "-d 0m".
-  2) Replace the old TACK with the new one.
-
-Changing your SSL certificate:
-  1) Run "TACK.py update -k TACK_Key.pem -i TACKold.pem -c CERT >TACKnew.pem".
-  2) Replace the old TACK with the new one.
-    - You MUST update the TACK whenever you change the SSL cert.
 
 
 Advanced uses
@@ -107,15 +97,17 @@ To generate a break signature for a TACK:
 Revoking older versions of a TACK 
 ----------------------------------
 If an SSL cert has been compromised and you are switching to a new SSL cert,
-you may revoke all older versions of the TACK by "-g <new_generation>" in the
-"update" command. <new_generation> is a number from 0-255 that is larger than
+you may revoke all older versions of the TACK by "-m <min_generation>" in the
+"update" command. <min_generation> is a number from 0-255 that is larger than
 the generations of all previous versions of the TACK.
 
 Clients who encounter the new TACK will reject older generations from then on.
+Prior to publishing a new <min_generation> value you must updates all your
+tacks to this generation number by "-g <generation>".
 
 For example: The initial TACK has generation=0, so the first time you use this
-capability you will want to set "-g1". If you have to use it a second time,
-you will set "-g2", and so on.
+capability you will want to set "-m1". If you have to use it a second time,
+you will set "-m2", and so on.
 
 Security Consideration: This revocation capability only provides protection if
 clients receive the new generation value. For a more robust defense against
@@ -143,7 +135,8 @@ the "-e" time is used as the expiration time for the first file.
 
 Example:
 
-TACK.py up -k TACK_Key.pem -c CERT -i TACK.pem -n 365@1d -e 2013-01-02Z -o T1
+TACK.py sign \
+  -k TACK_Key.pem -c CERT -i TACK.pem -d 30d -n 365@1d -e 2013-01-02Z -o T1
 
 produces 365 TACKs, one expiring at midnight (UTC) each day of 2013:
   T1_0000.pem
