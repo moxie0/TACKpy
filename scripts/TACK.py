@@ -3,7 +3,7 @@
 # Author: Trevor Perrin
 # See the LICENSE file for legal information regarding use of this file.
 
-from TACKpy import TACK, TACK_Break_Sig, TACK_Extension, \
+from TACKpy import TACK, TACK_Key, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
     m2cryptoLoaded, TACK_Key_Type, TACK_Sig_Type, \
@@ -290,14 +290,13 @@ def signCmd(argv):
  
 def breakCmd(argv):
     """Handle "TACK break <argv>" command."""
-    password, (outputFile,_), tack, inKey, verbose = \
-        handleArgs(argv, "poik", "ki", flags="v")
-        
-    if tack.key.public_key != inKey.public_key:
-        printError("TACK Key File does not match TACK's public key")    
+    password, (outputFile,_), inKey, verbose = \
+        handleArgs(argv, "pok", "k", flags="v")
 
+    key = TACK_Key()
+    key.create(inKey.public_key)
     breakSig = TACK_Break_Sig()
-    breakSig.create(tack.key, inKey.sign(tack.key.write()))
+    breakSig.create(key, inKey.sign(key.write()))
     outputFile.write(addPemComments(breakSig.writePem()))
     if verbose:
         sys.stderr.write(breakSig.writeText()+"\n")        
@@ -403,7 +402,7 @@ def printUsage(s=None):
 Commands (use "help <command>" to see optional args):
   genkey
   sign   -k KEY -c CERT -d DURATION
-  break  -k KEY -i TACK
+  break  -k KEY
   tackcert -i TACK
   view   FILE
   test  
@@ -435,7 +434,7 @@ Optional arguments:
   sign -k KEY -c CERT -d DURATION
   
   -k KEY             : Use this TACK SecretKey file
-  -c CERT            : Sign this SSL certificate
+  -c CERT            : Sign this SSL certificate's public key
   -d DURATION        : Use this duration for the pin:
                          ("5m", "30d", "1d12h5m", "0m", etc.)
 
@@ -449,16 +448,18 @@ Optional arguments:
                          ("%s", "%sZ",
                           "%sZ", "%sZ" etc.)
                          (or, specify a duration from current time)
-  - n NUM@INTERVAL   : Generate NUM updates, with expiration times spaced 
+  - n NUM@INTERVAL   : Generate NUM TACKs, with expiration times spaced 
                        out by INTERVAL (see -d for INTERVAL syntax).  The 
                        -o argument is used as a filename prefix, and the
-                       -e argument is used as the starting expiration time.
+                       -e argument is used as the first expiration time.
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
         print( \
-"""Creates a break signature based on an input TACK.
+"""Creates a break signature based on an input TACK SecretKey file.
 
-  break -k KEY -i TACK 
+  break -k KEY
+  
+  -k KEY             : Use this TACK SecretKey file 
 
 Optional arguments:
   -v                 : Verbose

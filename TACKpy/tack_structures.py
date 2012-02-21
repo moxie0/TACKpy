@@ -46,7 +46,7 @@ class TACK_Key:
             raise SyntaxError("Excess bytes in TACK_Key")        
         
     def write(self):        
-        """Return a 73-byte bytearray encoding of this TACK_Key."""
+        """Return a 65-byte bytearray encoding of this TACK_Key."""
         assert(self.type == TACK_Key_Type.v1)        
         w = Writer(TACK_Key.length)
         w.add(self.type, 1)
