@@ -172,11 +172,9 @@ class SSL_Cert:
     def writeText(self):
         s = \
 """key_sha256     = 0x%s
-cert_sha256    = 0x%s
 notAfter       = %s
 """ % (\
         writeBytes(self.key_sha256),
-        writeBytes(self.cert_sha256),
         posixTimeToStr(self.notAfter, True))
         if self.tackExt:        
             s += "\n" + writeTextTACKStructures(self.tackExt.tack, 
