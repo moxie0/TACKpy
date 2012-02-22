@@ -1,11 +1,11 @@
-TACKpy version 0.9.4                                              Feb 7 2012
+TACKpy version 0.9.5                                              Feb 7 2012
 Trevor Perrin <tackpy at trevp.net>
 ============================================================================
 
 Licenses/Acknowledgements
 ==========================
-TACKpy is written (mostly) by Trevor Perrin. It includes Python crypto code
-from Peter Pearson (ECDSA) and Bram Cohen (AES).
+TACKpy is written (mostly) by Trevor Perrin. It includes crypto code from
+Peter Pearson (ECDSA) and Bram Cohen (AES).
 
 All code in TACKpy has been dedicated to the public domain by its authors. See
 the LICENSE file for details.
@@ -22,21 +22,30 @@ Run "python setup.py install" or "make install".  This installs:
 To use TACK.py without installation you can use the self-contained version in
 "selfcontained/".
 
-If you have M2Crypto installed, TACKpy will use it to accelerate EC and AES.
+If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
+operations.
 
 
 Quick start 
 ============
+You will need to create one or more secret keys to "pin" your hostnames to.
+Any hosts pinned to the same key could impersonate each other, so you may need
+multiple keys for hosts with different security properties (see next section).
+Once you decide how many keys you need, and the assignment of hostnames to
+keys, do the following:
 
-To create a TACK based on a site's SSL certificate:
-  1) Run "TACK.py genkey > TACK_Key.pem" to create a new TACK secret key.  
+Create a TACK secret key:
+  1) Run "TACK.py genkey > TACK_Key.pem".  
   2) Backup the secret key where it won't be lost or stolen.
-  3) Run "TACK.py sign -k TACK_Key.pem -c CERT > TACK.pem".
-  4) Add the TACK to your website (see next section).
-  5) Test the site (if there are problems, see "break signatures").
-  6) Whenever you change the site's certificate, re-sign and replace the TACK.
 
-Adding the TACK to your website:
+Create a TACK for each hostname's SSL certificate:
+  1) Run "TACK.py sign -k TACK_Key.pem -c CERT > TACK.pem".
+  2) Add the TACK to your website (see below).
+  3) Test the site (if there are problems, see "break signatures").
+  4) Whenever you change the site's certificate, you must re-sign and replace 
+     the TACK at the same time.
+
+Add the TACK to your website:
   1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
     - TLS Extensions require web server support.
     - TACK Certificates have a small risk of browser compatibility problems
@@ -48,11 +57,8 @@ Adding the TACK to your website:
     - In Apache, append it to your "SSLCertificateChainFile".
 
 
-Advanced uses
-==============
-
-One key, many sites
---------------------
+Assigning Hostnames to Keys
+============================
 You may use a single TACK key for different sites. This is beneficial in
 several ways, since it reduces the number of keys you have to manage, allows
 the sites to share "secure" cookies, and means all the sites will benefit from
@@ -64,78 +70,73 @@ Thus, you should only use the same TACK key for sites with similar security
 properties.
 
 
-Halting use of a TACK, and "break signatures"
-----------------------------------------------
-If you wish to stop using a TACK, you must consider that some clients may have
-stored the TACK, and will be expecting it (or an updated version) for the
-remainder of the stored TACK's duration. This time interval during which
-clients may be expecting an old TACK is known as the "ghost interval".
+Advanced uses
+==============
 
-An easy way to handle this is to set the TACK's duration to zero for the ghost
-interval. This will cause any clients contacting the site to forget about the
-TACK. Once the ghost interval expires, the TACK can be safely removed.
+Break signatures
+-----------------
+If you wish to stop using TACK for a site, or change the site's TACK key, the
+site must publish a "break signature" from the previous TACK key. This break
+signature must remain published by the site until all outstanding pins for the
+old TACK key have reached their end of life and been discarded.
 
-However, there may be situations where you need to remove or replace a TACK
-during a ghost interval. In this case, the site must provide a "break"
-signature from the "ghost TACK" during the ghost interval. Otherwise, clients
-storing the "ghost TACK" will reject the site.
+At any point in time a site can have up to ten break signatures. However,
+keep in mind that break signatures add to TLS handshake overhead, so are best
+avoided.
 
-At any point in time, a site can have up to ten break signatures from
-different ghost TACKs. However, keep in mind that break signatures add to TLS
-handshake overhead, so are best avoided.
-
-In any case, once the ghost interval for a ghost TACK is elapsed, the
-corresponding break signature may be removed.
-
-To generate a break signature for a TACK:
-  1) Run "TACK.py break -i TACK_ghost.pem > TACK_Break_Sig.pem"
+Creating a break signature for a TACK:
+  1) Run "TACK.py break -k TACK_Key.pem > TACK_Break_Sig.pem"
   2) Add the break signature to your web server.
-  3) After the ghost interval has elapsed, remove the break signature.
+
+Break signatures can be safely removed after 30 days. If the broken TACK key
+was in use for a span of time shorter than 30 days, the break signatures can
+be removed after an equally short span of time. (For example: If you start
+using TACK from a new TACK key, then decide to publish a break signature after
+the first day, you only need to leave the break signature up for a day).
 
 
 Revoking older versions of a TACK 
 ----------------------------------
-If an SSL cert has been compromised and you are switching to a new SSL cert,
-you may revoke all older versions of the TACK by "-m <min_generation>" in the
-"update" command. <min_generation> is a number from 0-255 that is larger than
-the generations of all previous versions of the TACK.
+If an SSL key has been compromised and you are switching to a new SSL key, you
+may revoke the TACK for this key by "-m <min_generation>" in the "sign"
+command. <min_generation> is a number from 0-255 that is larger than the
+generation of the TACK you wish to revoke.
 
 Clients who encounter the new TACK will reject older generations from then on.
-Prior to publishing a new <min_generation> value you must updates all your
-tacks to this generation number by "-g <generation>".
+Prior to publishing a new <min_generation> you should replace all your TACKs
+with this generation number (or higher) by signing with "-g <generation>".
 
-For example: The initial TACK has generation=0, so the first time you use this
-capability you will want to set "-m1". If you have to use it a second time,
-you will set "-m2", and so on.
+For example: By default TACK signatures have generation=0, so the first time
+you use this capability you will want to set "-m1" after pushing out a new set
+of TACKs signed with "-g1". If you use it a second time, you will set "-m2",
+and so on.
 
-Security Consideration: This revocation capability only provides protection if
-clients receive the new generation value. For a more robust defense against
-SSL certificate compromise, consider using short-lived TACKs.
+Security Consideration: This only provides protection if clients receive the
+new min_generation. For a more robust defense against SSL key compromise,
+consider using short-lived TACKs.
 
 
 Short-lived TACKs
 ------------------
-Every TACK contains a signature covering some SSL certificate. By default the
-TACK will expire at the same time as the certificate, and must be replaced by
-an updated version after that point.
+Every TACK contains a signature covering an SSL key. The SSL key is contained
+in an SSL certificate. By default the TACK signature is set to expire at the
+same time as the certificate, and must be replaced by an updated version at
+that point.
 
 If you shorten the TACK's expiration time, then a compromised SSL certificate
 will become unusable to an attacker once the TACK expires. For example, every
 day at midnight you could deploy a new TACK that expires within 48 hours.
 
-A good way to handle short-lived TACKs is to generate a batch of them, then
+A good way to handle short-lived TACKs is to generate a batch of them and
 store the TACKs on a secure system that distributes them to webservers. This
 way, you do not have to use your TACK key to sign new TACKs frequently.
 
 You can generate a batch of TACKs with the "-n NUM@INTERVAL" argument to
-"TACK.py update", specifying the number of TACKs and the interval between
-their expiration times. The "-o" argument is taken as a filename prefix, and
-the "-e" time is used as the expiration time for the first file.
+"sign", specifying the number of TACKs and the interval between their
+expiration times. The "-o" argument is taken as a filename prefix, and the
+"-e" time is used as the first expiration time.  Example:
 
-Example:
-
-TACK.py sign \
-  -k TACK_Key.pem -c CERT -i TACK.pem -d 30d -n 365@1d -e 2013-01-02Z -o T1
+TACK.py sign -k TACK_Key.pem -c CERT -n 365@1d -e 2013-01-02Z -o T1
 
 produces 365 TACKs, one expiring at midnight (UTC) each day of 2013:
   T1_0000.pem
