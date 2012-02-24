@@ -33,4 +33,5 @@ its author. See rijndael.py for details.
 
 -
 
-Code written by Peter Pearson was dedicated to the public domain by its author. See numbertheory.py, ellipticcurve.py, and ecdsa.py for details.
+Code written by Peter Pearson was dedicated to the public domain by its
+author. See numbertheory.py, ellipticcurve.py, and ecdsa.py for details.
