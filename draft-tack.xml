@@ -1,0 +1,726 @@
+<?xml version="1.0"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+    <!ENTITY rfc2119 PUBLIC '' 
+      'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
+]>
+
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<?rfc private="" ?>
+<?rfc toc="yes" ?>
+<?rfc symrefs="yes" ?>
+
+<rfc ipr="trust200902" docName="draf-ietf-tack-00">
+
+    <front>
+        <title>Trust Assertions for Certificate Keys</title>
+        <author initials='M.M.' surname="Marlinspike" fullname='Moxie Marlinspike'>	
+            <organization/>
+        </author>
+        <author initials='T.P.' surname="Perrin" fullname='Trevor Perrin' 
+				role="editor">
+            <organization/>
+        </author>
+        <date/>
+		<area>None</area>
+		<workgroup>No working group</workgroup>
+        <abstract>
+			<t>
+
+This document defines a TLS Extension through which a TLS server can assert a
+"TACK" signing key which is used to sign the server's public key. TLS clients
+may "pin" the server's hostname to the TACK key. TLS servers with a pinned
+hostname must present valid TACK signatures for their public keys, thus
+increasing security.
+
+			</t>
+		</abstract>
+    </front>
+
+    <middle>
+		<section anchor="intro" title="Introduction">
+			<t>
+
+Traditionally a TLS server authenticates itself using a chain of X.509
+certificates which certify an "end-entity" public key. Increasingly, TLS
+clients are looking for other means of verifying the end-entity public key.
+
+			</t>
+			<t>
+
+"Pinning" is one such method. With pinning, past connections are used to
+verify future connections by checking for some constant element.
+Unfortunately, it is difficult to pin X.509 certificate chains, for three
+reasons: First, a TLS server may replace its certificate chain at any time.
+Second, the "more-constant" elements of a certificate chain - the CAs - may
+not be trustworthy. Third, a client using pinning may be oblivious to key
+compromise events which render the pinned data untrustworthy.
+
+			</t> 
+			<t>
+
+TACK addresses these problems by having the server choose a TACK signing key
+(an ECDSA key pair) and use the TACK private key to sign its end-entity public
+keys. This enables clients to pin a hostname to a TACK public key without
+interfering with the server's X.509 certificates, and without needing trust in
+CAs. The TACK key may be used to sign statements revoking previous TACK
+signatures or even itself, to handle end-entity or TACK key compromise.
+
+ 			</t>
+
+			<t>
+
+If requested by a client, the server will present its TACK public key and
+signature during the TLS handshake. Once a client has seen the same (hostname,
+TACK key) combination multiple times, the client will "activate" a pin for a
+period equal to the length of time the pin has been observed for. This "pin
+activation" process limits the impact of bad TACKs resulting from transient
+network attacks or operator error.
+
+			</t>
+			<t>
+
+TACK pins are easily communicated between clients and other "trust
+infrastructure", such as Convergence. Thus, there is no requirement that the
+client that creates a pin is the same client that uses it to verify a TLS
+connection.
+
+			</t>
+
+ </section> 
+
+
+<section title="Requirements notation"> <t>The key words "MUST",
+"MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT",
+"RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as
+described in <xref target="RFC2119"/>.</t> 
+</section>
+
+<section title="Overview">
+
+<section title="TACK life cycle">
+
+<t>A server operator using TACK may perform several processes:
+
+	<list style="hanging">
+	<t hangText="Selection of a TACK key:">	
+
+The server operator first chooses the ECDSA signing key to use for a set of
+hostnames.
+
+	</t>
+	<t hangText="Creating initial TACKs under a TACK key:">	
+
+The TACK private key is then used to sign the end-entity public keys for all
+servers associated with those hostnames. The TACK public key and signature are
+combined with some metadata into each server's "TACK".
+
+	</t>
+	<t hangText="Creating new TACKs under a TACK key:">	
+
+A TACK must be replaced with a newly-signed TACK whenever a server changes its
+public key, or when a TACK signature expires. TACKs under a key may also need
+to be replaced with later-generation TACKs if the key's "min_generation" is
+updated (see next). </t>
+
+<t hangText="Revoking old TACKs:">
+
+If an end-entity private key is compromised, the affected TACKs can be revoked
+by publishing a new TACK containing a higher "min_generation".
+
+	</t>
+	<t hangText="Revoking TACK keys:">
+
+If a TACK private key is compromised, or a server operator wishes to stop
+using TACK for any reason, a server can revoke an entire TACK key (including
+all TACKs and pins referring to it) by publishing a "break signature".
+
+	</t>
+	</list>
+	<vspace blankLines="100" />	
+</t>
+	
+
+</section>
+
+<section title="Pin life cycle">
+	
+	<t>
+
+A TACK client maintains a store of pins for verifying TLS connections. Pins
+associate a hostname and a TACK key. When a client sees a new hostname and
+TACK key combination an inactive pin is created. Once the client has seen the
+pin more than once, the pin is "activated" for a period equal to the timespan
+between the first time the pin was seen and the most recent time, or a maximum
+period of 30 days.
+
+</t> <t>
+
+This "pin activation" process serves multiple purposes. First, it prevents an
+attacker with short-lived control of the hostname from setting long-lived
+pins. Second, it makes it safer for sites to experiment with TACKs, as a new
+TACK can be discarded without causing long-lived problems. The 30 day limit on
+activation period guarantees that a worst-case pin can be recovered from in
+reasonable time.
+
+</t>
+
+
+ <t>In addition to creating and activating pins a TLS connection can alter the
+   clients's pin store in two other ways:<list
+style="hanging"> <t hangText="Min_generation:">
+
+Each pin stores the highest "min_generation" value it has seen from the pinned
+TACK key.
+
+	</t>
+
+	<t hangText="Break signatures:">
+
+A TLS handshake may send break signatures which cause all pins for the
+broken key to be discarded.
+
+	</t>
+
+	</list>
+	</t>
+</section>
+</section>
+
+<section title="TACK Extension">
+	<section title="Definition of TACK_Extension">
+	<t>
+
+A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
+client in the (extended) client hello.
+
+</t>
+<figure><artwork>
+enum {tack(TBD), (65535)} ExtensionType;
+</artwork></figure>	
+<t>
+ The "extension_data" field of this extension
+SHALL be empty. A TLS server MAY respond with an extension of type "tack" in
+the (extended) server hello. The "extension_data" field of this extension
+SHALL contain a "TACK_Extension", as defined below using the TLS presentation
+language.
+	</t>
+<figure><artwork>
+enum {v1(1)} TACK_Key_Type;
+enum {v1(1)} TACK_Sig_Type;
+enum {v1(1)} TACK_Extension_Type;
+
+struct {
+   TACK_Key_Type type;
+   opaque public_key[64];
+} TACK_Key;
+
+struct {
+   TACK_Sig_Type type;
+   uint8  min_generation;
+   uint8  generation;
+   uint32 expiration;
+   opaque target_sha256[32];
+   opaque signature[64];
+} TACK_Sig;
+
+struct {
+   TACK_Key key;
+   TACK_Sig sig;
+} TACK;
+
+struct {
+   TACK_Key key;
+   opaque signature[64];
+} TACK_Break_Sig;
+
+struct {
+   TACK_Extension_Type type;
+   TACK tack&lt;0...168&gt;   # 0 or 1 TACKs
+   TACK_Break_Sig break_sigs&lt;0...1290&gt;   # 0...10 Break Signatures
+} TACK_Extension;	
+</artwork></figure>
+</section>
+<section title="Explanation of TACK_Extension fields">
+	<section title="TACK_Key fields">
+	<t>
+	<list style="hanging">
+	<t hangText="type:">
+
+This field provides a version number which controls the interpretation of TACK
+and TACK_Break_Sig. A client who does not recognize a TACK_Key.type MUST NOT
+attempt further interpretation of the extension's "tack" or "break_sigs"
+fields.
+
+	</t>
+	<t hangText="public_key:">
+
+This field specifies the server's "TACK key" as an elliptic curve public key
+on the NIST P-256 curve. The field contains a pair of nonnegative integers
+(x,y) representing a point on the elliptic curve P-256 defined in FIPS 186-3.
+Each integer is less than 2^256. Each integer is encoded as a 32-byte octet
+string using the Integer-to-Octet-String algorithm from SEC1, and these
+strings are concatenated with the x value first to produce a 64-byte octet
+string. (NOTE: This is equivalent to an uncompressed subjectPublicKey from
+SEC1, except that the initial 0x04 byte from subjectPublicKey is omitted).
+
+	</t>	
+ </list> 
+</t>
+</section> 
+
+<section title="TACK_Sig fields">
+<t>
+<list style="hanging">
+
+<t hangText="type:">
+
+This field provides a version number which controls the interpretation of the
+TACK_Sig structure. A client who does not recognize a TACK_Sig.type MUST NOT
+attempt further interpretation of the TACK_Sig. This document specifies a
+single value for this field: "v1" which specifies that the "target_sha256"
+field contains a hash of the TLS server's SubjectPublicKeyInfo (as conveyed
+through the end-entity X.509 certificate or some other means, including any
+future TLS handshake protocols which convey the server's SubjectPublicKeyInfo
+without using a certificate).
+
+</t>
+<t hangText="min_generation:"> 
+
+This field publishes a min_generation value.
+
+</t>
+
+<t hangText="generation:"> 
+
+This field assigns each TACK a generation. Generations less than a published
+min_generation are considered revoked.
+
+</t>
+
+<t hangText="expiration:"> 
+
+This field specifies a check that is applied to the current UTC time to
+determine whether the TACK signature is expired. If the current UTC time, when
+converted to an integer via the algorithm in POSIX.1, is greater than or equal
+to the value expiration*60, the signature is expired.
+
+</t>
+
+<t hangText="target_sha256:"> 
+
+This field is a SHA256 hash of a SubjectPublicKeyInfo.
+
+</t>
+
+<t hangText="signature:">
+
+This field is an ECDSA-P256-SHA256 signature over the entire TACK structure
+prior to the "signature" field. The field contains a pair of nonnegative
+integers (r,s) representing an ECDSA signature as defined in FIPS 186-3. Each
+integer is less than 2^256. Each integer is encoded as a 32-byte octet string
+using the Integer-to-Octet-String algorithm from SEC1, and these strings are
+concatenated with the r value first to produce a 64-byte octet string.
+
+</t>
+</list>
+</t>
+</section>
+
+
+<section title="TACK fields">
+<t>
+<list style="hanging">
+
+<t hangText="key:">
+
+This field specifies the TACK's key.
+
+</t>
+
+<t hangText="sig:">
+
+This field specifies the TACK's signature and related fields.
+
+</t>
+</list>
+</t>
+</section>
+
+
+<section title="TACK_Break_Sig fields">
+<t>
+<list style="hanging">
+
+<t hangText="key:">
+
+This field specifies the TACK key being broken, and supplies the public key
+used to verify the following signature.
+
+</t>
+
+<t hangText="signature:">
+
+This field is an ECDSA-P256-SHA256 signature over the entire TACK_Break_Sig
+structure prior to the "signature" field. It is encoded as per
+TACK_Sig.signature.
+
+</t>
+
+
+</list>
+</t>
+</section>
+
+<section title="TACK_Extension fields">
+<t>
+<list style="hanging">
+
+<t hangText="type:">
+
+This field provides a version number which controls the interpretation of the
+TACK_Extension structure. A client who does not recognize a
+TACK_Extension.type MUST NOT attempt further interpretation of the
+TACK_Extension.
+
+</t>
+
+<t hangText="tack:">
+
+This field provides the server's TACK, if any.	
+	
+</t>
+
+<t hangText="break_sigs:">
+
+This field provides 0 to 10 break signatures.
+	
+</t>
+
+</list>
+</t>
+</section>
+
+</section> 
+</section>
+
+<section title="Client processing">
+<section title="TACK pins, key records, and host records">
+
+<t>
+
+A client supporting TACK SHALL have a local store of pins, consisting of "key
+records" and "host records". Each host record is pinned to a key record.
+Multiple host records may be pinned to a single key record. A "pin"
+refers to a (host record, key record) pair. Different pins can share the same
+key record.
+
+</t> 
+<t>
+
+ A "key record" contains:
+
+<list style="empty">
+<t>
+
+TACK_Key (or hash): A TACK_Key or a cryptographically-secure, second
+preimage-resistant hash of a TACK_Key. A key record "matches" a TACK or break
+signature structure if the key record contains the structure's TACK_Key or its
+hash. A client SHALL NOT store multiple key records that match the same TACK.
+
+</t> 
+<t>
+
+Min_generation: A single byte used to detect revoked TACKs.
+
+</t>
+</list>
+</t>
+<t>
+
+A "host record" contains:
+
+<list style="empty">
+
+<t>
+
+Hostname: A DNS hostname. A host record "matches" a hostname if it contains
+the hostname. A client SHALL NOT store multiple host records that match the
+same hostname. A pin matching the current TLS connection's hostname is a
+"relevant" pin.
+
+</t>
+<t>
+
+Initial timestamp: A timestamp noting when this pin was created.
+
+</t> 
+
+<t>
+
+Active period end: Empty or a timestamp. If empty or set to a time in the
+past, the pin is "inactive". If set to a future time, the pin is "active"
+until that time.
+
+</t> 
+
+</list>
+</t>
+</section>
+
+<section title="High-level client processing">
+
+<t>
+
+A TLS client compliant with this specification SHALL send the "tack" extension
+defined previously. The client SHALL also send a "server_name" extension
+indicating the DNS hostname the client is contacting. The server MAY respond
+with a TACK_Extension which MAY contain a TACK and/or break signatures.
+
+</t>
+<t>
+
+The TLS client SHALL perform the following steps prior to using the TLS
+connection:
+
+<list style="numbers">
+ <t>Discard pins based on break signatures (if present).</t>
+ <t>Check whether the TACK is valid (if present).</t>
+ <t>Update pins based on the TACK (if valid).</t> 
+</list>
+</t>
+
+<t>
+
+If there is a relevant active pin and a valid matching TACK then the
+connection is verified by the pin. If there is a relevant active pin but no
+valid matching TACK, the connection is rejected by the pin. Otherwise, the
+connection is unverified.
+
+</t>
+
+</section>
+<section title="Client processing details"> 
+
+<section title="Discarding pins based on break signatures"> 
+<t>
+
+Any key records revoked by a break signature SHALL be discarded, along with
+their associated host records. A key record is revoked by a break signature if
+the break signature matches the key record and the break signature's
+"signature" field verifies using the break signature's "public_key".
+
+</t> 
+</section>
+
+<section title="Checking whether the TACK is valid"> 
+<t> 
+
+A TACK is "valid" if the following checks are true:
+<list style="numbers">
+ <t>The TACK_Extension parses correctly and all "type" fields are recognized.</t>
+
+ <t>The TACK_Sig.generation is >= TACK_Sig.min_generation.</t>
+
+ <t>The TACK_Sig.expiration is non-expired.</t>
+
+ <t>The TACK_Sig.target_sha256 is equal to the SHA256 hash of the server's
+   SubjectPublicKeyInfo.</t>
+
+ <t>The TACK_Sig.signature is a correct ECDSA signature over the TACK's
+   contents when verified using the TACK's "public_key".</t>
+
+ <t>The TACK_Sig.generation is >= the min_generation of any key record in 
+	the client's store which matches the TACK.
+	</t>	
+
+ <t>The TLS handshake completes successfully using the server's
+SubjectPublicKeyInfo.</t>
+
+</list>
+
+</t>
+</section> 
+
+
+<section title="Updating pins based on the TACK"> 
+<t>
+
+A valid TACK is used to update the client's pin store. If there is a key
+record matching the TACK, the key record's min_generation SHALL be set to the
+TACK's min_generation if the TACK's value is larger.
+
+</t>
+<t>
+
+A valid TACK MAY also be used to modify the host records using the "pin
+activation" process described below. Note that these steps are optional; a
+client MAY rely on an external source of pins, and not perform pin activation.
+A client MAY also use alternate algorithms to determine pin activation
+provided the resulting activation periods are not longer than the activation
+periods determined below.
+
+</t>
+<t>
+
+If there is a relevant pin matching the TACK, the host record's "active period
+end" MAY be set according to the following formula (where "current" is the
+current time, and "initial" is the "initial timestamp" from the host record:
+
+</t> <figure><artwork>
+
+active_period_end = current + MIN(30 days, current - initial)
+
+</artwork></figure>	
+<t>
+
+If there is no relevant pin, or only an inactive one which does not match the
+TACK, a new host record MAY be created. If the TACK's key matches an existing
+key record, the key record is reused, otherwise a new key record is created
+with the TACK's key and min_generation. A new host record is created
+containing the server's hostname, an "initial" timestamp equal to the current
+time, and an empty "active period end". Any previous host record matching the
+hostname is discarded.
+
+</t>
+<t>
+
+The following table summarizes this behavior depending on whether the relevant
+pin is active or inactive (or none), and whether the TACK matches the pin.
+
+</t>
+      <texttable>
+           <ttcol align='left'>Pin status</ttcol>
+           <ttcol align='left'>TACK matches pin?</ttcol>
+           <ttcol align='left'>Result</ttcol>
+           <c>Active</c>
+           <c>Yes</c>
+           <c>Extend activation period</c>
+
+           <c>Active</c>
+           <c>No</c>
+           <c>Rejected</c>
+
+           <c>Inactive</c>
+           <c>Yes</c>
+           <c>Activate pin</c>
+
+           <c>Inactive</c>
+           <c>No</c>
+           <c>Replace with new inactive pin</c>
+
+           <c>None</c>
+           <c>-</c>
+           <c>Create new inactive pin</c>
+       </texttable>
+
+</section>
+</section>	
+</section>
+
+<section title="Miscellaneous">
+	
+<section title="TACK IDs">	
+<t>
+
+To display TACK information to users in a consistent form, a "TACK ID" MAY be
+used to represent a TACK_Key. A TACK ID is a base32 encoding of 5 bits TACK ID
+version (=0x01) followed by the first 120 bits of SHA256(TACK_Key), using the
+base32 alphabet "ABCDEFGHIJKLMNPQRSTUVWXY13456789".  Examples:
+<list>
+	<t>BJFVI.U5YFA.WXMIW.CQGFW.APVIF</t>
+	<t>B3LBX.KWYAP.A8CT1.4IFE8.JDQPT</t>
+	<t>BUT93.HCELT.SU745.LA44H.WJFGF</t>	
+</list>
+</t>
+</section> 
+
+<section title="Cookies and TACKs">
+<t>
+
+HTTP cookies with a "secure" atttribute (aka "secure cookies") SHALL be bound
+to the TACK Key of the server that set them. Secure cookies set over a TLS
+connection that is verified by a pin SHALL be associated to the pin's "key
+record", and SHALL only be sent through TLS connections that verify using that
+key record.
+
+</t> </section>
+
+</section>
+
+<section title="Advice"> 
+<section title="For server operators">
+<t>
+<list style="hanging">
+
+<t hangText="Key reuse:">
+
+All hostnames that are pinned to a single key are able to impersonate each
+other. Thus, different keys should be used to pin hostnames with different
+security properties. However, all servers sharing secure cookies must be
+pinned to the same key. Due to cookie scoping rules, it will often be
+desirable to pin web servers under a single DNS domain to a single key.
+
+</t>
+
+<t hangText="Generation:">
+	
+To revoke older generations of TACKs, the server operator should first provide
+all servers with a new generation of TACKs, then publish new TACKs containing
+the new min_generation.</t>
+
+<t hangText="Signature expiration:">
+
+It is convenient to set the TACK signature expiration equal to the end-entity
+certificate expiration, so that the TACK and certificate may both be replaced
+at the same time. Alternatively, short-lived TACK signatures may be used so
+that a compromised end-entity key has limited value to an attacker.</t>
+
+<t hangText="Break signatures:">
+
+Break signatures are useful if a server wishes to abruptly change its TACK
+key, stop using TACKs, or advertise that a TACK key is compromised and clients
+should stop relying on it. A break signature only needs to be published for a
+time interval equal to the maximum active period of any affected pins. For
+example, if a new TACK has only been published on a website for 24 hours, its
+break signature only needs to be published for 24 hours.
+
+</t>
+
+</list>
+<vspace blankLines="100" />	
+</t>
+</section> 
+<section title="For client implementors">
+<t>
+<list style="hanging">
+<t hangText="Sharing pin information:">
+
+It is possible for a client to maintain a pin store based entirely on its own
+TLS connections. However, such a client runs the risk of deriving incorrect
+pins, failing to keep its pins active, or failing to receive min_generation
+updates and break signatures. Clients are advised to collaborate so that pin
+data can be aggregated and shared (e.g. see [Convergence]). </t>
+
+</list>
+</t>
+</section> 
+</section>
+
+        <section title="Security Considerations">
+        <t>
+All servers sharing a TACK key can impersonate each other.
+Use different TACK keys for servers with different security properties.
+</t>
+<t>
+Make backup copies of the TACK private key and keep all copies in a secure
+location where they can't be compromised.	
+</t>
+
+        </section>
+    </middle>
+
+    <back>
+        <references title='Normative References'>&rfc2119;</references>
+    </back>
+
+</rfc>
