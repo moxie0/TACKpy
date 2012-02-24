@@ -425,7 +425,7 @@ YZc1Sc+m4VWPQR8RIRqj4DewzYA1QnWCBiDwojfe4XY7PeRNPGSlhgdvF9XFe8UB
     assert(t.key.type == TACK_Key_Type.v1)
     assert(t.key.public_key == a2b_hex("c5ed07089a6ee0a70205fee4068be4192efb22e3e3c1a65ab4f6096c13395149"+
                        "3875bd9a5d9bb4e90186056aa736bcf08cefe981ff72e50ad7be9416c2b2cc1f"))
-    assert(t.sig.type == TACK_Sig_Type.v1_cert)
+    #assert(t.sig.type == TACK_Sig_Type.v1_cert)
     assert(posixTimeToStr(t.sig.expiration*60) == "2026-11-16T01:55Z")
     assert(t.sig.generation == 2)
     assert(t.sig.target_sha256 == a2b_hex("09ed6e991fc3273d8fea317d339c0204"+
