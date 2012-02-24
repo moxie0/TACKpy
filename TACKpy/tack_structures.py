@@ -354,7 +354,7 @@ class TACK_Extension:
         tackLen = p.getInt(1)
         if tackLen:
             if tackLen != TACK.length:
-                raise SyntaxError("Only supports v1 TACKs")
+                raise SyntaxError("Only supports v1 TACKs (wrong length)")
             self.tack = TACK()
             self.tack.parse(p.getBytes(tackLen))
         sigsLen = p.getInt(2)
