@@ -26,11 +26,12 @@
         <abstract>
 			<t>
 
-This document defines a TLS Extension through which a TLS server can assert a
-"TACK" signing key which is used to sign the server's public key. TLS clients
-may "pin" the server's hostname to the TACK key. TLS servers with a pinned
-hostname must present valid TACK signatures for their public keys, thus
-increasing security.
+This document defines TACK, a TLS Extension that enables a TLS server to
+assert the authenticity of its public key. A TACK contains a signing key, used
+to sign the TLS server's public key, which clients can associate with the
+server's hostname in order to form a "pin." In order for clients to accept the
+authenticity of a public key advertised by a TLS server with a pinned
+hostname, the server must include a valid TACK signature for that public key.
 
 			</t>
 		</abstract>
@@ -39,32 +40,29 @@ increasing security.
     <middle>
 		<section anchor="intro" title="Introduction">
 			<t>
-
-Traditionally a TLS server authenticates itself using a chain of X.509
-certificates which certify an "end-entity" public key. Increasingly, TLS
-clients are looking for other means of verifying the end-entity public key.
-
+Traditionally, a TLS server authenticates its public key with a chain of X.509
+certificates.  For a number of reasons, it is becoming increasingly important
+for TLS clients to have other means for verifing the authenticity of a TLS
+server's public key.
 			</t>
 			<t>
-
-"Pinning" is one such method. With pinning, past connections are used to
-verify future connections by checking for some constant element.
-Unfortunately, it is difficult to pin X.509 certificate chains, for three
-reasons: First, a TLS server may replace its certificate chain at any time.
-Second, the "more-constant" elements of a certificate chain - the CAs - may
-not be trustworthy. Third, a client using pinning may be oblivious to key
-compromise events which render the pinned data untrustworthy.
-
+One possible alternative is for clients to employ "pinning."  In this case,
+past connections would be used to verify future connections by checking
+some constant element.  Unfortunately, a number of problems present themselves
+when attempting to pin X.509 certificate chains:  The TLS server may replace
+its certificate at any time, the "more constant" elements of a certificate chain
+ - the CAs - may not be trustworthy, and the client employing a pinning strategy
+may be oblivious to key compromise events which render the pinned data untrustworthy.
 			</t> 
 			<t>
-
-TACK addresses these problems by having the server choose a TACK signing key
-(an ECDSA key pair) and use the TACK private key to sign its end-entity public
-keys. This enables clients to pin a hostname to a TACK public key without
-interfering with the server's X.509 certificates, and without needing trust in
-CAs. The TACK key may be used to sign statements revoking previous TACK
-signatures or even itself, to handle end-entity or TACK key compromise.
-
+TACK addresses these problems by providing an alternative structure that's designed
+for pinning, but which doesn't interfere with a server's existing X.509 certificates.
+The server chooses a TACK signing key (an ECDSA key pair), and uses it to sign the
+end-entity public key that typically resides inside its TLS certificate.  When the
+TACK public key and signature are communicated to the client through a TLS extension,
+it enables the client to pin the server's hostname to that TACK public key.  Additionally,
+the TACK key may also be used to sign statements revoking previous TACK signatures,
+or even itself, in order to handle end-entity or TACK key compromises.
  			</t>
 
 			<t>
@@ -148,7 +146,7 @@ all TACKs and pins referring to it) by publishing a "break signature".
 
 A TACK client maintains a store of pins for verifying TLS connections. Pins
 associate a hostname and a TACK key. When a client sees a new hostname and
-TACK key combination an inactive pin is created. Once the client has seen the
+TACK key combination, an inactive pin is created. Once the client has seen the
 pin more than once, the pin is "activated" for a period equal to the timespan
 between the first time the pin was seen and the most recent time, or a maximum
 period of 30 days.
@@ -165,7 +163,7 @@ reasonable time.
 </t>
 
 
- <t>In addition to creating and activating pins a TLS connection can alter the
+ <t>In addition to creating and activating pins, a TLS connection can alter the
    clients's pin store in two other ways:<list
 style="hanging"> <t hangText="Min_generation:">
 
