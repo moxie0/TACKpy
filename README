@@ -41,7 +41,7 @@ Create a TACK secret key:
 Create a TACK for each hostname's SSL certificate:
   1) Run "TACK.py sign -k TACK_Key.pem -c CERT > TACK.pem".
   2) Add the TACK to your website (see below).
-  3) Test the site (if there are problems, see "break signatures").
+  3) Test the site (if there are problems, see "Break signatures").
   4) Whenever you change the site's certificate, you must re-sign and replace 
      the TACK at the same time.
 
@@ -62,12 +62,13 @@ Assigning Hostnames to Keys
 You may use a single TACK key for different sites. This is beneficial in
 several ways, since it reduces the number of keys you have to manage, allows
 the sites to share "secure" cookies, and means all the sites will benefit from
-"break signatures" or "min_generation" updates published by any one of them.
+"break signatures" or "min_generation" updates published by any of them.
 
 However, note that all sites sharing the same TACK key are considered
-"equivalent" by a TACK client - any of the sites could impersonate any other.
-Thus, you should only use the same TACK key for sites with similar security
-properties.
+"equivalent" by a TACK client - any of the sites could impersonate any other,
+and a "Break signature" (see below) published by any site will dissolve pins
+for all of them. Thus, you should only use the same TACK key for sites with
+similar security properties.
 
 
 Advanced uses
@@ -77,10 +78,15 @@ Break signatures
 -----------------
 If you wish to stop using TACK for a site, or change the site's TACK key, the
 site must publish a "break signature" from the previous TACK key. This break
-signature must remain published by the site until all outstanding pins for the
-old TACK key have reached their end of life and been discarded.
+signature must remain published by the site until all pins between the site
+and the old TACK key have become inactive (30 days at most; see below).
 
-At any point in time a site can have up to ten break signatures. However,
+A break signature from a TACK_Key causes any client who encounters it to
+discard all pins involving the TACK_Key. Thus, once a break signature is
+published for a TACK key, all existing pins and TACKS for the TACK key cease
+providing security.
+
+At any point in time a site can have up to fifteen break signatures. However,
 keep in mind that break signatures add to TLS handshake overhead, so are best
 avoided.
 
@@ -88,15 +94,19 @@ Creating a break signature for a TACK:
   1) Run "TACK.py break -k TACK_Key.pem > TACK_Break_Sig.pem"
   2) Add the break signature to your web server.
 
-Break signatures can be safely removed after 30 days. If the broken TACK key
-was in use for a span of time shorter than 30 days, the break signatures can
-be removed after an equally short span of time. (For example: If you start
-using TACK from a new TACK key, then decide to publish a break signature after
-the first day, you only need to leave the break signature up for a day).
+Break signatures can be safely removed after 30 days, since all TACK pins
+become inactive after 30 days without reinforcement. 
+
+If a site used a TACK from the broken TACK key for a span of time shorter than
+30 days, the break signature can be removed from that site after an equally
+short span of time. (For example: If you start using a TACK for "example.com"
+with a new TACK key, then decide to publish a break signature after the first
+day, you only need to leave the break signature up at "example.com" for one
+day).
 
 
-Revoking older versions of a TACK 
-----------------------------------
+Revoking older generations of a TACK 
+-------------------------------------
 If an SSL key has been compromised and you are switching to a new SSL key, you
 may revoke the TACK for this key by "-m <min_generation>" in the "sign"
 command. <min_generation> is a number from 0-255 that is larger than the
@@ -120,8 +130,8 @@ Short-lived TACKs
 ------------------
 Every TACK contains a signature covering an SSL key. The SSL key is contained
 in an SSL certificate. By default the TACK signature is set to expire at the
-same time as the certificate, and must be replaced by an updated version at
-that point.
+same time as the certificate, and must be replaced by an updated TACK at that
+point.
 
 If you shorten the TACK's expiration time, then a compromised SSL certificate
 will become unusable to an attacker once the TACK expires. For example, every
