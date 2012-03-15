@@ -10,7 +10,3 @@ class TACK_Key_Type:
 class TACK_Sig_Type:
     v1 = 1
     strings = (None, "v1")
-    
-class TACK_Extension_Type:
-    v1 = 1
-    strings = (None, "v1")

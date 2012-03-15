@@ -334,41 +334,47 @@ class TACK_Break_Sig:
 class TACK_Extension:
 
     def __init__(self):
-        self.type = 0 # 8-bit type from TACK_Extension_Type
         self.tack = None
         self.break_sigs = None # aka []
         
     def create(self, tack=None, break_sigs=None):
-        self.type = TACK_Extension_Type.v1
         self.tack = tack
         self.break_sigs = break_sigs        
     
     def isEmpty(self):
         return (not self.tack and not self.break_sigs)
 
-    def parse(self, b):
+    def parse(self, b, allowNewVersions=False):
+        self.tack = None
+        self.break_sigs = []         
         p = Parser(b)
-        self.type = p.getInt(1)
-        if self.type != TACK_Extension_Type.v1:
-            raise SyntaxError("Bad TACK_Extension type")
-        tackLen = p.getInt(1)
+
+        tackLen = p.getInt(2)
+        if tackLen > 1024:
+            raise SyntaxError("TACK too large")
         if tackLen:
-            if tackLen != TACK.length:
-                raise SyntaxError("Only supports v1 TACKs (wrong length)")
-            self.tack = TACK()
-            self.tack.parse(p.getBytes(tackLen))
+            b2 = p.getBytes(tackLen)
+            if b2[0] != TACK_Key_Type.v1:
+                if not allowNewVersions:
+                    raise SyntaxError("Only supports v1 TACKs")
+            else:
+                self.tack = TACK()
+                self.tack.parse(b2)
+
         sigsLen = p.getInt(2)
-        if sigsLen % TACK_Break_Sig.length != 0:
-            raise SyntaxError("Bad length in TACK_Break_Sig")
-        if sigsLen // TACK_Break_Sig.length > 10:
-            raise SyntaxError("Too many Break Sigs")
-        self.break_sigs = []            
-        while sigsLen:
-            b2 = p.getBytes(TACK_Break_Sig.length)
-            breakSig = TACK_Break_Sig()
-            breakSig.parse(b2)
-            self.break_sigs.append(breakSig)
-            sigsLen -= TACK_Break_Sig.length
+        if sigsLen > 2048:
+            raise SyntaxError("break_sigs too large")
+        if sigsLen:
+            b2 = p.getBytes(sigsLen)
+            while b2:
+                if b2[0] != TACK_Key_Type.v1:
+                    if not allowNewVersions:
+                        raise SyntaxError("Only supports v1 break sigs")
+                    break
+                breakSig = TACK_Break_Sig()
+                breakSig.parse(b2[:TACK_Break_Sig.length])
+                self.break_sigs.append(breakSig)
+                b2 = b2[TACK_Break_Sig.length:]
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK_Extension")
 
@@ -379,12 +385,11 @@ class TACK_Extension:
         if self.break_sigs:
             length += len(self.break_sigs) * TACK_Break_Sig.length
         w = Writer(length+4)
-        w.add(self.type, 1)
         if self.tack:
-            w.add(TACK.length, 1)
+            w.add(TACK.length, 2)
             w.add(self.tack.write(), TACK.length)
         else:
-            w.add(0, 1)
+            w.add(0, 2)
         if self.break_sigs:
             w.add(len(self.break_sigs) * TACK_Break_Sig.length, 2)
             for break_sig in self.break_sigs:
