@@ -275,7 +275,7 @@ class TACK_Break_Sig:
         """        
         b = dePem(s, "TACK BREAK SIG")
         if len(b) != TACK_Break_Sig.length:
-            raise SyntaxError("TACK is the wrong size")        
+            raise SyntaxError("Break Sig is the wrong size")        
         self.parse(b)
 
     def parse(self, b):
@@ -420,60 +420,62 @@ def testTACKStructures():
     print("Testing TACK STRUCTURES")
     s = """
 -----BEGIN TACK-----
-AcXtBwiabuCnAgX+5AaL5Bku+yLj48GmWrT2CWwTOVFJOHW9ml2btOkBhgVqpza8
-8Izv6YH/cuUK176UFsKyzB/rmvvBFv9cLwIByHCTAgntbpkfwyc9j+oxfTOcAgQY
-YZc1Sc+m4VWPQR8RIRqj4DewzYA1QnWCBiDwojfe4XY7PeRNPGSlhgdvF9XFe8UB
-+gsjLjUkqPJDk0fjDYHwspY2MiwlRITG51j/1vlhKQAAqMA=
+AR3jPQCkF1ud7U9hb44zpFuRLz6EKE22hwQRkQFEdxT/YUd5Qi7FYCtVk1+P1nh+
+/ZPihRFAXJH0WkN4L5bSS7wBAAACQnQFvz5Foz1gTLBokQZWIokmalgb+AkeB8Zp
+58j2QptdIOYCTri1KsSYPuRK4LSannEvgQxfG58c84RxNu69VS6ihZVNlkx8/zGU
+C6ag+gdToKLmPJDQIXb0cdO04CbTu2Hc
 -----END TACK-----"""
     t = TACK()
     t.parsePem(s)
     assert(t.key.type == TACK_Key_Type.v1)
-    assert(t.key.public_key == a2b_hex("c5ed07089a6ee0a70205fee4068be4192efb22e3e3c1a65ab4f6096c13395149"+
-                       "3875bd9a5d9bb4e90186056aa736bcf08cefe981ff72e50ad7be9416c2b2cc1f"))
-    #assert(t.sig.type == TACK_Sig_Type.v1_cert)
-    assert(posixTimeToStr(t.sig.expiration*60) == "2026-11-16T01:55Z")
-    assert(t.sig.generation == 2)
-    assert(t.sig.target_sha256 == a2b_hex("09ed6e991fc3273d8fea317d339c0204"+
-                                       "1861973549cfa6e1558f411f11211aa3"))
-    assert(t.sig.signature == a2b_hex("e037b0cd80354275820620f0a237dee1" + 
-                                   "763b3de44d3c64a586076f17d5c57bc5" + 
-                                   "01fa0b232e3524a8f2439347e30d81f0" + 
-                                   "b29636322c254484c6e758ffd6f96129"))
+    assert(t.key.public_key == a2b_hex(
+"1de33d00a4175b9ded4f616f8e33a45b"
+"912f3e84284db68704119101447714ff"
+"614779422ec5602b55935f8fd6787efd"
+"93e28511405c91f45a43782f96d24bbc"))
+    assert(t.sig.type == TACK_Sig_Type.v1)
+    assert(posixTimeToStr(t.sig.expiration*60) == "2042-01-29T01:09Z")
+    assert(t.sig.generation == 0)
+    assert(t.sig.target_sha256 == a2b_hex("bf3e45a33d604cb0689106562289266a"
+                   "581bf8091e07c669e7c8f6429b5d20e6"))
+    assert(t.sig.signature == a2b_hex("024eb8b52ac4983ee44ae0b49a9e712f"
+                   "810c5f1b9f1cf3847136eebd552ea285"
+                   "954d964c7cff31940ba6a0fa0753a0a2"
+                   "e63c90d02176f471d3b4e026d3bb61dc"))
     s = """
 -----BEGIN TACK BREAK SIG-----
-AcXtBwiabuCnAgX+5AaL5Bku+yLj48GmWrT2CWwTOVFJOHW9ml2btOkBhgVqpza8
-8Izv6YH/cuUK176UFsKyzB+4EWiVTg109+XeXctHNIYr6ZsqM7MHR+ClMWYnM0De
-Nv4iPe0BhWHNV9x7KBMC+cE8pcGohrTXxiVTGjAO32k4vGQst4VQSgk=
+AR3jPQCkF1ud7U9hb44zpFuRLz6EKE22hwQRkQFEdxT/YUd5Qi7FYCtVk1+P1nh+
+/ZPihRFAXJH0WkN4L5bSS7wLSfGPO7ezR9GJtpI2pFfaGFwYRy2jpbjg4T+O5SAu
+FwFGRqeNl/uT+iTRYJH+GU0hHkA+v6Rm0oBt2COSvP5E
 -----END TACK BREAK SIG-----"""
     tbs = TACK_Break_Sig()
     tbs.parsePem(s)
     assert(tbs.key.type == TACK_Key_Type.v1)
-    assert(tbs.key.public_key == a2b_hex("c5ed07089a6ee0a70205fee4068be419"+
-                       "2efb22e3e3c1a65ab4f6096c13395149"+
-                       "3875bd9a5d9bb4e90186056aa736bcf0"+
-                       "8cefe981ff72e50ad7be9416c2b2cc1f"))
-    assert(tbs.signature == a2b_hex("e5de5dcb4734862be99b2a33b30747e0"+
-                       "a53166273340de36fe223ded018561cd"+
-                       "57dc7b281302f9c13ca5c1a886b4d7c6"+
-                       "25531a300edf6938bc642cb785504a09"))
+    assert(tbs.getTACKID() == "BCX9R.6IYW3.8TN4D.5G9JJ.I18GY")
+    assert(tbs.signature == a2b_hex(
+"0b49f18f3bb7b347d189b69236a457da"
+"185c18472da3a5b8e0e13f8ee5202e17"
+"014646a78d97fb93fa24d16091fe194d"
+"211e403ebfa466d2806dd82392bcfe44"))
+
     s = """                       
-Created by TACK.py 0.9.3
-Created at 2012-02-01T00:30:10Z
+Created by TACK.py 0.9.6
+Created at 2012-03-15T20:42:21Z
 -----BEGIN TACK BREAK SIG-----
-ATKhrz5C6JHJW8BF5fLVrnQss6JnWVyEaC0p89LNhKPswvcC9/s6+vWLd9snYTUv
-YMEBdw69PUP8JB4AdqA3K6Ap0Fgd9SSTOECeAKOUAym8zcYaXUwpk0+WuPYa7Zmm
-SkbOlK4ywqt+amhWbg9txSGUwFO5tWUHT3QrnRlE/e3PeNFXLx5Bckg=
+AR3jPQCkF1ud7U9hb44zpFuRLz6EKE22hwQRkQFEdxT/YUd5Qi7FYCtVk1+P1nh+
+/ZPihRFAXJH0WkN4L5bSS7wLSfGPO7ezR9GJtpI2pFfaGFwYRy2jpbjg4T+O5SAu
+FwFGRqeNl/uT+iTRYJH+GU0hHkA+v6Rm0oBt2COSvP5E
 -----END TACK BREAK SIG-----
-Created by TACK.py 0.9.3
-Created at 2012-02-01T00:30:11Z
+Created by TACK.py 0.9.6
+Created at 2012-03-15T20:42:22Z
 -----BEGIN TACK BREAK SIG-----
-ATKhrz5C6JHJW8BF5fLVrnQss6JnWVyEaC0p89LNhKPswvcC9/s6+vWLd9snYTUv
-YMEBdw69PUP8JB4AdqA3K6BVCWfcjN36lx6JwxmZQncS6sww7DecFO/qjSePCxwM
-+kdDqX/9/183nmjx6bf0ewhPXkA0nVXsDYZaydN8rJU1GaMlnjcIYxY=
+ATBZ2H0kKqfIK0s0lFLr5zogOTLHpkXawY9cGd5W19IkKofKjPLl6yHGAuxFIgF3
+K3SpVgeBp0R2gpBKuEnLxH1DfR2lg+gjycXKc0JXoAR3TeOG3Aig6Y9ziVHvikHD
+5jlRD867NH5U3zE/xHka02Lhd3zRao0sEPsy6WCuPJze
 -----END TACK BREAK SIG-----
 """
     tbsList = TACK_Break_Sig.parsePemList(s)
-    assert(tbsList[0].getTACKID()  == "BHMXG.NIUGC.4D9EG.BRLP1.DTQBE")
-    assert(tbsList[1].getTACKID()  == "BWDJY.IDCEA.74IDQ.X4DG9.MRIMS")
+    assert(tbsList[0].getTACKID()  == "BCX9R.6IYW3.8TN4D.5G9JJ.I18GY")
+    assert(tbsList[1].getTACKID()  == "BUDHM.4Q6XU.74GEU.ISNA9.KE6LN")
     assert(len(tbsList) == 2)
     return 1

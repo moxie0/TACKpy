@@ -29,7 +29,7 @@ def selfTest():
     assert(testASN1() == 1)
     assert(testCompat() == 1)
     assert(testTime() == 1)
-    #assert(testTACKStructures() == 1)
+    assert(testTACKStructures() == 1)
     assert(testTACKID() == 1)
     assert(testSSLCert() == 1)
     assert(testKeyFile() == 1)
