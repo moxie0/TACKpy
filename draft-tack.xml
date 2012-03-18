@@ -280,7 +280,7 @@ SEC1, except that the initial 0x04 byte from subjectPublicKey is omitted).
 This field provides a version number which controls the interpretation of the
 TACK_Sig structure. A client who does not recognize a TACK_Sig.type MUST NOT
 attempt further interpretation of the TACK_Sig. This document specifies a
-single value for this field: "v1" which specifies that the "target_sha256"
+single value for this field: "spki" which specifies that the "target_sha256"
 field contains a hash of the TLS server's SubjectPublicKeyInfo (as conveyed
 through the end-entity X.509 certificate or some other means, including any
 future TLS handshake protocols which convey the server's SubjectPublicKeyInfo
@@ -739,7 +739,7 @@ protocols and infrastructure outside the scope of this document.
 </section> 
 </section>
 
-        <section title="Security Considerations">
+        <section title="Security considerations">
         <t>
 All servers sharing a TACK key can impersonate each other.
 Use different TACK keys for servers with different security properties.
@@ -750,6 +750,47 @@ locations where they can't be compromised.
 </t>
 
         </section>
+
+	<section title="IANA considerations">
+	<section title="New entry for the TLS ExtensionType Registry">
+	<t>
+
+IANA is requested to add an entry to the existing TLS ExtensionType registry,
+defined in RFC 5246, for tack(TBD) as defined in this document.
+
+ </t>
+</section>
+	<section title="New registry for TACK_Key_Type">
+	<t>
+
+IANA is requested to establish a registry for TLS TACK_Key_Type values. The
+initial entries in the registry are 0(reserved) and 1(v1). The policy for
+adding new values to this registry, following the terminology defined in RFC
+5226, is Expert Review.
+
+	</t>
+</section>
+	<section title="New registry for TACK_Sig_Type">
+	<t>
+
+IANA is requested to establish a registry for TLS TACK_Sig_Type values. The
+initial entries in the registry are 0(reserved) and 1(v1). The policy for
+adding new values to this registry, following the terminology defined in RFC
+5226, is Expert Review.
+
+	</t>
+	
+
+ </section>
+</section>
+<section title="Acknowledgements">
+<t>
+
+Valuable feedback has been provided by Adam Langley, Chris Palmer, Nate
+Lawson, and Joseph Bonneau.
+
+</t> </section>
+
     </middle>
 
     <back>

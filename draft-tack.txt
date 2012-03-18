@@ -3,7 +3,7 @@
 
 No working group                                          M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Expires: September 15, 2012                               March 14, 2012
+Expires: September 19, 2012                               March 18, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -34,7 +34,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 15, 2012.
+   This Internet-Draft will expire on September 19, 2012.
 
 Copyright Notice
 
@@ -52,7 +52,7 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 1]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 1]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -88,9 +88,14 @@ Table of Contents
    7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
      7.1.  For server operators . . . . . . . . . . . . . . . . . . . 14
      7.2.  For client implementors  . . . . . . . . . . . . . . . . . 15
-   8.  Security Considerations  . . . . . . . . . . . . . . . . . . . 16
-   9.  Normative References . . . . . . . . . . . . . . . . . . . . . 17
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 18
+   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 16
+   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 17
+     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 17
+     9.2.  New registry for TACK_Key_Type . . . . . . . . . . . . . . 17
+     9.3.  New registry for TACK_Sig_Type . . . . . . . . . . . . . . 17
+   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 18
+   11. Normative References . . . . . . . . . . . . . . . . . . . . . 19
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 20
 
 
 
@@ -103,12 +108,7 @@ Table of Contents
 
 
 
-
-
-
-
-
-Marlinspike & Perrin   Expires September 15, 2012               [Page 2]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -164,7 +164,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 3]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 4]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -276,7 +276,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 5]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -332,7 +332,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 6]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -388,7 +388,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 7]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -419,7 +419,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       interpretation of the TACK_Sig structure.  A client who does not
       recognize a TACK_Sig.type MUST NOT attempt further interpretation
       of the TACK_Sig. This document specifies a single value for this
-      field: "v1" which specifies that the "target_sha256" field
+      field: "spki" which specifies that the "target_sha256" field
       contains a hash of the TLS server's SubjectPublicKeyInfo (as
       conveyed through the end-entity X.509 certificate or some other
       means, including any future TLS handshake protocols which convey
@@ -444,7 +444,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 8]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -500,7 +500,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012               [Page 9]
+Marlinspike & Perrin   Expires September 19, 2012               [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -556,7 +556,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 10]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -612,7 +612,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 11]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -668,7 +668,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 12]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -724,7 +724,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 13]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -780,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 14]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -836,12 +836,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 15]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
-8.  Security Considerations
+8.  Security considerations
 
    All servers sharing a TACK key can impersonate each other.  Use
    different TACK keys for servers with different security properties.
@@ -892,12 +892,124 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 16]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
-9.  Normative References
+9.  IANA considerations
+
+9.1.  New entry for the TLS ExtensionType Registry
+
+   IANA is requested to add an entry to the existing TLS ExtensionType
+   registry, defined in RFC 5246, for tack(TBD) as defined in this
+   document.
+
+9.2.  New registry for TACK_Key_Type
+
+   IANA is requested to establish a registry for TLS TACK_Key_Type
+   values.  The initial entries in the registry are 0(reserved) and
+   1(v1).  The policy for adding new values to this registry, following
+   the terminology defined in RFC 5226, is Expert Review.
+
+9.3.  New registry for TACK_Sig_Type
+
+   IANA is requested to establish a registry for TLS TACK_Sig_Type
+   values.  The initial entries in the registry are 0(reserved) and
+   1(v1).  The policy for adding new values to this registry, following
+   the terminology defined in RFC 5226, is Expert Review.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin   Expires September 19, 2012              [Page 17]
+
+Internet-Draft    Trust Assertions for Certificate Keys       March 2012
+
+
+10.  Acknowledgements
+
+   Valuable feedback has been provided by Adam Langley, Chris Palmer,
+   Nate Lawson, and Joseph Bonneau.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin   Expires September 19, 2012              [Page 18]
+
+Internet-Draft    Trust Assertions for Certificate Keys       March 2012
+
+
+11.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, March 1997.
@@ -948,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 17]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
@@ -1004,5 +1116,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin   Expires September 15, 2012              [Page 18]
+Marlinspike & Perrin   Expires September 19, 2012              [Page 20]
 
