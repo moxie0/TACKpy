@@ -760,26 +760,25 @@ defined in RFC 5246, for tack(TBD) as defined in this document.
 
  </t>
 </section>
-	<section title="New registry for TACK_Key_Type">
+	<section title="New registries for TACK_Key_Type and TACK_Sig_Type">
 	<t>
 
-IANA is requested to establish a registry for TLS TACK_Key_Type values. The
-initial entries in the registry are 0(reserved) and 1(v1). The policy for
-adding new values to this registry, following the terminology defined in RFC
-5226, is Expert Review.
+IANA is requested to establish new registries for TLS TACK_Key_Type and TLS
+TACK_Sig_Type values. The initial entries in each registry are 0(reserved) and
+1(v1). The policy for adding new values to these registries, following the
+terminology defined in RFC 5226, is Expert Review.
 
 	</t>
-</section>
-	<section title="New registry for TACK_Sig_Type">
 	<t>
 
-IANA is requested to establish a registry for TLS TACK_Sig_Type values. The
-initial entries in the registry are 0(reserved) and 1(v1). The policy for
-adding new values to this registry, following the terminology defined in RFC
-5226, is Expert Review.
+The designated expert is expected to consult the TLS mailing list or its
+designated successor, as well as review any documentation to determine whether
+the extension will be widely useful to the internet community and is fully
+documented. To preserve the limited number of code points and maximize
+interoperability, the presumption should be that a code point SHOULD NOT be
+granted, unless there is a compelling reason to the contrary.
 
-	</t>
-	
+ </t>
 
  </section>
 </section>
