@@ -1,11 +1,7 @@
 <?xml version="1.0"?>
-<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
-    <!ENTITY rfc2119 PUBLIC '' 
-      'http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml'>
-]>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" []>
 
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
-<?rfc private="" ?>
 <?rfc toc="yes" ?>
 <?rfc symrefs="yes" ?>
 
@@ -194,7 +190,7 @@ broken key to be discarded.
 	<t>
 
 A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
-client in the (extended) client hello.
+client in the (extended) client hello as per <xref target="RFC6066"/>.
 
 </t>
 <figure><artwork>
@@ -206,7 +202,7 @@ The "extension_data" field of this extension SHALL be empty. A TLS server
 which is not resuming a TLS session MAY respond with an extension of type
 "tack" in the server hello. The "extension_data" field of this extension SHALL
 contain a "TACK_Extension", as defined below using the TLS presentation
-language.
+language from <xref target="RFC4346"/>.
 
 	</t>
 <figure><artwork>
@@ -216,7 +212,7 @@ enum {v1(1)} TACK_Sig_Type;
 struct {
    TACK_Key_Type type;
    opaque public_key[64];
-} TACK_Key;  # 65 bytes
+} TACK_Key;  /* 65 bytes */
 
 struct {
    TACK_Sig_Type type;
@@ -225,21 +221,21 @@ struct {
    uint32 expiration;
    opaque target_sha256[32];
    opaque signature[64];
-} TACK_Sig;  # 103 bytes
+} TACK_Sig;  /* 103 bytes */
 
 struct {
    TACK_Key key;
    TACK_Sig sig;
-} TACK;  # 168 bytes
+} TACK;  /* 168 bytes */
 
 struct {
    TACK_Key key;
    opaque signature[64];
-} TACK_Break_Sig;  # 129 bytes
+} TACK_Break_Sig;  /* 129 bytes */
 
 struct {
-   TACK tack&lt;0...1024&gt;   # 0 or 1 TACKs
-   TACK_Break_Sig break_sigs&lt;0...2048&gt;   # 0 or more Break Signatures
+   TACK tack&lt;0...1024&gt;   /* 0 or 1 TACKs */
+   TACK_Break_Sig break_sigs&lt;0...2048&gt;   /* 0 or more Break Sigs */
 } TACK_Extension;	
 </artwork></figure>
 </section>
@@ -257,14 +253,13 @@ TACK_Break_Sig.
 	</t>
 	<t hangText="public_key:">
 
-This field specifies the server's "TACK key" as an elliptic curve public key
-on the NIST P-256 curve. The field contains a pair of nonnegative integers
-(x,y) representing a point on the elliptic curve P-256 defined in FIPS 186-3.
-Each integer is less than 2^256. Each integer is encoded as a 32-byte octet
-string using the Integer-to-Octet-String algorithm from SEC1, and these
-strings are concatenated with the x value first to produce a 64-byte octet
-string. (NOTE: This is equivalent to an uncompressed subjectPublicKey from
-SEC1, except that the initial 0x04 byte from subjectPublicKey is omitted).
+This field specifies the server's "TACK public key". The field contains a pair
+of integers (x,y) representing a point on the elliptic curve P-256 defined in
+<xref target="FIPS186-3"/>. Each integer is encoded as a 32-byte octet string
+using the Integer-to-Octet-String algorithm from <xref target="RFC6090"/>, and
+these strings are concatenated with the x value first. (NOTE: This is
+equivalent to an uncompressed subjectPublicKey from <xref target="RFC5480"/>,
+except that the initial 0x04 byte is omitted).
 
 	</t>	
  </list> 
@@ -279,12 +274,7 @@ SEC1, except that the initial 0x04 byte from subjectPublicKey is omitted).
 
 This field provides a version number which controls the interpretation of the
 TACK_Sig structure. A client who does not recognize a TACK_Sig.type MUST NOT
-attempt further interpretation of the TACK_Sig. This document specifies a
-single value for this field: "spki" which specifies that the "target_sha256"
-field contains a hash of the TLS server's SubjectPublicKeyInfo (as conveyed
-through the end-entity X.509 certificate or some other means, including any
-future TLS handshake protocols which convey the server's SubjectPublicKeyInfo
-without using a certificate).
+attempt further interpretation of the TACK_Sig.
 
 </t>
 <t hangText="min_generation:"> 
@@ -311,19 +301,20 @@ to the value expiration*60, the signature is expired.
 
 <t hangText="target_sha256:"> 
 
-This field is a SHA256 hash of a SubjectPublicKeyInfo.
+This field is a SHA256 hash of the TLS server's SubjectPublicKeyInfo <xref
+target="RFC3280"/>. The SubjectPublicKeyInfo is typically conveyed as part of
+the server's X.509 certificate.
 
 </t>
 
 <t hangText="signature:">
 
-This field is an ECDSA-P256-SHA256 signature over the entire TACK structure
-prior to the "signature" field (i.e. the preceding 104 bytes). The field
-contains a pair of nonnegative integers (r,s) representing an ECDSA signature
-as defined in FIPS 186-3. Each integer is less than 2^256. Each integer is
-encoded as a 32-byte octet string using the Integer-to-Octet-String algorithm
-from SEC1, and these strings are concatenated with the r value first to
-produce a 64-byte octet string.
+This field is an ECDSA signature over the entire TACK structure prior to the
+"signature" field (i.e. the preceding 104 bytes). The field contains a pair of
+integers (r,s) representing an ECDSA signature as defined in <xref
+target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
+a 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
+target="RFC6090"/>, and these strings are concatenated with the r value first.
 
 </t>
 </list>
@@ -364,9 +355,9 @@ used to verify the following signature.
 
 <t hangText="signature:">
 
-This field is an ECDSA-P256-SHA256 signature over the entire TACK_Break_Sig
-structure prior to the "signature" field (i.e. the preceding 65 bytes). It is
-encoded as per TACK_Sig.signature.
+This field is an ECDSA signature over the entire TACK_Break_Sig structure
+prior to the "signature" field (i.e. the preceding 65 bytes). It is encoded as
+per TACK_Sig.signature.
 
 </t>
 
@@ -655,10 +646,10 @@ base32 alphabet "ABCDEFGHIJKLMNPQRSTUVWXY13456789".  Examples:
 <section title="Cookies and TACKs">
 <t>
 
-HTTP cookies with a "secure" atttribute (aka "secure cookies") set over a TLS
-connection with a valid TACK SHALL be bound to the TACK's TACK_Key. Clients
-SHALL only send these cookies over TLS connections with a valid TACK
-containing the same TACK_Key.
+HTTP cookies with a "secure" atttribute (aka "secure cookies") <xref
+target="RFC6265"/> set over a TLS connection with a valid TACK SHALL be bound
+to the TACK's TACK_Key. Clients SHALL only send these cookies over TLS
+connections with a valid TACK containing the same TACK_Key.
 
 </t>
 <t>
@@ -766,7 +757,7 @@ defined in RFC 5246, for tack(TBD) as defined in this document.
 IANA is requested to establish new registries for TLS TACK_Key_Type and TLS
 TACK_Sig_Type values. The initial entries in each registry are 0(reserved) and
 1(v1). The policy for adding new values to these registries, following the
-terminology defined in RFC 5226, is Expert Review.
+terminology defined in <xref target="RFC5226"/>, is Expert Review.
 
 	</t>
 	<t>
@@ -793,7 +784,43 @@ Lawson, and Joseph Bonneau.
     </middle>
 
     <back>
-        <references title='Normative References'>&rfc2119;</references>
+        <references title='Normative references'>
+	
+<reference
+  anchor="FIPS180-2"
+  target="http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf">
+  <front>
+    <title>Secure Hash Standard</title>
+    <author>
+      <organization>National Institute of Standards and Technology</organization>
+    </author>
+    <date month="August" year="2002" />
+  </front>
+  <seriesInfo name="FIPS" value="PUB 180-2" />
+</reference>
+
+<reference 
+	anchor="FIPS186-3" 
+	target="http://csrc.nist.gov/publications/fips/fips186-3/fips_186-3.pdf">
+<front>
+<title>Digital Signature Standard</title>
+<author>
+<organization>National Institute of Standards and Technology</organization>
+</author>
+<date month="June" year="2009" />
+</front>
+<seriesInfo name="FIPS" value="PUB 186-3" />
+</reference>
+
+			<?rfc include="bib/reference.RFC.2119.xml"?>
+			<?rfc include="bib/reference.RFC.3280.xml"?>
+			<?rfc include="bib/reference.RFC.4346.xml"?>
+			<?rfc include="bib/reference.RFC.5226.xml"?>
+			<?rfc include="bib/reference.RFC.5480.xml"?>
+			<?rfc include="bib/reference.RFC.6066.xml"?>			
+			<?rfc include="bib/reference.RFC.6090.xml"?>			
+			<?rfc include="bib/reference.RFC.6265.xml"?>
+	</references>
     </back>
 
 </rfc>

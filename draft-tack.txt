@@ -93,7 +93,7 @@ Table of Contents
      9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 17
      9.2.  New registries for TACK_Key_Type and TACK_Sig_Type . . . . 17
    10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 18
-   11. Normative References . . . . . . . . . . . . . . . . . . . . . 19
+   11. Normative references . . . . . . . . . . . . . . . . . . . . . 19
    Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 20
 
 
@@ -342,7 +342,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 4.1.  Definition of TACK_Extension
 
    A new TLS ExtensionType ("tack") is defined and MAY be included by a
-   TLS client in the (extended) client hello.
+   TLS client in the (extended) client hello as per [RFC6066].
 
    enum {tack(TBD), (65535)} ExtensionType;
 
@@ -350,7 +350,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    server which is not resuming a TLS session MAY respond with an
    extension of type "tack" in the server hello.  The "extension_data"
    field of this extension SHALL contain a "TACK_Extension", as defined
-   below using the TLS presentation language.
+   below using the TLS presentation language from [RFC4346].
 
    enum {v1(1)} TACK_Key_Type;
    enum {v1(1)} TACK_Sig_Type;
@@ -358,7 +358,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    struct {
       TACK_Key_Type type;
       opaque public_key[64];
-   } TACK_Key;  # 65 bytes
+   } TACK_Key;  /* 65 bytes */
 
    struct {
       TACK_Sig_Type type;
@@ -367,21 +367,21 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       uint32 expiration;
       opaque target_sha256[32];
       opaque signature[64];
-   } TACK_Sig;  # 103 bytes
+   } TACK_Sig;  /* 103 bytes */
 
    struct {
       TACK_Key key;
       TACK_Sig sig;
-   } TACK;  # 168 bytes
+   } TACK;  /* 168 bytes */
 
    struct {
       TACK_Key key;
       opaque signature[64];
-   } TACK_Break_Sig;  # 129 bytes
+   } TACK_Break_Sig;  /* 129 bytes */
 
    struct {
-      TACK tack<0...1024>   # 0 or 1 TACKs
-      TACK_Break_Sig break_sigs<0...2048>   # 0 or more Break Signatures
+      TACK tack<0...1024>   /* 0 or 1 TACKs */
+      TACK_Break_Sig break_sigs<0...2048>   /* 0 or more Break Sigs */
    } TACK_Extension;
 
 
@@ -402,28 +402,21 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       recognize a TACK or TACK_Break_Sig's TACK_Key.type MUST NOT
       attempt further interpretation of the TACK or TACK_Break_Sig.
 
-   public_key:  This field specifies the server's "TACK key" as an
-      elliptic curve public key on the NIST P-256 curve.  The field
-      contains a pair of nonnegative integers (x,y) representing a point
-      on the elliptic curve P-256 defined in FIPS 186-3.  Each integer
-      is less than 2^256.  Each integer is encoded as a 32-byte octet
-      string using the Integer-to-Octet-String algorithm from SEC1, and
-      these strings are concatenated with the x value first to produce a
-      64-byte octet string.  (NOTE: This is equivalent to an
-      uncompressed subjectPublicKey from SEC1, except that the initial
-      0x04 byte from subjectPublicKey is omitted).
+   public_key:  This field specifies the server's "TACK public key".
+      The field contains a pair of integers (x,y) representing a point
+      on the elliptic curve P-256 defined in [FIPS186-3].  Each integer
+      is encoded as a 32-byte octet string using the Integer-to-Octet-
+      String algorithm from [RFC6090], and these strings are
+      concatenated with the x value first.  (NOTE: This is equivalent to
+      an uncompressed subjectPublicKey from [RFC5480], except that the
+      initial 0x04 byte is omitted).
 
 4.2.2.  TACK_Sig fields
 
    type:  This field provides a version number which controls the
       interpretation of the TACK_Sig structure.  A client who does not
       recognize a TACK_Sig.type MUST NOT attempt further interpretation
-      of the TACK_Sig. This document specifies a single value for this
-      field: "spki" which specifies that the "target_sha256" field
-      contains a hash of the TLS server's SubjectPublicKeyInfo (as
-      conveyed through the end-entity X.509 certificate or some other
-      means, including any future TLS handshake protocols which convey
-      the server's SubjectPublicKeyInfo without using a certificate).
+      of the TACK_Sig.
 
    min_generation:  This field publishes a min_generation value.
 
@@ -436,10 +429,17 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       via the algorithm in POSIX.1, is greater than or equal to the
       value expiration*60, the signature is expired.
 
-   target_sha256:  This field is a SHA256 hash of a
-      SubjectPublicKeyInfo.
+   target_sha256:  This field is a SHA256 hash of the TLS server's
+      SubjectPublicKeyInfo [RFC3280].  The SubjectPublicKeyInfo is
+      typically conveyed as part of the server's X.509 certificate.
 
-
+   signature:  This field is an ECDSA signature over the entire TACK
+      structure prior to the "signature" field (i.e. the preceding 104
+      bytes).  The field contains a pair of integers (r,s) representing
+      an ECDSA signature as defined in [FIPS186-3], using curve P-256
+      and SHA256.  Each integer is encoded as a 32-byte octet string
+      using the Integer-to-Octet-String algorithm from [RFC6090], and
+      these strings are concatenated with the r value first.
 
 
 
@@ -448,15 +448,6 @@ Marlinspike & Perrin   Expires September 19, 2012               [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
-
-   signature:  This field is an ECDSA-P256-SHA256 signature over the
-      entire TACK structure prior to the "signature" field (i.e. the
-      preceding 104 bytes).  The field contains a pair of nonnegative
-      integers (r,s) representing an ECDSA signature as defined in FIPS
-      186-3.  Each integer is less than 2^256.  Each integer is encoded
-      as a 32-byte octet string using the Integer-to-Octet-String
-      algorithm from SEC1, and these strings are concatenated with the r
-      value first to produce a 64-byte octet string.
 
 4.2.3.  TACK fields
 
@@ -469,10 +460,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    key:  This field specifies the TACK key being broken, and supplies
       the public key used to verify the following signature.
 
-   signature:  This field is an ECDSA-P256-SHA256 signature over the
-      entire TACK_Break_Sig structure prior to the "signature" field
-      (i.e. the preceding 65 bytes).  It is encoded as per
-      TACK_Sig.signature.
+   signature:  This field is an ECDSA signature over the entire
+      TACK_Break_Sig structure prior to the "signature" field (i.e. the
+      preceding 65 bytes).  It is encoded as per TACK_Sig.signature.
 
 4.2.5.  TACK_Extension fields
 
@@ -487,6 +477,16 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       TACK_Key.type.
 
    Note that both the "tack" and "break_sigs" fields MAY be empty.
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -691,10 +691,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 6.2.  Cookies and TACKs
 
-   HTTP cookies with a "secure" atttribute (aka "secure cookies") set
-   over a TLS connection with a valid TACK SHALL be bound to the TACK's
-   TACK_Key. Clients SHALL only send these cookies over TLS connections
-   with a valid TACK containing the same TACK_Key.
+   HTTP cookies with a "secure" atttribute (aka "secure cookies")
+   [RFC6265] set over a TLS connection with a valid TACK SHALL be bound
+   to the TACK's TACK_Key. Clients SHALL only send these cookies over
+   TLS connections with a valid TACK containing the same TACK_Key.
 
    Note that the decisions to bind a cookie received over a TLS
    connection to a TACK_Key, and to send such a cookie over a TLS
@@ -910,7 +910,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    IANA is requested to establish new registries for TLS TACK_Key_Type
    and TLS TACK_Sig_Type values.  The initial entries in each registry
    are 0(reserved) and 1(v1).  The policy for adding new values to these
-   registries, following the terminology defined in RFC 5226, is Expert
+   registries, following the terminology defined in [RFC5226], is Expert
    Review.
 
    The designated expert is expected to consult the TLS mailing list or
@@ -1009,45 +1009,45 @@ Marlinspike & Perrin   Expires September 19, 2012              [Page 18]
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
-11.  Normative References
+11.  Normative references
+
+   [FIPS180-2]
+              National Institute of Standards and Technology, "Secure
+              Hash Standard", FIPS PUB 180-2, August 2002, <http://
+              csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf>.
+
+   [FIPS186-3]
+              National Institute of Standards and Technology, "Digital
+              Signature Standard", FIPS PUB 186-3, June 2009, <http://
+              csrc.nist.gov/publications/fips/fips186-3/fips_186-3.pdf>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, March 1997.
 
+   [RFC3280]  Housley, R., Polk, W., Ford, W., and D. Solo, "Internet
+              X.509 Public Key Infrastructure Certificate and
+              Certificate Revocation List (CRL) Profile", RFC 3280,
+              April 2002.
 
+   [RFC4346]  Dierks, T. and E. Rescorla, "The Transport Layer Security
+              (TLS) Protocol Version 1.1", RFC 4346, April 2006.
 
+   [RFC5226]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
+              IANA Considerations Section in RFCs", BCP 26, RFC 5226,
+              May 2008.
 
+   [RFC5480]  Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk,
+              "Elliptic Curve Cryptography Subject Public Key
+              Information", RFC 5480, March 2009.
 
+   [RFC6066]  Eastlake, D., "Transport Layer Security (TLS) Extensions:
+              Extension Definitions", RFC 6066, January 2011.
 
+   [RFC6090]  McGrew, D., Igoe, K., and M. Salter, "Fundamental Elliptic
+              Curve Cryptography Algorithms", RFC 6090, February 2011.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+   [RFC6265]  Barth, A., "HTTP State Management Mechanism", RFC 6265,
+              April 2011.
 
 
 
