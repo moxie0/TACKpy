@@ -429,9 +429,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       via the algorithm in POSIX.1, is greater than or equal to the
       value expiration*60, the signature is expired.
 
-   target_sha256:  This field is a SHA256 hash of the TLS server's
-      SubjectPublicKeyInfo [RFC3280].  The SubjectPublicKeyInfo is
-      typically conveyed as part of the server's X.509 certificate.
+   target_sha256:  This field is a SHA256 hash [FIPS180-2] of the TLS
+      server's SubjectPublicKeyInfo [RFC3280].  The SubjectPublicKeyInfo
+      is typically conveyed as part of the server's X.509 certificate.
 
    signature:  This field is an ECDSA signature over the entire TACK
       structure prior to the "signature" field (i.e. the preceding 104

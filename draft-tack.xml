@@ -301,7 +301,7 @@ to the value expiration*60, the signature is expired.
 
 <t hangText="target_sha256:"> 
 
-This field is a SHA256 hash of the TLS server's SubjectPublicKeyInfo <xref
+This field is a SHA256 hash <xref target="FIPS180-2"/> of the TLS server's SubjectPublicKeyInfo <xref
 target="RFC3280"/>. The SubjectPublicKeyInfo is typically conveyed as part of
 the server's X.509 certificate.
 
