@@ -115,9 +115,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 1.  Introduction
 
-   Traditionally, a TLS client verifies a TLS server's public key by way
-   of a certificate chain issued by some public CA.  It is desirable to
-   have stronger methods of verifying server public keys.
+   Traditionally, a TLS client verifies a TLS server's public key using
+   a certificate chain issued by some public CA.  TACK facilitates
+   stronger methods of verifying server public keys.
 
    One such method is for clients to employ "pinning", in which the
    client uses past connections to verify future connections by checking
@@ -302,11 +302,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    alter the clients's pin store in two other ways:
 
    Min_generation:  Each pin stores the highest "min_generation" value
-      it has seen from the pinned TACK key.
+      it has seen from the pinned TACK key, and rejects TACKs from
+      earlier generations.
 
    Break signatures:  A TLS handshake may send break signatures which
       cause all pins for the broken key to be discarded.
-
 
 
 
@@ -625,31 +625,32 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
    A valid TACK MAY also be used to modify the host records using the
    "pin activation" process described below.  Note that the following
-   steps are optional; a client MAY rely on an external source of pins,
-   and not perform pin activation.
+   steps are optional; a client MAY rely on an external source of pins.
 
    If there is a relevant pin matching the TACK, the host record's
    "active period end" MAY be set according to the following formula
    (where "current" is the current time, and "initial" is the "initial
-   timestamp" from the host record:
+   timestamp" from the host record):
 
 
    active_period_end = current + MIN(30 days, current - initial)
 
 
    If there is no relevant pin, or only an inactive one which does not
-   match the TACK, a new host record MAY be created.  If the TACK's key
-   matches an existing key record, the key record is reused, otherwise a
-   new key record is created with the TACK's key and min_generation.
+   match the TACK, a new pin MAY be created with the following steps:
 
-   The new host record is created containing the server's hostname, an
-   "initial" timestamp equal to the current time, and an empty "active
-   period end".  If there was an existing relevant host record, it is
-   discarded.
+   1.  If the TACK's key matches an existing key record, the key record
+       is reused, otherwise a new key record is created with the TACK's
+       key and min_generation.
 
-   The following table summarizes this behavior depending on whether the
-   relevant pin is active or inactive (or none), and whether the TACK
-   matches the pin.
+   2.  A new host record is created containing the server's hostname, an
+       "initial timestamp" equal to the current time, and an empty
+       "active period end".
+
+   3.  If there was an existing relevant host record, it is discarded.
+
+   The following table summarizes this behavior based on whether the
+   relevant pin is active and matches the TACK:
 
     +------------+-------------------+-------------------------------+
     | Pin status | TACK matches pin? | Result                        |
@@ -667,7 +668,6 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-
 Marlinspike & Perrin   Expires September 21, 2012              [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
@@ -677,11 +677,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 6.1.  TACK IDs
 
-   To display TACK information to users in a consistent form, a "TACK
-   ID" MAY be used to represent a TACK_Key. A TACK ID is a base32
-   encoding of 5 bits TACK ID version (=0x01) followed by the first 120
-   bits of SHA256(TACK_Key), using the base32 alphabet
-   "ABCDEFGHIJKLMNPQRSTUVWXY13456789".  Examples:
+   A "TACK ID" MAY be used to represent a TACK_Key to users.  A TACK ID
+   is a base32 encoding of 5 bits TACK ID version (=0x01) followed by
+   the first 120 bits of SHA256(TACK_Key).  The base32 alphabet used is
+   "ABCDEFGHIJKLMNPQRSTUVWXY13456789" (in other words: uppercase letters
+   followed by numbers, with the visually similar character pairs (0, O)
+   and (2, Z) omitted).  Example TACK IDs:
 
       BJFVI.U5YFA.WXMIW.CQGFW.APVIF
 
@@ -723,7 +724,6 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
 
-
 Marlinspike & Perrin   Expires September 21, 2012              [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
@@ -737,10 +737,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       impersonate each other.  Thus, different keys should be used to
       pin hostnames with different security properties.  However, all
       servers sharing secure cookies must be pinned to the same key.
-      Due to cookie scoping rules, it will often be desirable to pin web
-      servers under a single DNS domain to a single key.
+      Due to cookie scoping rules (see [RFC6265]), it will often be
+      desirable to pin web servers under a single DNS domain to a single
+      key.
 
-   Generation:  To revoke older generations of TACKs, the server
+   Generations:  To revoke older generations of TACKs, the server
       operator should first provide all servers with a new generation of
       TACKs, then provide servers with new TACKs containing the new
       min_generation.  This is safer then trying to update
@@ -763,7 +764,6 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       example, if a TACK key has only been used for a TACK which has
       been published on a website for 24 hours, the break signature only
       needs to be published for 24 hours.
-
 
 
 
@@ -915,11 +915,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
    The designated expert is expected to consult the TLS mailing list or
    its designated successor, as well as review any documentation to
-   determine whether the extension will be widely useful to the internet
-   community and is fully documented.  To preserve the limited number of
-   code points and maximize interoperability, the presumption should be
-   that a code point SHOULD NOT be granted, unless there is a compelling
-   reason to the contrary.
+   determine whether the extension will be widely useful and is fully
+   documented.  To preserve the limited number of code points and
+   maximize interoperability, the presumption should be that a code
+   point SHOULD NOT be granted, unless there is a compelling reason to
+   the contrary.
 
 
 

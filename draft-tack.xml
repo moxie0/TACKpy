@@ -37,9 +37,9 @@ TACK key and a valid TACK signature.
 		<section anchor="intro" title="Introduction">
 			<t>
 
-Traditionally, a TLS client verifies a TLS server's public key by way of a
-certificate chain issued by some public CA. It is desirable to have stronger
-methods of verifying server public keys.
+Traditionally, a TLS client verifies a TLS server's public key using a
+certificate chain issued by some public CA. TACK facilitates stronger methods
+of verifying server public keys.
 
  </t> <t>
 
@@ -171,7 +171,7 @@ time.
 style="hanging"> <t hangText="Min_generation:">
 
 Each pin stores the highest "min_generation" value it has seen from the pinned
-TACK key.
+TACK key, and rejects TACKs from earlier generations.
 
 	</t>
 
@@ -567,15 +567,14 @@ TACK's min_generation if the TACK's value is larger.
 
 A valid TACK MAY also be used to modify the host records using the "pin
 activation" process described below. Note that the following steps are
-optional; a client MAY rely on an external source of pins, and not perform pin
-activation.
+optional; a client MAY rely on an external source of pins.
 
 </t>
 <t>
 
 If there is a relevant pin matching the TACK, the host record's "active period
 end" MAY be set according to the following formula (where "current" is the
-current time, and "initial" is the "initial timestamp" from the host record:
+current time, and "initial" is the "initial timestamp" from the host record):
 
 </t> <figure><artwork>
 
@@ -585,20 +584,21 @@ active_period_end = current + MIN(30 days, current - initial)
 <t>
 
 If there is no relevant pin, or only an inactive one which does not match the
-TACK, a new host record MAY be created. If the TACK's key matches an existing
+TACK, a new pin MAY be created with the following steps:
+<list style="numbers">
+<t>If the TACK's key matches an existing
 key record, the key record is reused, otherwise a new key record is created
-with the TACK's key and min_generation.
-</t>
-<t> The new host record is created
-containing the server's hostname, an "initial" timestamp equal to the current
-time, and an empty "active period end". If there was an existing relevant host
-record, it is discarded.
-
+with the TACK's key and min_generation.</t>
+<t>A new host record is created
+containing the server's hostname, an "initial timestamp" equal to the current
+time, and an empty "active period end".</t>	
+<t>If there was an existing relevant host record, it is discarded.</t>
+</list>
 </t>
 <t>
 
-The following table summarizes this behavior depending on whether the relevant
-pin is active or inactive (or none), and whether the TACK matches the pin.
+The following table summarizes this behavior based on whether the relevant pin is active
+and matches the TACK:
 
 </t>
       <texttable>
@@ -635,16 +635,20 @@ pin is active or inactive (or none), and whether the TACK matches the pin.
 <section title="TACK IDs">	
 <t>
 
-To display TACK information to users in a consistent form, a "TACK ID" MAY be
-used to represent a TACK_Key. A TACK ID is a base32 encoding of 5 bits TACK ID
-version (=0x01) followed by the first 120 bits of SHA256(TACK_Key), using the
-base32 alphabet "ABCDEFGHIJKLMNPQRSTUVWXY13456789".  Examples:
+A "TACK ID" MAY be used to represent a TACK_Key to users. A TACK ID is a
+base32 encoding of 5 bits TACK ID version (=0x01) followed by the first 120
+bits of SHA256(TACK_Key). The base32 alphabet used is
+"ABCDEFGHIJKLMNPQRSTUVWXY13456789" (in other words: uppercase letters followed
+by numbers, with the visually similar character pairs (0, O) and (2, Z)
+omitted). Example TACK IDs:
+
 <list>
 	<t>BJFVI.U5YFA.WXMIW.CQGFW.APVIF</t>
 	<t>B3LBX.KWYAP.A8CT1.4IFE8.JDQPT</t>
 	<t>BUT93.HCELT.SU745.LA44H.WJFGF</t>	
 </list>
 </t>
+
 </section> 
 
 <section title="Cookies and TACKs">
@@ -677,12 +681,13 @@ or unverified by a pin.
 All servers that are pinned to a single key are able to impersonate each
 other. Thus, different keys should be used to pin hostnames with different
 security properties. However, all servers sharing secure cookies must be
-pinned to the same key. Due to cookie scoping rules, it will often be
-desirable to pin web servers under a single DNS domain to a single key.
+pinned to the same key. Due to cookie scoping rules (see <xref
+target="RFC6265"/>), it will often be desirable to pin web servers under a
+single DNS domain to a single key.
 
 </t>
 
-<t hangText="Generation:">
+<t hangText="Generations:">
 
 To revoke older generations of TACKs, the server operator should first provide
 all servers with a new generation of TACKs, then provide servers with new
@@ -769,10 +774,10 @@ terminology defined in <xref target="RFC5226"/>, is Expert Review.
 
 The designated expert is expected to consult the TLS mailing list or its
 designated successor, as well as review any documentation to determine whether
-the extension will be widely useful to the internet community and is fully
-documented. To preserve the limited number of code points and maximize
-interoperability, the presumption should be that a code point SHOULD NOT be
-granted, unless there is a compelling reason to the contrary.
+the extension will be widely useful and is fully documented. To preserve the
+limited number of code points and maximize interoperability, the presumption
+should be that a code point SHOULD NOT be granted, unless there is a
+compelling reason to the contrary.
 
  </t>
 
