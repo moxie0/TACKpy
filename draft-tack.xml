@@ -46,10 +46,10 @@ methods of verifying server public keys.
 One such method is for clients to employ "pinning", in which the client uses
 past connections to verify future connections by checking for some constant
 element. Unfortunately, a number of problems arise when attempting to pin
-X.509 certificate chains: the TLS servers at a given hostname may have
-different certificate chains, and may change their chains at any time; the
-"more constant" elements of a chain - the CAs - may not be trustworthy; and
-the client employing pinning may be oblivious to key compromise events which
+certificate chains: the TLS servers at a given hostname may have different
+certificate chains, and may change their chains at any time; the "more
+constant" elements of a chain - the CAs - may not be trustworthy; and the
+client employing pinning may be oblivious to key compromise events which
 render the pinned data untrustworthy.
 
 			</t> 
@@ -192,7 +192,7 @@ broken key to be discarded.
 	<t>
 
 A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
-client in the (extended) client hello as per <xref target="RFC6066"/>.
+client in the extended client hello message defined in <xref target="RFC4366"/>.
 
 </t>
 <figure><artwork>
@@ -202,9 +202,10 @@ enum {tack(TBD), (65535)} ExtensionType;
 
 The "extension_data" field of this extension SHALL be empty. A TLS server
 which is not resuming a TLS session MAY respond with an extension of type
-"tack" in the server hello. The "extension_data" field of this extension SHALL
-contain a "TACK_Extension", as defined below using the TLS presentation
-language from <xref target="RFC4346"/>.
+"tack" in the extended server hello message defined in <xref
+target="RFC4366"/>. The "extension_data" field of this extension SHALL contain
+a "TACK_Extension", as defined below using the TLS presentation language from
+<xref target="RFC4346"/>.
 
 	</t>
 <figure><artwork>
@@ -249,14 +250,13 @@ struct {
 
 This field provides a version number which controls the interpretation of TACK
 and TACK_Break_Sig. A client who does not recognize a TACK or TACK_Break_Sig's
-TACK_Key.type MUST NOT attempt further interpretation of the TACK or
-TACK_Break_Sig.
+TACK_Key.type MUST NOT process the TACK or TACK_Break_Sig.
 
 	</t>
 	<t hangText="public_key:">
 
 This field specifies the server's "TACK public key". The field contains a pair
-of integers (x,y) representing a point on the elliptic curve P-256 defined in
+of integers (x, y) representing a point on the elliptic curve P-256 defined in
 <xref target="FIPS186-3"/>. Each integer is encoded as a 32-byte octet string
 using the Integer-to-Octet-String algorithm from <xref target="RFC6090"/>, and
 these strings are concatenated with the x value first. (NOTE: This is
@@ -274,9 +274,9 @@ except that the initial 0x04 byte is omitted).
 
 <t hangText="type:">
 
-This field provides a version number which controls the interpretation of the
-TACK_Sig structure. A client who does not recognize a TACK_Sig.type MUST NOT
-attempt further interpretation of the TACK_Sig.
+This field provides a version number which controls the interpretation of
+TACK_Sig. A client who does not recognize a TACK_Sig.type MUST NOT process the
+TACK_Sig.
 
 </t>
 <t hangText="min_generation:"> 
@@ -294,29 +294,29 @@ min_generation are considered revoked.
 
 <t hangText="expiration:"> 
 
-This field specifies a check that is applied to the current UTC time to
-determine whether the TACK signature is expired. If the current UTC time, when
-converted to an integer via the algorithm in POSIX.1, is greater than or equal
-to the value expiration*60, the signature is expired.
-
-</t>
+This field specifies a time after which the TACK signature is considered
+expired. The expiration time is encoded as the number of minutes, excluding
+leap seconds, after midnight UTC, January 1, 1970. Equivalently, this field
+multiplied by 60 equals the "UNIX time" encoding of the expiration time. </t>
 
 <t hangText="target_sha256:"> 
 
-This field is a SHA256 hash <xref target="FIPS180-2"/> of the TLS server's SubjectPublicKeyInfo <xref
-target="RFC3280"/>. The SubjectPublicKeyInfo is typically conveyed as part of
-the server's X.509 certificate.
+This field is a hash of the TLS server's SubjectPublicKeyInfo <xref
+target="RFC3280"/> using the SHA256 algorithm from <xref target="FIPS180-2"/>.
+The SubjectPublicKeyInfo is typically conveyed as part of the server's X.509
+certificate.
 
 </t>
 
 <t hangText="signature:">
 
-This field is an ECDSA signature over the entire TACK structure prior to the
-"signature" field (i.e. the preceding 104 bytes). The field contains a pair of
-integers (r,s) representing an ECDSA signature as defined in <xref
-target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
-a 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
-target="RFC6090"/>, and these strings are concatenated with the r value first.
+This field is an ECDSA signature by the TACK's public key over the entire TACK
+structure prior to the "signature" field (i.e. the preceding 104 bytes). The
+field contains a pair of integers (r, s) representing an ECDSA signature as
+defined in <xref target="FIPS186-3"/>, using curve P-256 and SHA256. Each
+integer is encoded as a 32-byte octet string using the Integer-to-Octet-String
+algorithm from <xref target="RFC6090"/>, and these strings are concatenated
+with the r value first.
 
 </t>
 </list>
@@ -357,9 +357,10 @@ used to verify the following signature.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature over the entire TACK_Break_Sig structure
-prior to the "signature" field (i.e. the preceding 65 bytes). It is encoded as
-per TACK_Sig.signature.
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the
+entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
+preceding 65 bytes of TACK_Key). It is calculated and encoded as per
+TACK_Sig.signature.
 
 </t>
 
@@ -382,10 +383,9 @@ This field provides the server's TACK, if any.
 
 This field provides break signatures. It MAY be empty, or MAY contain however
 many break signatures fit into 2 KB. The break signatures MAY have different
-TACK_Key.type values. In this case, they SHALL be ordered with the lowest
-types first, so that a client that does not recognize the later types can stop
-processing the break signatures list once it encounters an unrecognized
-TACK_Key.type.
+TACK_Key.type values. In this case, the break signatures SHALL be ordered with
+the lowest types first, so that a client can stop processing this field once
+an unrecognized TACK_Key.type is encountered.
 
 </t> </list> </t> 
 
@@ -436,9 +436,9 @@ A "host record" contains:
 
 <t>
 
-Hostname: A DNS hostname. A pin containing the current TLS connection's
-hostname is a "relevant" pin. A client SHALL NOT store multiple host records
-with the same hostname.
+Hostname: A DNS hostname. A client SHALL NOT store multiple host records with
+the same hostname. A pin containing the current TLS connection's hostname is a
+"relevant" pin.
 
 </t>
 <t>
@@ -519,7 +519,7 @@ the following statements are true:
 
 	<t>The break signature's "signature" field is a correct ECDSA signature over
 the break signature's contents when verified using the break signature's
-"public_key". </t>
+public key. </t>
 
 </list>
 </t> 
@@ -541,7 +541,7 @@ A TACK is "valid" if the following checks are true:
    SubjectPublicKeyInfo (or a session is being resumed).</t>
 
  <t>The TACK_Sig.signature is a correct ECDSA signature over the TACK's
-contents when verified using the TACK's "public_key".</t>
+contents when verified using the TACK's public key.</t>
 
  <t>The TACK_Sig.generation is >= the min_generation of any key record in 
 	the client's store which matches the TACK.
@@ -587,7 +587,9 @@ active_period_end = current + MIN(30 days, current - initial)
 If there is no relevant pin, or only an inactive one which does not match the
 TACK, a new host record MAY be created. If the TACK's key matches an existing
 key record, the key record is reused, otherwise a new key record is created
-with the TACK's key and min_generation. The new host record is created
+with the TACK's key and min_generation.
+</t>
+<t> The new host record is created
 containing the server's hostname, an "initial" timestamp equal to the current
 time, and an empty "active period end". If there was an existing relevant host
 record, it is discarded.
@@ -720,10 +722,11 @@ on a website for 24 hours, the break signature only needs to be published for
 
 It is possible for a client to maintain a pin store based entirely on its own
 TLS connections. However, such a client runs the risk of creating incorrect
-pins, failing to keep its pins active, or failing to receive min_generation
-updates and break signatures. Clients are advised to collaborate so that pin
-data can be aggregated and shared. This will likely require additional
-protocols and infrastructure outside the scope of this document.
+pins, failing to keep its pins active, or failing to receive revocation
+information (min_generation updates and break signatures). Clients are advised
+to collaborate so that pin data can be aggregated and shared. This will likely
+require additional protocols and infrastructure outside the scope of this
+document.
 
 </t>
 
@@ -817,9 +820,9 @@ Lawson, and Joseph Bonneau.
 			<?rfc include="bib/reference.RFC.2119.xml"?>
 			<?rfc include="bib/reference.RFC.3280.xml"?>
 			<?rfc include="bib/reference.RFC.4346.xml"?>
+			<?rfc include="bib/reference.RFC.4366.xml"?>
 			<?rfc include="bib/reference.RFC.5226.xml"?>
 			<?rfc include="bib/reference.RFC.5480.xml"?>
-			<?rfc include="bib/reference.RFC.6066.xml"?>			
 			<?rfc include="bib/reference.RFC.6090.xml"?>			
 			<?rfc include="bib/reference.RFC.6265.xml"?>
 	</references>
