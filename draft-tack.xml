@@ -37,17 +37,16 @@ TACK key and a valid TACK signature.
 		<section anchor="intro" title="Introduction">
 			<t>
 
-Traditionally, a TLS client verifies a TLS server's public key by checking the
-server's X.509 certificate chain. It is becoming increasingly important for
-TLS clients to have other means for verifing server public keys.
+Traditionally, a TLS client verifies a TLS server's public key by way of a
+certificate chain issued by some public CA. It is desirable to have stronger
+methods of verifying server public keys.
 
-			</t>
-			<t>
+ </t> <t>
 
-One alternative is for clients to employ some sort of "pinning", in which the
-client uses past connections to verify future connections by checking for some
-constant element. Unfortunately, a number of problems arise when attempting to
-pin X.509 certificate chains: the TLS servers at a given hostname may have
+One such method is for clients to employ "pinning", in which the client uses
+past connections to verify future connections by checking for some constant
+element. Unfortunately, a number of problems arise when attempting to pin
+X.509 certificate chains: the TLS servers at a given hostname may have
 different certificate chains, and may change their chains at any time; the
 "more constant" elements of a chain - the CAs - may not be trustworthy; and
 the client employing pinning may be oblivious to key compromise events which
@@ -61,21 +60,22 @@ TACK addresses these problems by having the site choose a TACK signing key
 which is used to sign TLS server public keys. This enables clients to "pin" a
 hostname to the TACK key without requiring sites to modify their existing
 certificate chains, and without limiting a site's flexibility to deploy
-different certificate chains or change certificate chains. Since TACK pins are
-based on TACK keys (instead of CA keys), trust in CAs is not required.
-Additionally, the TACK key may be used to revoke previous TACK signatures or
-even itself, to handle compromise of TLS or TACK private keys.
+different certificate chains on different servers, or change certificate
+chains at any time. Since TACK pins are based on TACK keys (instead of CA
+keys), trust in CAs is not required. Additionally, the TACK key may be used to
+revoke previous TACK signatures or even itself, to handle compromise of TLS or
+TACK private keys.
 
 	</t>
 	<t>
 
-If requested by a client, the server will send a TLS Extension containing its
-"TACK". Inside the TACK is a TACK public key and TACK signature. Once a client
-has seen the same (hostname, TACK public key) pair multiple times, the client
-will "activate" a pin between the hostname and TACK key for a period equal to
-the length of time the pair has been observed for. This "pin activation"
-process limits the impact of bad pins resulting from transient network attacks
-or operator error.
+If requested by a client, a compliant server will send a TLS Extension
+containing its "TACK". Inside the TACK is a TACK public key and TACK
+signature. Once a client has seen the same (hostname, TACK public key) pair
+multiple times, the client will "activate" a pin between the hostname and TACK
+key for a period equal to the length of time the pair has been observed for.
+This "pin activation" process limits the impact of bad pins resulting from
+transient network attacks or operator error.
 
 			</t>
 			<t>
@@ -156,12 +156,12 @@ period of 30 days.
 
 </t> <t>
 
-This "pin activation" process serves multiple purposes. First, it prevents an
-attacker with short-lived control of the hostname from setting long-lived
-pins. Second, it makes it safer for sites to experiment with TACKs, as a new
-TACK can be discarded without causing long-lived problems. The 30 day limit on
-activation period guarantees that a worst-case pin can be recovered from in
-reasonable time.
+Pin activation serves multiple purposes. First, it prevents an attacker with
+short-lived control of the hostname from setting long-lived pins. Second, it
+makes it safer for sites to experiment with TACKs, as a new TACK can be
+discarded without causing long-lived problems. The 30 day limit on activation
+period guarantees that a worst-case pin can be recovered from in reasonable
+time.
 
 </t>
 
