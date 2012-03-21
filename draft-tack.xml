@@ -5,7 +5,7 @@
 <?rfc toc="yes" ?>
 <?rfc symrefs="yes" ?>
 
-<rfc ipr="trust200902" docName="draft-ietf-tls-tack-00.txt" category="std">
+<rfc ipr="trust200902" docName="draft-tack.txt" category="std">
 
     <front>
         <title>Trust Assertions for Certificate Keys</title>

@@ -8,7 +8,7 @@ Expires: September 21, 2012
 
 
                  Trust Assertions for Certificate Keys
-                       draft-ietf-tls-tack-00.txt
+                             draft-tack.txt
 
 Abstract
 
