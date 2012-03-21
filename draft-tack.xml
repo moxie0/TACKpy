@@ -24,10 +24,10 @@
 
 This document defines TACK, a TLS Extension that enables a TLS server to
 assert the authenticity of its public key. A TACK contains a "TACK signing
-key" and a "TACK signature" from that key over the TLS server's public key.
-Hostnames can be "pinned" to a TACK key. TLS connections to a pinnned hostname
-are only considered verified if the server presents a TACK containing the pinned
-TACK key and a valid TACK signature.
+key" and a corresponding "TACK signature" over the public key from the TLS
+server's certificate. Hostnames can be "pinned" to a TACK key, where TLS
+connections to a pinnned hostname are only considered verified if the server
+presents the pinned TACK key and a valid TACK signature.
 
 			</t>
 		</abstract>
@@ -56,7 +56,7 @@ render the pinned data untrustworthy.
 
 	<t>
 
-TACK addresses these problems by having the site choose a TACK signing key
+TACK addresses these problems by having the site choose a TACK signing key,
 which is used to sign TLS server public keys. This enables clients to "pin" a
 hostname to the TACK key without requiring sites to modify their existing
 certificate chains, and without limiting a site's flexibility to deploy
