@@ -5,7 +5,7 @@
 <?rfc toc="yes" ?>
 <?rfc symrefs="yes" ?>
 
-<rfc ipr="trust200902" docName="draf-ietf-tack-00">
+<rfc ipr="trust200902" docName="draft-ietf-tls-tack-00.txt" category="std">
 
     <front>
         <title>Trust Assertions for Certificate Keys</title>
@@ -17,8 +17,8 @@
             <organization/>
         </author>
         <date/>
-		<area>None</area>
-		<workgroup>No working group</workgroup>
+		<area>Security</area>
+		<workgroup>TLS Working Group</workgroup>
         <abstract>
 			<t>
 
@@ -192,7 +192,7 @@ broken key to be discarded.
 	<t>
 
 A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
-client in the extended client hello message defined in <xref target="RFC4366"/>.
+client in the client hello message defined in <xref target="RFC5246"/>.
 
 </t>
 <figure><artwork>
@@ -202,10 +202,10 @@ enum {tack(TBD), (65535)} ExtensionType;
 
 The "extension_data" field of this extension SHALL be empty. A TLS server
 which is not resuming a TLS session MAY respond with an extension of type
-"tack" in the extended server hello message defined in <xref
-target="RFC4366"/>. The "extension_data" field of this extension SHALL contain
+"tack" in the server hello message defined in <xref
+target="RFC5246"/>. The "extension_data" field of this extension SHALL contain
 a "TACK_Extension", as defined below using the TLS presentation language from
-<xref target="RFC4346"/>.
+<xref target="RFC5246"/>.
 
 	</t>
 <figure><artwork>
@@ -302,7 +302,7 @@ multiplied by 60 equals the "UNIX time" encoding of the expiration time. </t>
 <t hangText="target_sha256:"> 
 
 This field is a hash of the TLS server's SubjectPublicKeyInfo <xref
-target="RFC3280"/> using the SHA256 algorithm from <xref target="FIPS180-2"/>.
+target="RFC5280"/> using the SHA256 algorithm from <xref target="FIPS180-2"/>.
 The SubjectPublicKeyInfo is typically conveyed as part of the server's X.509
 certificate.
 
@@ -823,10 +823,9 @@ Lawson, and Joseph Bonneau.
 </reference>
 
 			<?rfc include="bib/reference.RFC.2119.xml"?>
-			<?rfc include="bib/reference.RFC.3280.xml"?>
-			<?rfc include="bib/reference.RFC.4346.xml"?>
-			<?rfc include="bib/reference.RFC.4366.xml"?>
 			<?rfc include="bib/reference.RFC.5226.xml"?>
+			<?rfc include="bib/reference.RFC.5246.xml"?>
+			<?rfc include="bib/reference.RFC.5280.xml"?>			
 			<?rfc include="bib/reference.RFC.5480.xml"?>
 			<?rfc include="bib/reference.RFC.6090.xml"?>			
 			<?rfc include="bib/reference.RFC.6265.xml"?>

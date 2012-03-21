@@ -1,13 +1,14 @@
 
 
 
-No working group                                          M. Marlinspike
+TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Expires: September 21, 2012                               March 20, 2012
+Intended status: Standards Track                          March 20, 2012
+Expires: September 21, 2012
 
 
                  Trust Assertions for Certificate Keys
-                           draf-ietf-tack-00
+                       draft-ietf-tls-tack-00.txt
 
 Abstract
 
@@ -48,7 +49,6 @@ Copyright Notice
    carefully, as they describe your rights and restrictions with respect
    to this document.  Code Components extracted from this document must
    include Simplified BSD License text as described in Section 4.e of
-   the Trust Legal Provisions and are provided without warranty as
 
 
 
@@ -57,6 +57,7 @@ Marlinspike & Perrin   Expires September 21, 2012               [Page 1]
 Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
 
+   the Trust Legal Provisions and are provided without warranty as
    described in the Simplified BSD License.
 
 
@@ -95,7 +96,6 @@ Table of Contents
    10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 18
    11. Normative references . . . . . . . . . . . . . . . . . . . . . 19
    Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 20
-
 
 
 
@@ -342,16 +342,16 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 4.1.  Definition of TACK_Extension
 
    A new TLS ExtensionType ("tack") is defined and MAY be included by a
-   TLS client in the extended client hello message defined in [RFC4366].
+   TLS client in the client hello message defined in [RFC5246].
 
    enum {tack(TBD), (65535)} ExtensionType;
 
    The "extension_data" field of this extension SHALL be empty.  A TLS
    server which is not resuming a TLS session MAY respond with an
-   extension of type "tack" in the extended server hello message defined
-   in [RFC4366].  The "extension_data" field of this extension SHALL
+   extension of type "tack" in the server hello message defined in
+   [RFC5246].  The "extension_data" field of this extension SHALL
    contain a "TACK_Extension", as defined below using the TLS
-   presentation language from [RFC4346].
+   presentation language from [RFC5246].
 
    enum {v1(1)} TACK_Key_Type;
    enum {v1(1)} TACK_Sig_Type;
@@ -429,7 +429,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
       equals the "UNIX time" encoding of the expiration time.
 
    target_sha256:  This field is a hash of the TLS server's
-      SubjectPublicKeyInfo [RFC3280] using the SHA256 algorithm from
+      SubjectPublicKeyInfo [RFC5280] using the SHA256 algorithm from
       [FIPS180-2].  The SubjectPublicKeyInfo is typically conveyed as
       part of the server's X.509 certificate.
 
@@ -1024,21 +1024,17 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, March 1997.
 
-   [RFC3280]  Housley, R., Polk, W., Ford, W., and D. Solo, "Internet
-              X.509 Public Key Infrastructure Certificate and
-              Certificate Revocation List (CRL) Profile", RFC 3280,
-              April 2002.
-
-   [RFC4346]  Dierks, T. and E. Rescorla, "The Transport Layer Security
-              (TLS) Protocol Version 1.1", RFC 4346, April 2006.
-
-   [RFC4366]  Blake-Wilson, S., Nystrom, M., Hopwood, D., Mikkelsen, J.,
-              and T. Wright, "Transport Layer Security (TLS)
-              Extensions", RFC 4366, April 2006.
-
    [RFC5226]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
               IANA Considerations Section in RFCs", BCP 26, RFC 5226,
               May 2008.
+
+   [RFC5246]  Dierks, T. and E. Rescorla, "The Transport Layer Security
+              (TLS) Protocol Version 1.2", RFC 5246, August 2008.
+
+   [RFC5280]  Cooper, D., Santesson, S., Farrell, S., Boeyen, S.,
+              Housley, R., and W. Polk, "Internet X.509 Public Key
+              Infrastructure Certificate and Certificate Revocation List
+              (CRL) Profile", RFC 5280, May 2008.
 
    [RFC5480]  Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk,
               "Elliptic Curve Cryptography Subject Public Key
@@ -1049,6 +1045,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       March 2012
 
    [RFC6265]  Barth, A., "HTTP State Management Mechanism", RFC 6265,
               April 2011.
+
+
+
+
 
 
 
