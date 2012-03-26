@@ -25,9 +25,9 @@
 This document defines TACK, a TLS Extension that enables a TLS server to
 assert the authenticity of its public key. A TACK contains a "TACK signing
 key" and a corresponding "TACK signature" over the public key from the TLS
-server's certificate. Hostnames can be "pinned" to a TACK key, in which case TLS
-connections to a pinnned hostname are only considered verified if the server
-presents the pinned TACK key and a valid TACK signature.
+server's certificate. Hostnames can be "pinned" to a TACK key. TLS connections
+to a pinnned hostname are only considered verified if the server presents a
+valid signature from the pinned key.
 
 			</t>
 		</abstract>
@@ -369,7 +369,9 @@ used to verify the following signature.
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the
 entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
-preceding 65 bytes of TACK_Key). It is calculated and encoded as per
+preceding 65 bytes of TACK_Key). The field contains a pair of integers (r, s)
+representing an ECDSA signature as defined in <xref target="FIPS186-3"/>,
+using curve P-256 and SHA256. It is calculated and encoded as per
 TACK_Sig.signature.
 
 </t>
@@ -503,8 +505,7 @@ connection:
 
 If, after the above steps, there is a relevant active pin and a valid matching
 TACK, then the connection is verified by the pin. If there is a relevant
-active pin but no such TACK, the connection is rejected by the pin. If there
-is no relevant active pin, the connection is unverified by a pin. How these
+active pin but no such TACK, the connection is rejected by the pin. How these
 different cases affect client behavior is out of scope of this specification.
 
  </t> <t>
@@ -561,6 +562,7 @@ contents when verified using the TACK's public key.</t>
  <t>The TLS handshake completes successfully.</t>
 
 </list>
+<vspace blankLines="100" />	
 
 </t>
 </section> 
@@ -607,8 +609,9 @@ time, and an empty "active period end".</t>
 </t>
 <t>
 
-The following table summarizes this behavior based on whether the relevant pin is active
-and matches the TACK:
+The following table summarizes this behavior based on whether the relevant pin
+is active and matches the TACK. The "(*)" means "if
+TACK_Extension.pin_activation is enabled".
 
 </t>
       <texttable>
@@ -617,7 +620,7 @@ and matches the TACK:
            <ttcol align='left'>Result</ttcol>
            <c>Active</c>
            <c>Yes</c>
-           <c>Extend activation period</c>
+           <c>Extend activation period (*)</c>
 
            <c>Active</c>
            <c>No</c>
@@ -625,7 +628,7 @@ and matches the TACK:
 
            <c>Inactive</c>
            <c>Yes</c>
-           <c>Activate pin</c>
+           <c>Activate pin (*)</c>
 
            <c>Inactive</c>
            <c>No</c>
@@ -651,7 +654,7 @@ encoded string of 125 bits, containing first the 5 bits TACK ID version
 
 Each of the 25 5-bit values in the TACK ID is encoded into a character by
 representing the value as a number from 0-31, then choosing the appropriate
-character from the below alphabet (where 0 is 'A', 1 is 'B', ..., 31 is '9').
+character from the below alphabet (where 0 is 'a', 1 is 'b', ..., 31 is '9').
 The 25 encoded characters are then split into five groups of five characters,
 separated by periods.
 
@@ -725,8 +728,7 @@ activate a pin by contacting one server, then contact a different server at
 the same hostname that does not yet have a valid TACK. The pin_activation
 field can also be used to phase out use of TACKs for a hostname - if all
 servers at a hostname disable pin activation, existing pins will eventually
-all become deactivated (within 30 days at most) and the TACKs may be removed
-at that point.
+all become deactivated (within 30 days at most).
 
 </t>
 
@@ -761,19 +763,27 @@ All servers sharing a TACK key can impersonate each other.
 Use different TACK keys for servers with different security properties.
 </t>
 <t>
+
 Make backup copies of the TACK private key and keep all copies in secure
 locations where they can't be compromised.
+
 </t>
 <t>
 
+A TACK private key MUST NOT be used to perform any non-TACK cryptographic
+operations. For example, using a TACK elliptic curve key for email encryption,
+code-signing, or any other purpose MUST NOT be done.
+
+</t> <t>
+
 HTTP cookies <xref target="RFC6265"/> set by a pinned host can be stolen by a
-network attacker who can forge web and DNS responses so as to cause the client
+network attacker who can forge web and DNS responses so as to cause a client
 to send the cookies to a phony subdomain of the pinned host. To prevent this,
 TACK HTTPS Servers SHOULD set the "secure" attribute and omit the "domain"
 attribute on all security-sensitive cookies, such as session cookies. These
 attribute settings tell the browser that the cookie should only be presented
 back to the originating host (not its subdomains), and should only be sent
-over an HTTPS connection (not HTTP) <xref target="RFC6265"/>.
+over HTTPS (not HTTP) <xref target="RFC6265"/>.
 
 </t>
 
