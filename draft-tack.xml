@@ -115,12 +115,21 @@ associated with those hostnames. The TACK public key and signature are
 combined with some metadata into each server's "TACK".
 
 	</t>
+	<t hangText="Deploying initial TACKs:">	
+
+For each hostname, TACKs are deployed to TLS servers in a two-stage process.
+First, each TLS server associated with the hostname is given a TACK. Then, pin
+activation is enabled on each server, so that clients may begin activating
+pins.
+
+	</t>
+	
 	<t hangText="Creating new TACKs under a TACK key:">	
 
 A TACK must be replaced whenever a server changes its TLS public key, or when
 a TACK signature expires. TACKs may also need to be replaced with
 later-generation TACKs if the TACK key's "min_generation" is updated (see
-next). 
+next).
 
 	</t>
 	<t hangText="Revoking old TACKs:">
@@ -151,8 +160,8 @@ A TACK client maintains a store of pins for verifying TLS connections. Pins
 associate a hostname and a TACK key. When a client sees a new hostname and
 TACK key combination, an inactive pin is created. Once the client has seen the
 pin more than once, the pin is "activated" for a period equal to the timespan
-between the first time the pin was seen and the most recent time, or a maximum
-period of 30 days.
+between the first time the pin was seen and the most recent time, up to a
+maximum period of 30 days.
 
 </t> <t>
 
@@ -192,7 +201,7 @@ broken key to be discarded.
 	<t>
 
 A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
-client in the client hello message defined in <xref target="RFC5246"/>.
+client in the ClientHello message defined in <xref target="RFC5246"/>.
 
 </t>
 <figure><artwork>
@@ -200,17 +209,17 @@ enum {tack(TBD), (65535)} ExtensionType;
 </artwork></figure>	
 <t>
 
-The "extension_data" field of this extension SHALL be empty. A TLS server
+The "extension_data" field of this ClientHello SHALL be empty. A TLS server
 which is not resuming a TLS session MAY respond with an extension of type
-"tack" in the server hello message defined in <xref
-target="RFC5246"/>. The "extension_data" field of this extension SHALL contain
-a "TACK_Extension", as defined below using the TLS presentation language from
-<xref target="RFC5246"/>.
+"tack" in the ServerHello. The "extension_data" field of this ServerHello
+SHALL contain a "TACK_Extension", as defined below using the TLS presentation
+language from <xref target="RFC5246"/>.
 
 	</t>
 <figure><artwork>
 enum {v1(1)} TACK_Key_Type;
 enum {v1(1)} TACK_Sig_Type;
+enum (disabled(0), enabled(1)} TACK_Activation;
 
 struct {
    TACK_Key_Type type;
@@ -233,12 +242,13 @@ struct {
 
 struct {
    TACK_Key key;
-   opaque signature[64];
+   opaque signature[64];   
 } TACK_Break_Sig;  /* 129 bytes */
 
 struct {
-   TACK tack&lt;0...1024&gt;   /* 0 or 1 TACKs */
-   TACK_Break_Sig break_sigs&lt;0...2048&gt;   /* 0 or more Break Sigs */
+   TACK tack&lt;0...1024&gt;  /* 0 or 1 TACKs */
+   TACK_Break_Sig  break_sigs&lt;0...2048&gt;  /* 0 or more Break Sigs */
+   TACK_Activation pin_activation;
 } TACK_Extension;	
 </artwork></figure>
 </section>
@@ -387,7 +397,14 @@ TACK_Key.type values. In this case, the break signatures SHALL be ordered with
 the lowest types first, so that a client can stop processing this field once
 an unrecognized TACK_Key.type is encountered.
 
-</t> </list> </t> 
+</t>
+<t hangText="pin_activation:">
+
+If this field is "enabled", this TACK_Extension MAY be used by clients to
+activate or extend the activation of TACK pins.
+
+</t>
+ </list> </t> 
 
 <t> Note that both the "tack" and "break_sigs" fields MAY be empty. </t>
 
@@ -402,8 +419,8 @@ an unrecognized TACK_Key.type is encountered.
 <t>
 
 A client supporting TACK SHALL have a local store of pins, consisting of "key
-records" and "host records". Each host record is pinned to a key record.
-Multiple host records may be pinned to a single key record. A "pin"
+records" and "host records". Each host record is associated with a key record.
+Multiple host records may be associated with a single key record. A "pin"
 refers to a (host record, key record) pair. Different pins can share the same
 key record.
 
@@ -464,8 +481,8 @@ until that time.
 <t>
 
 A TLS client compliant with this specification SHALL send the "tack" extension
-defined previously, as well as a "server_name" extension indicating the
-hostname the client is contacting.
+defined previously, as well as the "server_name" extension from <xref
+target="RFC6066"/> indicating the hostname the client is contacting.
 
 </t>
 <t>
@@ -479,13 +496,6 @@ connection:
  <t>Check whether the TACK is valid (if present).</t>
  <t>Update and activate pins based on the TACK (if valid).</t> 
 </list>
-</t>
-
-<t>
-
-If a TLS session that had a valid TACK is being resumed, step 1 above is
-skipped and the session's TACK is used for steps 2 and 3.
-
 </t>
 
 <t>
@@ -538,7 +548,7 @@ A TACK is "valid" if the following checks are true:
  <t>The TACK_Sig.expiration is non-expired.</t>
 
  <t>The TACK_Sig.target_sha256 is equal to the SHA256 hash of the server's
-   SubjectPublicKeyInfo (or a session is being resumed).</t>
+   SubjectPublicKeyInfo.</t>
 
  <t>The TACK_Sig.signature is a correct ECDSA signature over the TACK's
 contents when verified using the TACK's public key.</t>
@@ -572,14 +582,13 @@ optional; a client MAY rely on an external source of pins.
 </t>
 <t>
 
-If there is a relevant pin matching the TACK, the host record's "active period
-end" MAY be set according to the following formula (where "current" is the
-current time, and "initial" is the "initial timestamp" from the host record):
+If there is a relevant pin matching the TACK, and the TACK Extension's
+"pin_activation" is enabled, the host record's "active period end" MAY be set
+according to the following formula (where "current" is the current time, and
+"initial" is the "initial timestamp" from the host record):
 
 </t> <figure><artwork>
-
 active_period_end = current + MIN(30 days, current - initial)
-
 </artwork></figure>	
 <t>
 
@@ -630,44 +639,40 @@ and matches the TACK:
 </section>	
 </section>
 
-<section title="Miscellaneous">
-	
 <section title="TACK IDs">	
 <t>
+A "TACK ID" MAY be used to represent a TACK_Key to users. A TACK ID is an
+encoded string of 125 bits, containing first the 5 bits TACK ID version
+(=0x01) followed by the first 120 bits of SHA256(TACK_Key).
+</t>
 
-A "TACK ID" MAY be used to represent a TACK_Key to users. A TACK ID is a
-base32 encoding of 5 bits TACK ID version (=0x01) followed by the first 120
-bits of SHA256(TACK_Key). The base32 alphabet used is
-"ABCDEFGHIJKLMNPQRSTUVWXY13456789" (in other words: uppercase letters followed
-by numbers, with the visually similar character pairs (0, O) and (2, Z)
-omitted). Example TACK IDs:
+<t>
 
+Each of the 25 5-bit values in the TACK ID is encoded into a character by
+representing the value as a number from 0-31, then choosing the appropriate
+character from the below alphabet (where 0 is 'A', 1 is 'B', ..., 31 is '9').
+The 25 encoded characters are then split into five groups of five characters,
+separated by periods.
+
+</t>
+<t>
+
+The TACK ID alphabet is "abcdefghijkLmnpqrstuvwxy13456789". The alphabet is
+constructed by taking the uppercase letters followed by numbers, with the
+visually similar character pairs (0, O) and (2, z) omitted, and the visually
+similar pair ("1", "l") disambiguated by converting the letter "l" to "L".
+
+</t>
+<t>
+Example TACK IDs:	
+</t>
+<t>
 <list>
-	<t>BJFVI.U5YFA.WXMIW.CQGFW.APVIF</t>
-	<t>B3LBX.KWYAP.A8CT1.4IFE8.JDQPT</t>
-	<t>BUT93.HCELT.SU745.LA44H.WJFGF</t>	
+	<t>bkihj.gu49L.Lk4ap.6vmxj.88kaL</t>
+	<t>b3v8i.Ltauw.13vk8.h69fy.rsqqt</t>
+	<t>bsspt.aecek.u596t.39h8x.LL31L</t>	
 </list>
 </t>
-
-</section> 
-
-<section title="Cookies and TACKs">
-<t>
-
-HTTP cookies with a "secure" atttribute (aka "secure cookies") <xref
-target="RFC6265"/> set over a TLS connection with a valid TACK SHALL be bound
-to the TACK's TACK_Key. Clients SHALL only send these cookies over TLS
-connections with a valid TACK containing the same TACK_Key.
-
-</t>
-<t>
-
-Note that the decisions to bind a cookie received over a TLS connection to a
-TACK_Key, and to send such a cookie over a TLS connection, do not take into
-account whether the TLS connections are verified by a pin, rejected by a pin,
-or unverified by a pin.
-
-</t> </section>
 
 </section>
 
@@ -680,10 +685,7 @@ or unverified by a pin.
 
 All servers that are pinned to a single key are able to impersonate each
 other. Thus, different keys should be used to pin hostnames with different
-security properties. However, all servers sharing secure cookies must be
-pinned to the same key. Due to cookie scoping rules (see <xref
-target="RFC6265"/>), it will often be desirable to pin web servers under a
-single DNS domain to a single key.
+security properties.
 
 </t>
 
@@ -748,6 +750,17 @@ Use different TACK keys for servers with different security properties.
 <t>
 Make backup copies of the TACK private key and keep all copies in secure
 locations where they can't be compromised.
+</t>
+<t>
+
+HTTP cookies <xref target="RFC6265"/> set by a host can be easily stolen by a
+network attacker unless both the "secure" attribute is set and the cookie is
+scoped to a specific host (and not its subdomains) by omitting the "domain"
+attribute. TACK HTTPS Servers SHOULD set the "secure" attribute and omit the
+"domain" attribute on all security-sensitive cookies, such as session cookies.
+Browsers SHOULD handle the "secure" and "domain" attributes as per <xref
+target="RFC6265"/>.
+
 </t>
 
         </section>
@@ -827,6 +840,7 @@ Lawson, and Joseph Bonneau.
 			<?rfc include="bib/reference.RFC.5246.xml"?>
 			<?rfc include="bib/reference.RFC.5280.xml"?>			
 			<?rfc include="bib/reference.RFC.5480.xml"?>
+			<?rfc include="bib/reference.RFC.6066.xml"?>			
 			<?rfc include="bib/reference.RFC.6090.xml"?>			
 			<?rfc include="bib/reference.RFC.6265.xml"?>
 	</references>
