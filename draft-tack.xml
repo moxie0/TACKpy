@@ -401,10 +401,11 @@ an unrecognized TACK_Key.type is encountered.
 <t hangText="pin_activation:">
 
 If this field is "enabled", this TACK_Extension MAY be used by clients to
-activate or extend the activation of TACK pins.
+activate or extend the activation of TACK pins. This field is typically
+toggled from a disabled to an enabled state once TACKs have been deployed to
+all TLS servers for a hostname.
 
-</t>
- </list> </t> 
+</t> </list> </t>
 
 <t> Note that both the "tack" and "break_sigs" fields MAY be empty. </t>
 
@@ -660,7 +661,7 @@ separated by periods.
 The TACK ID alphabet is "abcdefghijkLmnpqrstuvwxy13456789". The alphabet is
 constructed by taking the uppercase letters followed by numbers, with the
 visually similar character pairs (0, O) and (2, z) omitted, and the visually
-similar pair ("1", "l") disambiguated by converting the letter "l" to "L".
+similar pair ("1", "l") disambiguated by capitalizing the letter "L".
 
 </t>
 <t>
@@ -712,11 +713,23 @@ Break signatures are useful if a server wishes to abruptly change its TACK
 key, stop using TACKs, or advertise that a TACK key is compromised and clients
 should stop relying on it. A break signature only needs to be published for a
 time interval equal to the maximum active period of any affected pins. For
-example, if a TACK key has only been used for a TACK which has been published
-on a website for 24 hours, the break signature only needs to be published for
-24 hours.
+example, if a TACK has been only been published on a website for 24 hours,
+removing the TACK requires only publishing the break signature for 24 hours.
 
 </t>
+<t hangText="Pin activation:">
+
+The pin_activation field should only be toggled to "enabled" once all TLS
+servers sharing the same hostname have a valid TACK. Otherwise, a client may
+activate a pin by contacting one server, then contact a different server at
+the same hostname that does not yet have a valid TACK. The pin_activation
+field can also be used to phase out use of TACKs for a hostname - if all
+servers at a hostname disable pin activation, existing pins will eventually
+all become deactivated (within 30 days at most) and the TACKs may be removed
+at that point.
+
+</t>
+
 
 </list>
 <vspace blankLines="100" />	
@@ -753,13 +766,14 @@ locations where they can't be compromised.
 </t>
 <t>
 
-HTTP cookies <xref target="RFC6265"/> set by a host can be easily stolen by a
-network attacker unless both the "secure" attribute is set and the cookie is
-scoped to a specific host (and not its subdomains) by omitting the "domain"
-attribute. TACK HTTPS Servers SHOULD set the "secure" attribute and omit the
-"domain" attribute on all security-sensitive cookies, such as session cookies.
-Browsers SHOULD handle the "secure" and "domain" attributes as per <xref
-target="RFC6265"/>.
+HTTP cookies <xref target="RFC6265"/> set by a pinned host can be stolen by a
+network attacker who can forge web and DNS responses so as to cause the client
+to send the cookies to a phony subdomain of the pinned host. To prevent this,
+TACK HTTPS Servers SHOULD set the "secure" attribute and omit the "domain"
+attribute on all security-sensitive cookies, such as session cookies. These
+attribute settings tell the browser that the cookie should only be presented
+back to the originating host (not its subdomains), and should only be sent
+over an HTTPS connection (not HTTP) <xref target="RFC6265"/>.
 
 </t>
 
