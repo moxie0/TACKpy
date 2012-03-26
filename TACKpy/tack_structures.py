@@ -451,7 +451,8 @@ FwFGRqeNl/uT+iTRYJH+GU0hHkA+v6Rm0oBt2COSvP5E
     tbs = TACK_Break_Sig()
     tbs.parsePem(s)
     assert(tbs.key.type == TACK_Key_Type.v1)
-    assert(tbs.getTACKID() == "BCX9R.6IYW3.8TN4D.5G9JJ.I18GY")
+    #print tbs.getTACKID()
+    assert(tbs.getTACKID() == "bcx9r.6iyw3.8tn4d.5g9jj.i18gy")
     assert(tbs.signature == a2b_hex(
 "0b49f18f3bb7b347d189b69236a457da"
 "185c18472da3a5b8e0e13f8ee5202e17"
@@ -475,7 +476,9 @@ K3SpVgeBp0R2gpBKuEnLxH1DfR2lg+gjycXKc0JXoAR3TeOG3Aig6Y9ziVHvikHD
 -----END TACK BREAK SIG-----
 """
     tbsList = TACK_Break_Sig.parsePemList(s)
-    assert(tbsList[0].getTACKID()  == "BCX9R.6IYW3.8TN4D.5G9JJ.I18GY")
-    assert(tbsList[1].getTACKID()  == "BUDHM.4Q6XU.74GEU.ISNA9.KE6LN")
+    #print tbsList[0].getTACKID()
+    #print tbsList[1].getTACKID()    
+    assert(tbsList[0].getTACKID()  == "bcx9r.6iyw3.8tn4d.5g9jj.i18gy")
+    assert(tbsList[1].getTACKID()  == "budhm.4q6xu.74geu.isna9.ke6Ln")
     assert(len(tbsList) == 2)
     return 1

@@ -16,11 +16,11 @@ size. See Appendix A for more discussion.
 """
 ################ FINGERPRINTS ###
 
-alphabet = "ABCDEFGHIJKLMNPQRSTUVWXY13456789"
+alphabet = "abcdefghijkLmnpqrstuvwxy13456789"
 
-revAlphabet = {'A':0, 'B':1, 'C':2, 'D':3, 'E':4, 'F':5, 'G':6, 'H':7,
-    'I':8, 'J':9, 'K':10, 'L':11, 'M':12, 'N':13, 'P':14, 'Q':15, 
-    'R':16, 'S':17, 'T':18, 'U':19, 'V':20, 'W':21, 'X':22, 'Y':23, '1':24, 
+revAlphabet = {'a':0, 'b':1, 'c':2, 'd':3, 'e':4, 'f':5, 'g':6, 'h':7,
+    'i':8, 'j':9, 'k':10, 'L':11, 'm':12, 'n':13, 'p':14, 'q':15, 
+    'r':16, 's':17, 't':18, 'u':19, 'v':20, 'w':21, 'x':22, 'y':23, '1':24, 
     '3':25, '4':26, '5':27, '6':28, '7':29, '8':30, '9':31}
 
 def base32EncodeIntList(listInts):
