@@ -217,17 +217,17 @@ language from <xref target="RFC5246"/>.
 
 	</t>
 <figure><artwork>
-enum {v1(1)} TACK_Key_Type;
-enum {v1(1)} TACK_Sig_Type;
+enum {v1(1)} TACK_Version;
+enum {v1_spki(1), v1_break(2)} TACK_Sig_Type_v1;
 enum (disabled(0), enabled(1)} TACK_Activation;
 
 struct {
-   TACK_Key_Type type;
+   TACK_Version version;
    opaque public_key[64];
 } TACK_Key;  /* 65 bytes */
 
 struct {
-   TACK_Sig_Type type;
+   TACK_Sig_Type_v1 type;
    uint8  min_generation;
    uint8  generation;
    uint32 expiration;
@@ -246,7 +246,7 @@ struct {
 } TACK_Break_Sig;  /* 129 bytes */
 
 struct {
-   TACK tack&lt;0...1024&gt;  /* 0 or 1 TACKs */
+   TACK tacks&lt;0...1024&gt;  /* 0 or more TACKs */
    TACK_Break_Sig  break_sigs&lt;0...2048&gt;  /* 0 or more Break Sigs */
    TACK_Activation pin_activation;
 } TACK_Extension;	
@@ -256,11 +256,12 @@ struct {
 	<section title="TACK_Key fields">
 	<t>
 	<list style="hanging">
-	<t hangText="type:">
+	<t hangText="version:">
 
 This field provides a version number which controls the interpretation of TACK
 and TACK_Break_Sig. A client who does not recognize a TACK or TACK_Break_Sig's
-TACK_Key.type MUST NOT process the TACK or TACK_Break_Sig.
+version (which is the first byte of each) MUST NOT process the TACK or
+TACK_Break_Sig.
 
 	</t>
 	<t hangText="public_key:">
@@ -284,7 +285,7 @@ except that the initial 0x04 byte is omitted).
 
 <t hangText="type:">
 
-This field provides a version number which controls the interpretation of
+This field provides a type number which controls the interpretation of
 TACK_Sig. A client who does not recognize a TACK_Sig.type MUST NOT process the
 TACK_Sig.
 
@@ -369,10 +370,11 @@ used to verify the following signature.
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the
 entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
-preceding 65 bytes of TACK_Key). The field contains a pair of integers (r, s)
-representing an ECDSA signature as defined in <xref target="FIPS186-3"/>,
-using curve P-256 and SHA256. It is calculated and encoded as per
-TACK_Sig.signature.
+preceding 65 bytes of TACK_Key), followed by the single byte 0x02
+(representing the value "v1_break" from TACK_Sig_Type_v1). The field contains
+a pair of integers (r, s) representing an ECDSA signature as defined in <xref
+target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated and
+encoded as per TACK_Sig.signature.
 
 </t>
 
@@ -385,19 +387,25 @@ TACK_Sig.signature.
 <t>
 <list style="hanging">
 
-<t hangText="tack:">
+<t hangText="tacks:">
 
-This field provides the server's TACK, if any.	
-	
+This field provides the server's TACK(s). It MAY be empty, or may contain
+however many TACKs fit into 1 KB. If there are multiple TACKs, each TACK MUST
+have a different version number, and the TACKs MUST be ordered with the lowest
+version first, so that a client can stop processing this field once a
+supported version is encountered. TACKs defined in this specification (with
+version == v1) are always 168 byte in length. Version values defined in other
+specifications MAY specify larger TACKs.
+
 </t>
 
 <t hangText="break_sigs:">
 
 This field provides break signatures. It MAY be empty, or MAY contain however
 many break signatures fit into 2 KB. The break signatures MAY have different
-TACK_Key.type values. In this case, the break signatures SHALL be ordered with
-the lowest types first, so that a client can stop processing this field once
-an unrecognized TACK_Key.type is encountered.
+version values. In this case, the break signatures SHALL be ordered with the
+lowest versions first, so that a client can stop processing this field once an
+unrecognized version is encountered.
 
 </t>
 <t hangText="pin_activation:">
@@ -409,7 +417,7 @@ all TLS servers for a hostname.
 
 </t> </list> </t>
 
-<t> Note that both the "tack" and "break_sigs" fields MAY be empty. </t>
+<t> Note that both the "tacks" and "break_sigs" fields MAY be empty. </t>
 
 </section>
 
@@ -496,8 +504,8 @@ connection:
 
 <list style="numbers">
  <t>Discard pins based on break signatures (if present).</t>
- <t>Check whether the TACK is valid (if present).</t>
- <t>Update and activate pins based on the TACK (if valid).</t> 
+ <t>Check for a valid TACK.</t>
+ <t>Update and activate pins based on the valid TACK (if present).</t> 
 </list>
 </t>
 
@@ -525,7 +533,7 @@ the following statements are true:
 
 <list style="numbers">
 
-	<t>The break signature's TACK_Key.type field is recognized.</t>
+	<t>The break signature's version field is recognized.</t>
 
  	<t>The break signature "matches" the key record.</t>
 
@@ -537,13 +545,15 @@ public key. </t>
 </t> 
 </section>
 
-<section title="Checking whether the TACK is valid"> 
+<section title="Checking for a valid TACK"> 
 <t> 
 
-A TACK is "valid" if the following checks are true:
+A v1 TACK is "valid" if the below checks are true. (Checking the validity of
+other TACK versions is not defined in this specification).
+
 <list style="numbers">
 
- <t>The TACK_Key.type and TACK_Sig.type fields are recognized.</t>
+ <t>The version and TACK_Sig.type fields are recognized.</t>
 
  <t>The TACK_Sig.generation is >= TACK_Sig.min_generation.</t>
 
@@ -798,13 +808,15 @@ defined in RFC 5246, for tack(TBD) as defined in this document.
 
  </t>
 </section>
-	<section title="New registries for TACK_Key_Type and TACK_Sig_Type">
+	<section title="New registries for TACK_Version and TACK_Sig_Type_v1">
 	<t>
 
-IANA is requested to establish new registries for TLS TACK_Key_Type and TLS
-TACK_Sig_Type values. The initial entries in each registry are 0(reserved) and
-1(v1). The policy for adding new values to these registries, following the
-terminology defined in <xref target="RFC5226"/>, is Expert Review.
+IANA is requested to establish new registries for TLS TACK_Version and TLS
+TACK_Sig_Type_v1 values. The initial entries in TACK_Version are 0(reserved),
+and 1(v1). The initial entries in TACK_Sig_Type_v1 are 0(reserved),
+1(v1_spki), and 2(v1_break). The policy for adding new values to these
+registries, following the terminology defined in <xref target="RFC5226"/>, is
+Expert Review.
 
 	</t>
 	<t>
