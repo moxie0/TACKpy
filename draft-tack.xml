@@ -227,23 +227,20 @@ struct {
 } TACK_Key;  /* 65 bytes */
 
 struct {
+   TACK_Key key;
    TACK_Sig_Type_v1 type;
    uint8  min_generation;
    uint8  generation;
    uint32 expiration;
    opaque target_sha256[32];
    opaque signature[64];
-} TACK_Sig;  /* 103 bytes */
-
-struct {
-   TACK_Key key;
-   TACK_Sig sig;
 } TACK;  /* 168 bytes */
 
 struct {
    TACK_Key key;
-   opaque signature[64];   
-} TACK_Break_Sig;  /* 129 bytes */
+   TACK_Sig_Type_v1 type;
+   opaque signature[64];
+} TACK_Break_Sig;  /* 130 bytes */
 
 struct {
    TACK tacks&lt;0...1024&gt;  /* 0 or more TACKs */
@@ -260,8 +257,8 @@ struct {
 
 This field provides a version number which controls the interpretation of TACK
 and TACK_Break_Sig. A client who does not recognize a TACK or TACK_Break_Sig's
-version (which is the first byte of each) MUST NOT process the TACK or
-TACK_Break_Sig.
+version (which is the first byte of each) MUST NOT attempt to process the TACK
+or TACK_Break_Sig.
 
 	</t>
 	<t hangText="public_key:">
@@ -279,15 +276,15 @@ except that the initial 0x04 byte is omitted).
 </t>
 </section> 
 
-<section title="TACK_Sig fields">
+<section title="TACK fields">
 <t>
 <list style="hanging">
 
 <t hangText="type:">
 
-This field provides a type number which controls the interpretation of
-TACK_Sig. A client who does not recognize a TACK_Sig.type MUST NOT process the
-TACK_Sig.
+This field controls the interpretation of the following TACK fields. A client
+who does not recognize a TACK.type MUST NOT attempt to process the remainder
+of the TACK. All TACKs of version "v1" MUST have type "v1_spki".
 
 </t>
 <t hangText="min_generation:"> 
@@ -305,10 +302,9 @@ min_generation are considered revoked.
 
 <t hangText="expiration:"> 
 
-This field specifies a time after which the TACK signature is considered
-expired. The expiration time is encoded as the number of minutes, excluding
-leap seconds, after midnight UTC, January 1, 1970. Equivalently, this field
-multiplied by 60 equals the "UNIX time" encoding of the expiration time. </t>
+This field specifies a time after which the TACK is considered expired. The
+time is encoded as the number of minutes, excluding leap seconds, after
+midnight UTC, January 1 1970. </t>
 
 <t hangText="target_sha256:"> 
 
@@ -334,27 +330,6 @@ with the r value first.
 </t>
 </section>
 
-
-<section title="TACK fields">
-<t>
-<list style="hanging">
-
-<t hangText="key:">
-
-This field specifies the TACK's key.
-
-</t>
-
-<t hangText="sig:">
-
-This field specifies the TACK's signature and related fields.
-
-</t>
-</list>
-</t>
-</section>
-
-
 <section title="TACK_Break_Sig fields">
 <t>
 <list style="hanging">
@@ -365,16 +340,22 @@ This field specifies the TACK key being broken, and supplies the public key
 used to verify the following signature.
 
 </t>
+<t hangText="type:">
+
+This field controls the interpretation of the following break signature
+fields. A client who does not recognize a TACK_Break_Sig.type MUST NOT attempt
+to process the remainder of the TACK_Break_Sig. All TACK_Break_Sigs of version
+"v1" MUST have type "v1_break".
+
+</t>
 
 <t hangText="signature:">
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the
 entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
-preceding 65 bytes of TACK_Key), followed by the single byte 0x02
-(representing the value "v1_break" from TACK_Sig_Type_v1). The field contains
-a pair of integers (r, s) representing an ECDSA signature as defined in <xref
-target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated and
-encoded as per TACK_Sig.signature.
+preceding 66 bytes). The field contains a pair of integers (r, s) representing
+an ECDSA signature as defined in <xref target="FIPS186-3"/>, using curve P-256
+and SHA256. It is calculated and encoded as per TACK_Sig.signature.
 
 </t>
 
@@ -392,8 +373,8 @@ encoded as per TACK_Sig.signature.
 This field provides the server's TACK(s). It MAY be empty, or may contain
 however many TACKs fit into 1 KB. If there are multiple TACKs, each TACK MUST
 have a different version number, and the TACKs MUST be ordered with the lowest
-version first, so that a client can stop processing this field once a
-supported version is encountered. TACKs defined in this specification (with
+version first, so that a client can stop processing this field once an
+unrecognized version is encountered. TACKs defined in this specification (with
 version == v1) are always 168 byte in length. Version values defined in other
 specifications MAY specify larger TACKs.
 

@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                           April 1, 2012
-Expires: October 3, 2012
+Intended status: Standards Track                           April 3, 2012
+Expires: October 5, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -35,7 +35,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 3, 2012.
+   This Internet-Draft will expire on October 5, 2012.
 
 Copyright Notice
 
@@ -52,7 +52,7 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 1]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 1]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -72,10 +72,9 @@ Table of Contents
      4.1.  Definition of TACK_Extension . . . . . . . . . . . . . . .  7
      4.2.  Explanation of TACK_Extension fields . . . . . . . . . . .  8
        4.2.1.  TACK_Key fields  . . . . . . . . . . . . . . . . . . .  8
-       4.2.2.  TACK_Sig fields  . . . . . . . . . . . . . . . . . . .  8
-       4.2.3.  TACK fields  . . . . . . . . . . . . . . . . . . . . .  9
-       4.2.4.  TACK_Break_Sig fields  . . . . . . . . . . . . . . . .  9
-       4.2.5.  TACK_Extension fields  . . . . . . . . . . . . . . . .  9
+       4.2.2.  TACK fields  . . . . . . . . . . . . . . . . . . . . .  8
+       4.2.3.  TACK_Break_Sig fields  . . . . . . . . . . . . . . . .  9
+       4.2.4.  TACK_Extension fields  . . . . . . . . . . . . . . . .  9
    5.  Client processing  . . . . . . . . . . . . . . . . . . . . . . 10
      5.1.  TACK pins, key records, and host records . . . . . . . . . 10
      5.2.  High-level client processing . . . . . . . . . . . . . . . 10
@@ -108,7 +107,8 @@ Table of Contents
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 2]
+
+Marlinspike & Perrin     Expires October 5, 2012                [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -164,7 +164,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 3]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 4]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -276,7 +276,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 5]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -332,7 +332,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 6]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -362,23 +362,20 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    } TACK_Key;  /* 65 bytes */
 
    struct {
+      TACK_Key key;
       TACK_Sig_Type_v1 type;
       uint8  min_generation;
       uint8  generation;
       uint32 expiration;
       opaque target_sha256[32];
       opaque signature[64];
-   } TACK_Sig;  /* 103 bytes */
-
-   struct {
-      TACK_Key key;
-      TACK_Sig sig;
    } TACK;  /* 168 bytes */
 
    struct {
       TACK_Key key;
+      TACK_Sig_Type_v1 type;
       opaque signature[64];
-   } TACK_Break_Sig;  /* 129 bytes */
+   } TACK_Break_Sig;  /* 130 bytes */
 
    struct {
       TACK tacks<0...1024>  /* 0 or more TACKs */
@@ -388,7 +385,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 7]
+
+
+
+Marlinspike & Perrin     Expires October 5, 2012                [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -400,7 +400,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    version:  This field provides a version number which controls the
       interpretation of TACK and TACK_Break_Sig. A client who does not
       recognize a TACK or TACK_Break_Sig's version (which is the first
-      byte of each) MUST NOT process the TACK or TACK_Break_Sig.
+      byte of each) MUST NOT attempt to process the TACK or
+      TACK_Break_Sig.
 
    public_key:  This field specifies the server's "TACK public key".
       The field contains a pair of integers (x, y) representing a point
@@ -411,22 +412,21 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       an uncompressed subjectPublicKey from [RFC5480], except that the
       initial 0x04 byte is omitted).
 
-4.2.2.  TACK_Sig fields
+4.2.2.  TACK fields
 
-   type:  This field provides a type number which controls the
-      interpretation of TACK_Sig. A client who does not recognize a
-      TACK_Sig.type MUST NOT process the TACK_Sig.
+   type:  This field controls the interpretation of the following TACK
+      fields.  A client who does not recognize a TACK.type MUST NOT
+      attempt to process the remainder of the TACK.  All TACKs of
+      version "v1" MUST have type "v1_spki".
 
    min_generation:  This field publishes a min_generation value.
 
    generation:  This field assigns each TACK a generation.  Generations
       less than a published min_generation are considered revoked.
 
-   expiration:  This field specifies a time after which the TACK
-      signature is considered expired.  The expiration time is encoded
-      as the number of minutes, excluding leap seconds, after midnight
-      UTC, January 1, 1970.  Equivalently, this field multiplied by 60
-      equals the "UNIX time" encoding of the expiration time.
+   expiration:  This field specifies a time after which the TACK is
+      considered expired.  The time is encoded as the number of minutes,
+      excluding leap seconds, after midnight UTC, January 1 1970.
 
    target_sha256:  This field is a hash of the TLS server's
       SubjectPublicKeyInfo [RFC5280] using the SHA256 algorithm from
@@ -444,38 +444,36 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 8]
+Marlinspike & Perrin     Expires October 5, 2012                [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
-4.2.3.  TACK fields
-
-   key:  This field specifies the TACK's key.
-
-   sig:  This field specifies the TACK's signature and related fields.
-
-4.2.4.  TACK_Break_Sig fields
+4.2.3.  TACK_Break_Sig fields
 
    key:  This field specifies the TACK key being broken, and supplies
       the public key used to verify the following signature.
 
+   type:  This field controls the interpretation of the following break
+      signature fields.  A client who does not recognize a
+      TACK_Break_Sig.type MUST NOT attempt to process the remainder of
+      the TACK_Break_Sig. All TACK_Break_Sigs of version "v1" MUST have
+      type "v1_break".
+
    signature:  This field is an ECDSA signature by the TACK_Break_Sig's
       public key over the entire TACK_Break_Sig structure prior to the
-      "signature" field (i.e. the preceding 65 bytes of TACK_Key),
-      followed by the single byte 0x02 (representing the value
-      "v1_break" from TACK_Sig_Type_v1).  The field contains a pair of
-      integers (r, s) representing an ECDSA signature as defined in
-      [FIPS186-3], using curve P-256 and SHA256.  It is calculated and
-      encoded as per TACK_Sig.signature.
+      "signature" field (i.e. the preceding 66 bytes).  The field
+      contains a pair of integers (r, s) representing an ECDSA signature
+      as defined in [FIPS186-3], using curve P-256 and SHA256.  It is
+      calculated and encoded as per TACK_Sig.signature.
 
-4.2.5.  TACK_Extension fields
+4.2.4.  TACK_Extension fields
 
    tacks:  This field provides the server's TACK(s).  It MAY be empty,
       or may contain however many TACKs fit into 1 KB.  If there are
       multiple TACKs, each TACK MUST have a different version number,
       and the TACKs MUST be ordered with the lowest version first, so
-      that a client can stop processing this field once a supported
+      that a client can stop processing this field once an unrecognized
       version is encountered.  TACKs defined in this specification (with
       version == v1) are always 168 byte in length.  Version values
       defined in other specifications MAY specify larger TACKs.
@@ -500,7 +498,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012                [Page 9]
+
+
+Marlinspike & Perrin     Expires October 5, 2012                [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -556,7 +556,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 10]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -612,7 +612,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 11]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -668,7 +668,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 12]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -724,7 +724,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 13]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -780,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 14]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -836,7 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 15]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 16]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 17]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 18]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1060,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 19]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,5 +1116,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin     Expires October 3, 2012               [Page 20]
+Marlinspike & Perrin     Expires October 5, 2012               [Page 20]
 
