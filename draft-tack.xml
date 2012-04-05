@@ -218,7 +218,6 @@ language from <xref target="RFC5246"/>.
 	</t>
 <figure><artwork>
 enum {v1(1)} TACK_Version;
-enum {v1_spki(1), v1_break(2)} TACK_Sig_Type_v1;
 enum (disabled(0), enabled(1)} TACK_Activation;
 
 struct {
@@ -228,26 +227,29 @@ struct {
 
 struct {
    TACK_Key key;
-   TACK_Sig_Type_v1 type;
    uint8  min_generation;
    uint8  generation;
    uint32 expiration;
    opaque target_sha256[32];
    opaque signature[64];
-} TACK;  /* 168 bytes */
+} TACK;  /* 167 bytes */
 
 struct {
    TACK_Key key;
-   TACK_Sig_Type_v1 type;
    opaque signature[64];
-} TACK_Break_Sig;  /* 130 bytes */
+} TACK_Break_Sig;  /* 129 bytes */
 
 struct {
    TACK tacks&lt;0...1024&gt;  /* 0 or more TACKs */
    TACK_Break_Sig  break_sigs&lt;0...2048&gt;  /* 0 or more Break Sigs */
    TACK_Activation pin_activation;
-} TACK_Extension;	
-</artwork></figure>
+} TACK_Extension;
+</artwork>
+</figure>
+<t>
+<vspace blankLines="100" />	
+
+</t>
 </section>
 <section title="Explanation of TACK_Extension fields">
 	<section title="TACK_Key fields">
@@ -280,13 +282,13 @@ except that the initial 0x04 byte is omitted).
 <t>
 <list style="hanging">
 
-<t hangText="type:">
+<t hangText="key:">
 
-This field controls the interpretation of the following TACK fields. A client
-who does not recognize a TACK.type MUST NOT attempt to process the remainder
-of the TACK. All TACKs of version "v1" MUST have type "v1_spki".
+This field specifies the TACK key, and supplies the public key used to verify
+the TACK's signature.
 
 </t>
+
 <t hangText="min_generation:"> 
 
 This field publishes a min_generation value.
@@ -317,16 +319,17 @@ certificate.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK's public key over the entire TACK
-structure prior to the "signature" field (i.e. the preceding 104 bytes). The
-field contains a pair of integers (r, s) representing an ECDSA signature as
-defined in <xref target="FIPS186-3"/>, using curve P-256 and SHA256. Each
-integer is encoded as a 32-byte octet string using the Integer-to-Octet-String
-algorithm from <xref target="RFC6090"/>, and these strings are concatenated
-with the r value first.
+This field is an ECDSA signature by the TACK's public key over the ASCII
+string "TACK_tls" followed by the entire TACK structure prior to the
+"signature" field (i.e. the preceding 103 bytes). The field contains a pair of
+integers (r, s) representing an ECDSA signature as defined in <xref
+target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
+a 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
+target="RFC6090"/>, and these strings are concatenated with the r value first.
 
 </t>
 </list>
+<vspace blankLines="100" />	
 </t>
 </section>
 
@@ -340,22 +343,15 @@ This field specifies the TACK key being broken, and supplies the public key
 used to verify the following signature.
 
 </t>
-<t hangText="type:">
-
-This field controls the interpretation of the following break signature
-fields. A client who does not recognize a TACK_Break_Sig.type MUST NOT attempt
-to process the remainder of the TACK_Break_Sig. All TACK_Break_Sigs of version
-"v1" MUST have type "v1_break".
-
-</t>
 
 <t hangText="signature:">
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the
-entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
-preceding 66 bytes). The field contains a pair of integers (r, s) representing
-an ECDSA signature as defined in <xref target="FIPS186-3"/>, using curve P-256
-and SHA256. It is calculated and encoded as per TACK_Sig.signature.
+ASCII string "TACK_break" followed by the entire TACK_Break_Sig structure
+prior to the "signature" field (i.e. the preceding 65 bytes). The field
+contains a pair of integers (r, s) representing an ECDSA signature as defined
+in <xref target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated
+and encoded as per TACK_Sig.signature.
 
 </t>
 
@@ -375,7 +371,7 @@ however many TACKs fit into 1 KB. If there are multiple TACKs, each TACK MUST
 have a different version number, and the TACKs MUST be ordered with the lowest
 version first, so that a client can stop processing this field once an
 unrecognized version is encountered. TACKs defined in this specification (with
-version == v1) are always 168 byte in length. Version values defined in other
+version == v1) are always 167 byte in length. Version values defined in other
 specifications MAY specify larger TACKs.
 
 </t>
@@ -534,7 +530,7 @@ other TACK versions is not defined in this specification).
 
 <list style="numbers">
 
- <t>The version and TACK_Sig.type fields are recognized.</t>
+ <t>The version field is recognized.</t>
 
  <t>The TACK_Sig.generation is >= TACK_Sig.min_generation.</t>
 
@@ -789,15 +785,13 @@ defined in RFC 5246, for tack(TBD) as defined in this document.
 
  </t>
 </section>
-	<section title="New registries for TACK_Version and TACK_Sig_Type_v1">
+	<section title="New registry for TACK_Version">
 	<t>
 
-IANA is requested to establish new registries for TLS TACK_Version and TLS
-TACK_Sig_Type_v1 values. The initial entries in TACK_Version are 0(reserved),
-and 1(v1). The initial entries in TACK_Sig_Type_v1 are 0(reserved),
-1(v1_spki), and 2(v1_break). The policy for adding new values to these
-registries, following the terminology defined in <xref target="RFC5226"/>, is
-Expert Review.
+IANA is requested to establish a new registry for TLS TACK_Version. The
+initial entries in TACK_Version are 0(reserved), and 1(v1). The policy for
+adding new values to this registry, following the terminology defined in <xref
+target="RFC5226"/>, is Expert Review.
 
 	</t>
 	<t>
