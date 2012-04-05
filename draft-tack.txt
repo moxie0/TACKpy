@@ -432,7 +432,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       part of the server's X.509 certificate.
 
    signature:  This field is an ECDSA signature by the TACK's public key
-      over the ASCII string "TACK_tls" followed by the entire TACK
+      over the ASCII string "TACK_tls_tack" followed by the entire TACK
       structure prior to the "signature" field (i.e. the preceding 103
       bytes).  The field contains a pair of integers (r, s) representing
       an ECDSA signature as defined in [FIPS186-3], using curve P-256
