@@ -872,7 +872,7 @@ follows:
 
 <list style="numbers">
 	<t>Apply the base32 encoding from <xref target="RFC4648"/> to convert the 120
-bits to 24 base32 characters.</t>
+bits to 24 lowercase base32 characters.</t>
 	<t>
 
 Convert the base32 characters to TACK ID characters by adding 2 to all base32

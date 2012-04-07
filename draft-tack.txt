@@ -1073,7 +1073,7 @@ Appendix A.  Implementing the TACK ID alphabet
    process, as follows:
 
    1.  Apply the base32 encoding from [RFC4648] to convert the 120 bits
-       to 24 base32 characters.
+       to 24 lowercase base32 characters.
 
    2.  Convert the base32 characters to TACK ID characters by adding 2
        to all base32 numerals (changing '2' to '4', '3' to '5', etc.)
