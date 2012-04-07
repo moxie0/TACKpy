@@ -652,7 +652,7 @@ separated by periods.
 <t>
 
 The TACK ID alphabet is "abcdefghijkLmn1pqrstuvwxy3456789". The alphabet is
-constructed of uppercase letters and numbers, with the visually similar pairs
+constructed of lowercase letters and numbers, with the visually similar pairs
 ('0', 'o') and ('2', 'z') omitted, and the visually similar pair ('1', 'l')
 disambiguated by capitalizing the letter 'L'. The alphabet is ordered so as to
 allow easy encoding using an <xref target="RFC4648"/> base32 encoder (see
