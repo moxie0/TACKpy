@@ -49,33 +49,32 @@ element. Unfortunately, a number of problems arise when attempting to pin
 certificate chains: the TLS servers at a given hostname may have different
 certificate chains and may change their chains at any time; the "more
 constant" elements of a chain - the CAs - may not be trustworthy; and the
-client employing pinning may be oblivious to key compromise events which
-render the pinned data untrustworthy.
+client may be oblivious to key compromise events which render the pinned data
+untrustworthy.
 
 			</t> 
 
 	<t>
 
-TACK addresses these problems by having the site choose a TACK signing key,
-which is used to sign TLS server public keys. This enables clients to "pin" a
-hostname to the TACK key without requiring sites to modify their existing
-certificate chains, and without limiting a site's flexibility to deploy
-different certificate chains on different servers or change certificate
-chains at any time. Since TACK pins are based on TACK keys (instead of CA
-keys), trust in CAs is not required. Additionally, the TACK key may be used to
-revoke previous TACK signatures or even itself, to handle compromise of TLS or
-TACK private keys.
+TACK addresses these problems by having the site sign its TLS server public
+keys with a TACK key. This enables clients to "pin" a hostname to the TACK key
+without requiring sites to modify their existing certificate chains, and
+without limiting a site's flexibility to deploy different certificate chains
+on different servers or change certificate chains at any time. Since TACK pins
+are based on TACK keys (instead of CA keys), trust in CAs is not required.
+Additionally, the TACK key may be used to revoke previous TACK signatures or
+even itself, to handle compromise of TLS or TACK private keys.
 
 	</t>
 	<t>
 
-If requested by a client, a compliant server will send a TLS Extension
-containing its "TACK". Inside the TACK is a TACK public key and TACK
-signature. Once a client has seen the same (hostname, TACK public key) pair
-multiple times, the client will "activate" a pin between the hostname and TACK
-key for a period equal to the length of time the pair has been observed for.
-This "pin activation" process limits the impact of bad pins resulting from
-transient network attacks or operator error.
+If requested, a compliant server will send a TLS Extension containing its
+"TACK". Inside the TACK is a TACK public key and TACK signature. Once a client
+has seen the same (hostname, TACK public key) pair multiple times, the client
+will "activate" a pin between the hostname and TACK key for a period equal to
+the length of time the pair has been observed for. This "pin activation"
+process limits the impact of bad pins resulting from transient network attacks
+or operator error.
 
 			</t>
 			<t>
@@ -118,18 +117,16 @@ combined with some metadata into each server's "TACK".
 	<t hangText="Deploying initial TACKs:">	
 
 For each hostname, TACKs are deployed to TLS servers in a two-stage process.
-First, each TLS server associated with the hostname is given a TACK. Then, pin
-activation is enabled on each server, so that clients may begin activating
-pins.
+First, each TLS server associated with the hostname is given a TACK. Once this
+is completed, pin activation is enabled on the servers.
 
 	</t>
 	
 	<t hangText="Creating new TACKs under a TACK key:">	
 
 A TACK must be replaced whenever a server changes its TLS public key, or when
-a TACK signature expires. TACKs may also need to be replaced with
-later-generation TACKs if the TACK key's "min_generation" is updated (see
-next).
+the TACK expires. TACKs may also need to be replaced with later-generation
+TACKs if the TACK key's "min_generation" is updated (see next).
 
 	</t>
 	<t hangText="Revoking old TACKs:">
@@ -320,7 +317,7 @@ certificate.
 <t hangText="signature:">
 
 This field is an ECDSA signature by the TACK's public key over the ASCII
-string "TACK_tls_tack" followed by the entire TACK structure prior to the
+string "TACK_tack" followed by the entire TACK structure prior to the
 "signature" field (i.e. the preceding 103 bytes). The field contains a pair of
 integers (r, s) representing an ECDSA signature as defined in <xref
 target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
@@ -348,10 +345,10 @@ used to verify the following signature.
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the
 ASCII string "TACK_break" followed by the entire TACK_Break_Sig structure
-prior to the "signature" field (i.e. the preceding 65 bytes). The field
-contains a pair of integers (r, s) representing an ECDSA signature as defined
-in <xref target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated
-and encoded as per TACK_Sig.signature.
+prior to the "signature" field (i.e. the preceding 65 bytes of TACK_Key). The
+field contains a pair of integers (r, s) representing an ECDSA signature as
+defined in <xref target="FIPS186-3"/>, using curve P-256 and SHA256. It is
+calculated and encoded as per TACK_Sig.signature.
 
 </t>
 
@@ -372,7 +369,7 @@ have a different version number, and the TACKs MUST be ordered with the lowest
 version first, so that a client can stop processing this field once an
 unrecognized version is encountered. TACKs defined in this specification (with
 version == v1) are always 167 byte in length. Version values defined in other
-specifications MAY specify larger TACKs.
+specifications MAY specify different-sized TACKs.
 
 </t>
 
@@ -490,8 +487,11 @@ connection:
 
 If, after the above steps, there is a relevant active pin and a valid matching
 TACK, then the connection is verified by the pin. If there is a relevant
-active pin but no such TACK, the connection is rejected by the pin. How these
-different cases affect client behavior is out of scope of this specification.
+active pin but no such TACK, the connection is rejected by the pin. A rejected
+connection may indicate a network attack or some other communication failure,
+and a client SHOULD NOT send or receive data on such a connection. However,
+the details of how a client chooses to handle these different cases is out of
+scope of this specification.
 
  </t> <t>
 
@@ -632,10 +632,13 @@ TACK_Extension.pin_activation is enabled".
 
 <section title="TACK IDs">	
 <t>
-A "TACK ID" MAY be used to represent a TACK_Key to users. A TACK ID is an
-encoded string of 125 bits, containing first the 5 bits TACK ID version
-(=0x01) followed by the first 120 bits of SHA256(TACK_Key).
-</t>
+
+A "TACK ID" MAY be used to represent a TACK_Key to users in a form that is
+(somewhat) easy to visually compare and transcribe. A TACK ID is a string of
+alphanumeric characters and periods encoding 125 bits of data. The first 5
+bits of data contain the TACK_Key's version (note that TACK IDs are not
+compatible with versions greater than 31). For a v1 TACK_Key, the following
+120 bits contain the first 120 bits of SHA256(TACK_Key). </t>
 
 <t>
 
@@ -648,10 +651,12 @@ separated by periods.
 </t>
 <t>
 
-The TACK ID alphabet is "abcdefghijkLmnpqrstuvwxy13456789". The alphabet is
-constructed by taking the uppercase letters followed by numbers, with the
-visually similar character pairs (0, O) and (2, z) omitted, and the visually
-similar pair ("1", "l") disambiguated by capitalizing the letter "L".
+The TACK ID alphabet is "abcdefghijkLmn1pqrstuvwxy3456789". The alphabet is
+constructed of uppercase letters and numbers, with the visually similar pairs
+('0', 'o') and ('2', 'z') omitted, and the visually similar pair ('1', 'l')
+disambiguated by capitalizing the letter 'L'. The alphabet is ordered so as to
+allow easy encoding using an <xref target="RFC4648"/> base32 encoder (see
+<xref target="base32"/>).
 
 </t>
 <t>
@@ -659,9 +664,9 @@ Example TACK IDs:
 </t>
 <t>
 <list>
-	<t>bkihj.gu49L.Lk4ap.6vmxj.88kaL</t>
-	<t>b3v8i.Ltauw.13vk8.h69fy.rsqqt</t>
-	<t>bsspt.aecek.u596t.39h8x.LL31L</t>	
+	<t>buw81.a3sm4.8wpL6.t3vaq.gghaL</t>
+	<t>bd867.imy99.k8egk.Lynjx.68c6s</t>
+	<t>baemb.9bw7r.y75tn.7d88r.fh9ua</t>	
 </list>
 </t>
 
@@ -847,6 +852,7 @@ Lawson, and Joseph Bonneau.
 </reference>
 
 			<?rfc include="bib/reference.RFC.2119.xml"?>
+			<?rfc include="bib/reference.RFC.4648.xml"?>
 			<?rfc include="bib/reference.RFC.5226.xml"?>
 			<?rfc include="bib/reference.RFC.5246.xml"?>
 			<?rfc include="bib/reference.RFC.5280.xml"?>			
@@ -855,6 +861,26 @@ Lawson, and Joseph Bonneau.
 			<?rfc include="bib/reference.RFC.6090.xml"?>			
 			<?rfc include="bib/reference.RFC.6265.xml"?>
 	</references>
-    </back>
+	<section title="Implementing the TACK ID alphabet" anchor="base32">
+
+<t>
+
+The most complex step in creating a TACK ID is encoding the first 120 bits
+from SHA256(TACK_Key) into 24 characters from the TACK ID alphabet. An <xref
+target="RFC4648"/> base32 encoder can be used to simplify the process, as
+follows:
+
+<list style="numbers">
+	<t>Apply the base32 encoding from <xref target="RFC4648"/> to convert the 120
+bits to 24 base32 characters.</t>
+	<t>
+
+Convert the base32 characters to TACK ID characters by adding 2 to all base32
+numerals (changing '2' to '4', '3' to '5', etc.) and converting 'l' to 'L',
+'o' to '1', and 'z' to '3'.
+
+ </t> </list> </t>
+
+ </section> </back>
 
 </rfc>

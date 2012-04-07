@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                           April 5, 2012
-Expires: October 7, 2012
+Intended status: Standards Track                           April 7, 2012
+Expires: October 9, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -35,7 +35,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 7, 2012.
+   This Internet-Draft will expire on October 9, 2012.
 
 Copyright Notice
 
@@ -52,7 +52,7 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 1]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 1]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -92,7 +92,8 @@ Table of Contents
      9.2.  New registry for TACK_Version  . . . . . . . . . . . . . . 17
    10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 18
    11. Normative references . . . . . . . . . . . . . . . . . . . . . 19
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 20
+   Appendix A.  Implementing the TACK ID alphabet . . . . . . . . . . 20
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
 
 
 
@@ -107,8 +108,7 @@ Table of Contents
 
 
 
-
-Marlinspike & Perrin     Expires October 7, 2012                [Page 2]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -125,29 +125,28 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    when attempting to pin certificate chains: the TLS servers at a given
    hostname may have different certificate chains and may change their
    chains at any time; the "more constant" elements of a chain - the CAs
-   - may not be trustworthy; and the client employing pinning may be
-   oblivious to key compromise events which render the pinned data
-   untrustworthy.
+   - may not be trustworthy; and the client may be oblivious to key
+   compromise events which render the pinned data untrustworthy.
 
-   TACK addresses these problems by having the site choose a TACK
-   signing key, which is used to sign TLS server public keys.  This
-   enables clients to "pin" a hostname to the TACK key without requiring
-   sites to modify their existing certificate chains, and without
-   limiting a site's flexibility to deploy different certificate chains
-   on different servers or change certificate chains at any time.  Since
-   TACK pins are based on TACK keys (instead of CA keys), trust in CAs
-   is not required.  Additionally, the TACK key may be used to revoke
-   previous TACK signatures or even itself, to handle compromise of TLS
-   or TACK private keys.
+   TACK addresses these problems by having the site sign its TLS server
+   public keys with a TACK key.  This enables clients to "pin" a
+   hostname to the TACK key without requiring sites to modify their
+   existing certificate chains, and without limiting a site's
+   flexibility to deploy different certificate chains on different
+   servers or change certificate chains at any time.  Since TACK pins
+   are based on TACK keys (instead of CA keys), trust in CAs is not
+   required.  Additionally, the TACK key may be used to revoke previous
+   TACK signatures or even itself, to handle compromise of TLS or TACK
+   private keys.
 
-   If requested by a client, a compliant server will send a TLS
-   Extension containing its "TACK".  Inside the TACK is a TACK public
-   key and TACK signature.  Once a client has seen the same (hostname,
-   TACK public key) pair multiple times, the client will "activate" a
-   pin between the hostname and TACK key for a period equal to the
-   length of time the pair has been observed for.  This "pin activation"
-   process limits the impact of bad pins resulting from transient
-   network attacks or operator error.
+   If requested, a compliant server will send a TLS Extension containing
+   its "TACK".  Inside the TACK is a TACK public key and TACK signature.
+   Once a client has seen the same (hostname, TACK public key) pair
+   multiple times, the client will "activate" a pin between the hostname
+   and TACK key for a period equal to the length of time the pair has
+   been observed for.  This "pin activation" process limits the impact
+   of bad pins resulting from transient network attacks or operator
+   error.
 
    TACK pins are easily communicated between clients.  For example, a
    TACK client may scan the internet to discover TACK pins, then publish
@@ -164,7 +163,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 3]
+
+Marlinspike & Perrin     Expires October 9, 2012                [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 4]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -241,15 +241,13 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    Deploying initial TACKs:  For each hostname, TACKs are deployed to
       TLS servers in a two-stage process.  First, each TLS server
-      associated with the hostname is given a TACK.  Then, pin
-      activation is enabled on each server, so that clients may begin
-      activating pins.
+      associated with the hostname is given a TACK.  Once this is
+      completed, pin activation is enabled on the servers.
 
    Creating new TACKs under a TACK key:  A TACK must be replaced
-      whenever a server changes its TLS public key, or when a TACK
-      signature expires.  TACKs may also need to be replaced with later-
-      generation TACKs if the TACK key's "min_generation" is updated
-      (see next).
+      whenever a server changes its TLS public key, or when the TACK
+      expires.  TACKs may also need to be replaced with later-generation
+      TACKs if the TACK key's "min_generation" is updated (see next).
 
    Revoking old TACKs:  If a TLS private key is compromised, the
       affected TACKs can be revoked by publishing a new TACK containing
@@ -276,7 +274,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 5]
+
+
+Marlinspike & Perrin     Expires October 9, 2012                [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -332,7 +332,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 6]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -388,7 +388,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 7]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -432,7 +432,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       part of the server's X.509 certificate.
 
    signature:  This field is an ECDSA signature by the TACK's public key
-      over the ASCII string "TACK_tls_tack" followed by the entire TACK
+      over the ASCII string "TACK_tack" followed by the entire TACK
       structure prior to the "signature" field (i.e. the preceding 103
       bytes).  The field contains a pair of integers (r, s) representing
       an ECDSA signature as defined in [FIPS186-3], using curve P-256
@@ -444,7 +444,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 8]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -457,10 +457,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    signature:  This field is an ECDSA signature by the TACK_Break_Sig's
       public key over the ASCII string "TACK_break" followed by the
       entire TACK_Break_Sig structure prior to the "signature" field
-      (i.e. the preceding 65 bytes).  The field contains a pair of
-      integers (r, s) representing an ECDSA signature as defined in
-      [FIPS186-3], using curve P-256 and SHA256.  It is calculated and
-      encoded as per TACK_Sig.signature.
+      (i.e. the preceding 65 bytes of TACK_Key).  The field contains a
+      pair of integers (r, s) representing an ECDSA signature as defined
+      in [FIPS186-3], using curve P-256 and SHA256.  It is calculated
+      and encoded as per TACK_Sig.signature.
 
 4.2.4.  TACK_Extension fields
 
@@ -471,7 +471,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       that a client can stop processing this field once an unrecognized
       version is encountered.  TACKs defined in this specification (with
       version == v1) are always 167 byte in length.  Version values
-      defined in other specifications MAY specify larger TACKs.
+      defined in other specifications MAY specify different-sized TACKs.
 
    break_sigs:  This field provides break signatures.  It MAY be empty,
       or MAY contain however many break signatures fit into 2 KB.  The
@@ -500,7 +500,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012                [Page 9]
+Marlinspike & Perrin     Expires October 9, 2012                [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -556,7 +556,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 10]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -564,8 +564,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    If, after the above steps, there is a relevant active pin and a valid
    matching TACK, then the connection is verified by the pin.  If there
    is a relevant active pin but no such TACK, the connection is rejected
-   by the pin.  How these different cases affect client behavior is out
-   of scope of this specification.
+   by the pin.  A rejected connection may indicate a network attack or
+   some other communication failure, and a client SHOULD NOT send or
+   receive data on such a connection.  However, the details of how a
+   client chooses to handle these different cases is out of scope of
+   this specification.
 
 5.3.  Client processing details
 
@@ -609,10 +612,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-
-
-Marlinspike & Perrin     Expires October 7, 2012               [Page 11]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -668,16 +668,20 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 12]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 6.  TACK IDs
 
-   A "TACK ID" MAY be used to represent a TACK_Key to users.  A TACK ID
-   is an encoded string of 125 bits, containing first the 5 bits TACK ID
-   version (=0x01) followed by the first 120 bits of SHA256(TACK_Key).
+   A "TACK ID" MAY be used to represent a TACK_Key to users in a form
+   that is (somewhat) easy to visually compare and transcribe.  A TACK
+   ID is a string of alphanumeric characters and periods encoding 125
+   bits of data.  The first 5 bits of data contain the TACK_Key's
+   version (note that TACK IDs are not compatible with versions greater
+   than 31).  For a v1 TACK_Key, the following 120 bits contain the
+   first 120 bits of SHA256(TACK_Key).
 
    Each of the 25 5-bit values in the TACK ID is encoded into a
    character by representing the value as a number from 0-31, then
@@ -685,21 +689,20 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    is 'a', 1 is 'b', ..., 31 is '9').  The 25 encoded characters are
    then split into five groups of five characters, separated by periods.
 
-   The TACK ID alphabet is "abcdefghijkLmnpqrstuvwxy13456789".  The
-   alphabet is constructed by taking the uppercase letters followed by
-   numbers, with the visually similar character pairs (0, O) and (2, z)
-   omitted, and the visually similar pair ("1", "l") disambiguated by
-   capitalizing the letter "L".
+   The TACK ID alphabet is "abcdefghijkLmn1pqrstuvwxy3456789".  The
+   alphabet is constructed of uppercase letters and numbers, with the
+   visually similar pairs ('0', 'o') and ('2', 'z') omitted, and the
+   visually similar pair ('1', 'l') disambiguated by capitalizing the
+   letter 'L'.  The alphabet is ordered so as to allow easy encoding
+   using an [RFC4648] base32 encoder (see Appendix A).
 
    Example TACK IDs:
 
-      bkihj.gu49L.Lk4ap.6vmxj.88kaL
+      buw81.a3sm4.8wpL6.t3vaq.gghaL
 
-      b3v8i.Ltauw.13vk8.h69fy.rsqqt
+      bd867.imy99.k8egk.Lynjx.68c6s
 
-      bsspt.aecek.u596t.39h8x.LL31L
-
-
+      baemb.9bw7r.y75tn.7d88r.fh9ua
 
 
 
@@ -721,10 +724,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-
-
-Marlinspike & Perrin     Expires October 7, 2012               [Page 13]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -780,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 14]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -836,7 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 15]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 16]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 17]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 18]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1023,6 +1023,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC4648]  Josefsson, S., "The Base16, Base32, and Base64 Data
+              Encodings", RFC 4648, October 2006.
 
    [RFC5226]  Narten, T. and H. Alvestrand, "Guidelines for Writing an
               IANA Considerations Section in RFCs", BCP 26, RFC 5226,
@@ -1057,10 +1060,63 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
+Marlinspike & Perrin     Expires October 9, 2012               [Page 19]
+
+Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+
+
+Appendix A.  Implementing the TACK ID alphabet
+
+   The most complex step in creating a TACK ID is encoding the first 120
+   bits from SHA256(TACK_Key) into 24 characters from the TACK ID
+   alphabet.  An [RFC4648] base32 encoder can be used to simplify the
+   process, as follows:
+
+   1.  Apply the base32 encoding from [RFC4648] to convert the 120 bits
+       to 24 base32 characters.
+
+   2.  Convert the base32 characters to TACK ID characters by adding 2
+       to all base32 numerals (changing '2' to '4', '3' to '5', etc.)
+       and converting 'l' to 'L', 'o' to '1', and 'z' to '3'.
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 19]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin     Expires October 9, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,5 +1172,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin     Expires October 7, 2012               [Page 20]
+Marlinspike & Perrin     Expires October 9, 2012               [Page 21]
 
