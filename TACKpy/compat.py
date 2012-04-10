@@ -5,7 +5,8 @@
 """These functions abstract away the differences between Python 2 and 3.
 """
 
-import sys, binascii
+import sys, binascii, base64
+
 if sys.version_info >= (3,0):
     def raw_input(s):
         return input(s)
@@ -33,6 +34,9 @@ if sys.version_info >= (3,0):
             
     def b2a_base64(b):
         return binascii.b2a_base64(b).decode("ascii") 
+
+    def b2a_base32(b):
+        return base64.b32encode(b).decode("ascii")
         
     def bytesToStrAscii(b):
         return str(b, "ascii")  
@@ -67,6 +71,9 @@ else:
         
     def b2a_base64(b):
         return binascii.b2a_base64(compat26Str(b))
+        
+    def b2a_base32(b):
+        return base64.b32encode(str(b))        
         
     def bytesToStrAscii(b):
         return str(b)
