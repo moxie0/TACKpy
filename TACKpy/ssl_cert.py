@@ -54,7 +54,7 @@ class SSL_Cert:
         self.parse(sslBytes)  # SyntaxError
 
     def matches(self, tack):
-        if tack.sig.type == TACK_Sig_Type.v1:
+        if tack.version == TACK_Version.v1:
             return self.key_sha256 == tack.sig.target_sha256
         return False 
     

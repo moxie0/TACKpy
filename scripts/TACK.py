@@ -6,7 +6,7 @@
 from TACKpy import TACK, TACK_Key, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
-    m2cryptoLoaded, TACK_Key_Type, TACK_Sig_Type, \
+    m2cryptoLoaded, TACK_Version, \
     posixTimeToStr, selfTest, pemSniff, \
     parseDurationArg, parseTimeArg
 
@@ -58,7 +58,6 @@ values in the correct order.
     generation = None
     min_generation = None
     expiration = None
-    sigType = TACK_Sig_Type.v1
     breakSigs = None
     verbose = False
     numArg = None
@@ -256,7 +255,7 @@ def signCmd(argv):
     
     if not numArg: # No -n
         tack = TACK()
-        tack.create(inKey, TACK_Sig_Type.v1, min_generation, generation, 
+        tack.create(inKey, min_generation, generation, 
                     expiration, hash)
         outputFile.write(addPemComments(tack.writePem()))
         if verbose:
@@ -269,7 +268,7 @@ def signCmd(argv):
             printError("-e required with -n")
         for x in range(numTacks):
             tack = TACK()
-            tack.create(inKey, TACK_Sig_Type.v1, min_generation, generation, 
+            tack.create(inKey, min_generation, generation, 
                         expiration, hash)
             outputFile = open(outputFilename+"_%04d.pem" % x, "w")
             outputFile.write(addPemComments(tack.writePem()))

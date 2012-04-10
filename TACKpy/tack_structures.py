@@ -20,12 +20,12 @@ class TACK_Key:
         """Create an uninitialized TACK_Key.  
         
         Use create() or parse() to populate."""
-        self.type = 0 # integer from TACK_Key_Type
+        self.version = 0 # integer from TACK_Version
         self.public_key = bytearray(64) # EC public key using NIST-P256
     
     def create(self, public_key):
         """Initialize a TACK_Key, based on the input key 32-byte bytearray."""
-        self.type = TACK_Key_Type.v1
+        self.version = TACK_Version.v1
         assert(len(public_key) == 64)
         self.public_key = public_key
 
@@ -38,18 +38,18 @@ class TACK_Key:
         Raise a SyntaxError if input is malformed.
         """
         p = Parser(b)
-        self.type = p.getInt(1)
-        if self.type != TACK_Key_Type.v1:
-            raise SyntaxError("Bad key.type")
+        self.version = p.getInt(1)
+        if self.version != TACK_Version.v1:
+            raise SyntaxError("Bad version")
         self.public_key = p.getBytes(64)
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK_Key")        
         
     def write(self):        
         """Return a 65-byte bytearray encoding of this TACK_Key."""
-        assert(self.type == TACK_Key_Type.v1)        
+        assert(self.version == TACK_Version.v1)        
         w = Writer(TACK_Key.length)
-        w.add(self.type, 1)
+        w.add(self.version, 1)
         w.add(self.public_key, 64)
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?            
         return w.bytes  
@@ -58,140 +58,60 @@ class TACK_Key:
         """Return a readable string describing this TACK_Key.
         
         Used by the "TACK view" command to display TACK objects."""
-        assert(self.type == TACK_Key_Type.v1)
+        assert(self.version == TACK_Version.v1)
         s = \
 """TACK ID        = %s\n""" % \
 (self.getTACKID())
         return s
         
-           
-class TACK_Sig:
-    length = 103 # length of TACK_Sig in bytes
-        
-    def __init__(self):
-        """Create an uninitialized TACK_Sig.  
-        
-        Use create() or parse() to populate."""        
-        self.type = 0 # 8-bit value from TACK_Key_Type (v1)
-        self.min_generation = 0 # 8-bit integer
-        self.generation = 0 # 8-bit integer               
-        self.expiration = 0 # 32-bit unsigned integer encoding POSIX time
-        self.target_sha256 = bytearray(32) # 32-byte SHA256 result
-        self.signature = bytearray(64) # ECDSA signature using NIST-P256
-        
-    def create(self, type, min_generation, generation, expiration,
-                target_sha256, key, signFunc):
-        """Initialize a TACK_Sig.
-
-        The input args are mostly used to set TACK_Sig fields directly.
-        However, the last two args contain a TACK_Key object and an ECDSA
-        signing function, which are used to populate the "signature" value. 
-        
-        The signing function takes an input bytearray, and returns a
-        64-byte signature of the bytearray based on ECDSA-NIST-P256-SHA256.
-        
-        To calculate the signing function input, the TACK_Key is written to a 
-        73-byte bytearray, then the 38 bytes of TACK_Sig fields prior to the 
-        "signature" are appended, yielding a 111-byte bytearray.
-        """
-        assert(type == TACK_Sig_Type.v1)
-        assert(min_generation >= 0 and min_generation <= 255)                
-        assert(generation >= 0 and generation <= 255 and 
-                generation >= min_generation)
-        assert(expiration >=0 and expiration <= 2**32-1)
-        assert(len(target_sha256) == 32)                
-        self.type = type
-        self.min_generation = min_generation
-        self.generation = generation                
-        self.expiration = expiration        
-        self.target_sha256 = target_sha256
-        self.signature = signFunc(key.write() + self.write()[:-64])
-    
-    def parse(self, b):
-        """Parse a bytearray of 102 bytes to populate this TACK_Sig.
-        
-        Raise a SyntaxError if input is malformed.
-        """        
-        p = Parser(b)
-        self.type = p.getInt(1)
-        if self.type != TACK_Sig_Type.v1:
-            raise SyntaxError("Bad sig.type")
-        self.min_generation = p.getInt(1)
-        self.generation = p.getInt(1)            
-        self.expiration = p.getInt(4)
-        self.target_sha256 = p.getBytes(32)
-        self.signature = p.getBytes(64)
-        if p.index != len(b):
-            raise SyntaxError("Excess bytes in TACK_Sig")
-        
-    def write(self):
-        """Return a 102-byte bytearray encoding of this TACK_Sig."""        
-        assert(self.type == TACK_Sig_Type.v1)
-        w = Writer(TACK_Sig.length)
-        w.add(self.type, 1)
-        w.add(self.min_generation, 1)
-        w.add(self.generation, 1)
-        w.add(self.expiration, 4)
-        w.add(self.target_sha256, 32)
-        w.add(self.signature, 64)
-        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
-        return w.bytes
-
-    def writeText(self):
-        """Return a readable string describing this TACK_Sig.
-        
-        Used by the "TACK view" command to display TACK objects."""        
-        assert(self.type == TACK_Sig_Type.v1)
-        s = \
-"""min_generation = %d
-generation     = %d
-expiration     = %s
-target_sha256  = 0x%s\n""" % \
-(self.min_generation,
-self.generation,
-posixTimeToStr(self.expiration*60),
-writeBytes(self.target_sha256))
-        return s
-
 class TACK:
-    length =  TACK_Key.length + TACK_Sig.length  # 168 bytes
+    length =  167
     
     def __init__(self):
         """Create an uninitialized TACK.  
         
         Use create() or parsePem() to populate."""        
         self.key = None # class TACK_Key
-        self.sig = None # class TACK_Sig
+        self.min_generation = 0 # 8-bit integer
+        self.generation = 0 # 8-bit integer               
+        self.expiration = 0 # 32-bit unsigned integer encoding POSIX time
+        self.target_sha256 = bytearray(32) # 32-byte SHA256 result
+        self.signature = bytearray(64) # ECDSA signature using NIST-P256
 
-    def create(self, keyFile, sigType, min_generation, generation, 
+    def create(self, keyFile, min_generation, generation, 
                 expiration, target_sha256):
         """Initialize a TACK.
-
-        The input args are passed to TACK_Key.create() or TACK_Sig.create()
         """        
         self.key = TACK_Key()
-        self.key.create(keyFile.public_key)
-        self.update(keyFile, sigType, min_generation, generation, 
+        self.key.create(keyFile.public_key)        
+        self.sign(keyFile, min_generation, generation, 
                     expiration, target_sha256)
                 
-    def update(self, keyFile, sigType, min_generation, generation, 
+    def sign(self, keyFile, min_generation, generation, 
                 expiration, target_sha256):
-        """Create a new TACK_Sig for the TACK.
+        """Create a new TACK sig for the TACK.
 
-        The existing TACK_Sig is replaced.  The existing TACK_Key is 
-        unmodified.        """                        
-        self.sig = TACK_Sig()
-        self.sig.create(sigType, min_generation, generation,  
-                        expiration, target_sha256, 
-                        self.key, keyFile.sign)
-
+        The existing TACK sig is replaced.  The existing TACK_Key is 
+        unmodified.
+        """
+        assert(min_generation >= 0 and min_generation <= 255)                
+        assert(generation >= 0 and generation <= 255 and 
+                generation >= min_generation)
+        assert(expiration >=0 and expiration <= 2**32-1)
+        assert(len(target_sha256) == 32)                
+        self.min_generation = min_generation
+        self.generation = generation                
+        self.expiration = expiration        
+        self.target_sha256 = target_sha256
+        self.signature = keyFile.sign(self.write()[:-64]) 
+        
     def getTACKID(self):
         return self.key.getTACKID()
 
     def verifySignature(self):
-        bytesToVerify = self.key.write() + self.sig.write()[:-64]
+        bytesToVerify = self.write()[:-64]
         return ecdsa256Verify(self.key.public_key, bytesToVerify, 
-                                self.sig.signature)  
+                                self.signature)  
 
     def parsePem(self, s):
         """Parse a string containing a PEM file for a TACK.
@@ -211,17 +131,19 @@ class TACK:
         validation failure.
         """        
         self.key = TACK_Key()
-        self.sig = TACK_Sig()
         self.key.parse(b[ : TACK_Key.length])
         b = b[TACK_Key.length : ]
-        self.sig.parse(b[ : TACK_Sig.length])
-        b = b[TACK_Sig.length : ]
-        p = Parser(b)
+        p = Parser(b)        
+        self.min_generation = p.getInt(1)
+        self.generation = p.getInt(1)            
+        self.expiration = p.getInt(4)
+        self.target_sha256 = p.getBytes(32)
+        self.signature = p.getBytes(64)
+                
         if not self.verifySignature():
             raise SyntaxError("Signature verification failure")
         if p.index != len(b):
             raise SyntaxError("Excess bytes in TACK")
-        
 
     def writePem(self):
         """Return a string containing a PEM file for the TACK."""        
@@ -230,8 +152,12 @@ class TACK:
     def write(self):
         """Return a bytearray containing the TACK."""
         w = Writer(TACK.length)
-        w.add(self.key.write(), TACK_Key.length) 
-        w.add(self.sig.write(), TACK_Sig.length)
+        w.add(self.key.write(), TACK_Key.length)
+        w.add(self.min_generation, 1)
+        w.add(self.generation, 1)
+        w.add(self.expiration, 4)
+        w.add(self.target_sha256, 32)
+        w.add(self.signature, 64)
         return w.bytes
 
     def writeText(self):
@@ -239,8 +165,15 @@ class TACK:
         
         Used by the "TACK view" command to display TACK objects."""        
         s =\
-"""%s%s""" % \
-            (self.key.writeText(), self.sig.writeText())
+"""%smin_generation = %d
+generation     = %d
+expiration     = %s
+target_sha256  = 0x%s\n""" % \
+(self.key.writeText(),
+self.min_generation,
+self.generation,
+posixTimeToStr(self.expiration*60),
+writeBytes(self.target_sha256))
         return s   
         
 class TACK_Break_Sig:
@@ -354,7 +287,7 @@ class TACK_Extension:
             raise SyntaxError("TACK too large")
         if tackLen:
             b2 = p.getBytes(tackLen)
-            if b2[0] != TACK_Key_Type.v1:
+            if b2[0] != TACK_Version.v1:
                 if not allowNewVersions:
                     raise SyntaxError("Only supports v1 TACKs")
             else:
