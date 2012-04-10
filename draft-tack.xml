@@ -57,8 +57,8 @@ untrustworthy.
 	<t>
 
 TACK addresses these problems by having the site sign its TLS server public
-keys with a TACK key. This enables clients to "pin" a hostname to the TACK key
-without requiring sites to modify their existing certificate chains, and
+keys with a "TACK key". This enables clients to "pin" a hostname to the TACK
+key without requiring sites to modify their existing certificate chains, and
 without limiting a site's flexibility to deploy different certificate chains
 on different servers or change certificate chains at any time. Since TACK pins
 are based on TACK keys (instead of CA keys), trust in CAs is not required.
@@ -366,11 +366,9 @@ calculated and encoded as per TACK_Sig.signature.
 This field provides the server's TACK(s). It MAY be empty, or may contain
 however many TACKs fit into 1 KB. If there are multiple TACKs, each TACK MUST
 have a different version number, and the TACKs MUST be ordered with the lowest
-version first, so that a client can stop processing this field once an
-unrecognized version is encountered. TACKs defined in this specification (with
-version == v1) are always 167 byte in length. Version values defined in other
-specifications MAY specify different-sized TACKs.
-
+version first. A client encountering an unrecognized version SHALL behave as
+if it had reached the end of this field, i.e. it SHALL ignore any data in this
+field following the unrecognized version byte.
 </t>
 
 <t hangText="break_sigs:">
@@ -378,8 +376,9 @@ specifications MAY specify different-sized TACKs.
 This field provides break signatures. It MAY be empty, or MAY contain however
 many break signatures fit into 2 KB. The break signatures MAY have different
 version values. In this case, the break signatures SHALL be ordered with the
-lowest versions first, so that a client can stop processing this field once an
-unrecognized version is encountered.
+lowest versions first. A client encountering an unrecognized version SHALL
+behave as if it had reached the end of this field, i.e. it SHALL ignore any
+data in this field following the unrecognized version byte.
 
 </t>
 <t hangText="pin_activation:">
