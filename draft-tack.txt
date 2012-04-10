@@ -82,19 +82,19 @@ Table of Contents
        5.3.1.  Discarding pins based on break signatures  . . . . . . 11
        5.3.2.  Checking for a valid TACK  . . . . . . . . . . . . . . 11
        5.3.3.  Updating and activating pins based on the TACK . . . . 12
-   6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
-   7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
-     7.1.  For server operators . . . . . . . . . . . . . . . . . . . 14
-     7.2.  For client implementors  . . . . . . . . . . . . . . . . . 15
-   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 16
-   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 17
-     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 17
-     9.2.  New registry for TACK_Version  . . . . . . . . . . . . . . 17
-   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 18
-   11. Normative references . . . . . . . . . . . . . . . . . . . . . 19
-   Appendix A.  Implementing the TACK ID alphabet . . . . . . . . . . 20
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
-
+       5.3.4.  Deleting pins asynchronously . . . . . . . . . . . . . 13
+   6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+   7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+     7.1.  For server operators . . . . . . . . . . . . . . . . . . . 15
+     7.2.  For client implementors  . . . . . . . . . . . . . . . . . 16
+   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 17
+   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 18
+     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 18
+     9.2.  New registry for TACK_Version  . . . . . . . . . . . . . . 18
+   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 19
+   11. Normative references . . . . . . . . . . . . . . . . . . . . . 20
+   Appendix A.  Implementing the TACK ID alphabet . . . . . . . . . . 21
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 22
 
 
 
@@ -295,8 +295,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    attacker with short-lived control of the hostname from setting long-
    lived pins.  Second, it makes it safer for sites to experiment with
    TACKs, as a new TACK can be discarded without causing long-lived
-   problems.  The 30 day limit on activation period guarantees that a
-   worst-case pin can be recovered from in reasonable time.
+   problems.  The 30 day limit guarantees that a worst-case pin can be
+   recovered from in reasonable time.
 
    In addition to creating and activating pins, a TLS connection can
    alter the clients's pin store in two other ways:
@@ -673,6 +673,62 @@ Marlinspike & Perrin    Expires October 12, 2012               [Page 12]
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
+5.3.4.  Deleting pins asynchronously
+
+   A client MAY delete pins from its local store at any time, whether to
+   save space, protect privacy, or for any other reason.  To delete a
+   pin, its host record SHALL be removed.  If this leaves a key record
+   with no associated host records, the key record MAY be removed as
+   well.  Pins may be deleted regardless of whether they are active or
+   inactive.
+
+   Deleting pins obviously reduces the benefits of TACK, so SHOULD be
+   avoided.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin    Expires October 12, 2012               [Page 13]
+
+Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+
+
 6.  TACK IDs
 
    A "TACK ID" MAY be used to represent a TACK_Key to users in a form
@@ -724,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 13]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -734,8 +790,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 7.1.  For server operators
 
    Key reuse:  All servers that are pinned to a single key are able to
-      impersonate each other.  Thus, different keys should be used to
-      pin hostnames with different security properties.
+      impersonate each other (in other words: a TACK from one server
+      could match a pin from any other).  Thus, different keys should be
+      used to pin hostnames with different security properties.
 
    Generations:  To revoke older generations of TACKs, the server
       operator should first provide all servers with a new generation of
@@ -743,8 +800,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       min_generation.  This is safer then trying to update
       min_generation and generation simultaneously across a range of
       servers, since a client may receive a min_generation update from
-      one server but then try to contact a server which has not yet been
-      updated, and still has an older-generation TACK.
+      one server but then try to contact an older-generation server
+      which has not yet been updated.
 
    Signature expiration:  It is convenient to set the TACK signature
       expiration equal to the end-entity certificate expiration, so that
@@ -779,8 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-Marlinspike & Perrin    Expires October 12, 2012               [Page 14]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -836,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 15]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 16]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 17]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 18]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1060,7 +1116,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 19]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,7 +1172,7 @@ Appendix A.  Implementing the TACK ID alphabet
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 20]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 21]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1172,5 +1228,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires October 12, 2012               [Page 21]
+Marlinspike & Perrin    Expires October 12, 2012               [Page 22]
 

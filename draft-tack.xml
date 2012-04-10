@@ -165,9 +165,8 @@ maximum period of 30 days.
 Pin activation serves multiple purposes. First, it prevents an attacker with
 short-lived control of the hostname from setting long-lived pins. Second, it
 makes it safer for sites to experiment with TACKs, as a new TACK can be
-discarded without causing long-lived problems. The 30 day limit on activation
-period guarantees that a worst-case pin can be recovered from in reasonable
-time.
+discarded without causing long-lived problems. The 30 day limit guarantees
+that a worst-case pin can be recovered from in reasonable time.
 
 </t>
 
@@ -447,8 +446,7 @@ the same hostname. A pin containing the current TLS connection's hostname is a
 Initial timestamp: A timestamp noting when this pin was created.
 
 </t> 
-
-<t>
+ <t>
 
 Active period end: Empty or a timestamp. If empty or set to a time in the
 past, the pin is "inactive". If set to a future time, the pin is "active"
@@ -458,6 +456,7 @@ until that time.
 
 </list>
 </t>
+
 </section>
 
 <section title="High-level client processing">
@@ -626,6 +625,23 @@ TACK_Extension.pin_activation is enabled".
        </texttable>
 
 </section>
+<section title="Deleting pins asynchronously">
+
+<t>
+
+A client MAY delete pins from its local store at any time, whether to save
+space, protect privacy, or for any other reason. To delete a pin, its host
+record SHALL be removed. If this leaves a key record with no associated host
+records, the key record MAY be removed as well. Pins may be deleted regardless
+of whether they are active or inactive.
+
+</t>
+<t>
+
+Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
+
+</t>
+</section>
 </section>	
 </section>
 
@@ -678,9 +694,10 @@ Example TACK IDs:
 
 <t hangText="Key reuse:">
 
-All servers that are pinned to a single key are able to impersonate each
-other. Thus, different keys should be used to pin hostnames with different
-security properties.
+All servers that are pinned to a single key are able to impersonate each other
+(in other words: a TACK from one server could match a pin from any other).
+Thus, different keys should be used to pin hostnames with different security
+properties.
 
 </t>
 
@@ -691,8 +708,7 @@ all servers with a new generation of TACKs, then provide servers with new
 TACKs containing the new min_generation. This is safer then trying to update
 min_generation and generation simultaneously across a range of servers, since
 a client may receive a min_generation update from one server but then try to
-contact a server which has not yet been updated, and still has an
-older-generation TACK.</t>
+contact an older-generation server which has not yet been updated.</t>
 
 <t hangText="Signature expiration:">
 
