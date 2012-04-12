@@ -253,10 +253,10 @@ struct {
 	<list style="hanging">
 	<t hangText="version:">
 
-This field provides a version number which controls the interpretation of TACK
-and TACK_Break_Sig. A client who does not recognize a TACK or TACK_Break_Sig's
-version (which is the first byte of each) MUST NOT attempt to process the TACK
-or TACK_Break_Sig.
+This field provides a version number which controls the interpretation of
+TACK_Key, TACK, and TACK_Break_Sig. A client who does not recognize a TACK_Key,
+TACK, or TACK_Break_Sig's version (which is the first byte of each) MUST NOT
+attempt to process the TACK_Key, TACK, or TACK_Break_Sig.
 
 	</t>
 	<t hangText="public_key:">
