@@ -213,28 +213,25 @@ language from <xref target="RFC5246"/>.
 
 	</t>
 <figure><artwork>
-enum {v1(1)} TACK_Version;
 enum (disabled(0), enabled(1)} TACK_Activation;
 
 struct {
-   TACK_Version version;
    opaque public_key[64];
    uint8  min_generation;
    uint8  generation;
    uint32 expiration;
    opaque target_hash[32];
    opaque signature[64];
-} TACK;  /* 167 bytes */
+} TACK;  /* 166 bytes */
 
 struct {
-   TACK_Version version;
    opaque public_key[64];
    opaque signature[64];
-} TACK_Break_Sig;  /* 129 bytes */
+} TACK_Break_Sig;  /* 128 bytes */
 
 struct {
-   TACK tacks&lt;0...1024&gt;  /* 0 or more TACKs */
-   TACK_Break_Sig  break_sigs&lt;0...2048&gt;  /* 0 or more Break Sigs */
+   TACK tack&lt;0...166&gt;  /* 0 or 1 TACK */
+   TACK_Break_Sig  break_sigs&lt;0...1024&gt;  /* 0...8 Break Sigs */
    TACK_Activation pin_activation;
 } TACK_Extension;
 </artwork>
@@ -249,14 +246,6 @@ struct {
 <section title="TACK fields">
 <t>
 <list style="hanging">
-	
-<t hangText="version:">
-
-This field provides a version number which controls the interpretation of the
-TACK. A client who does not recognize a TACK's version (which is always the first
-byte) MUST NOT attempt to process the TACK.
-
-</t>
 
 	<t hangText="public_key:">
 
@@ -302,7 +291,7 @@ certificate.
 
 This field is an ECDSA signature by the TACK's public key over the 13 byte ASCII
 string "TACK_tack_sig" followed by the entire TACK structure prior to the
-"signature" field (i.e. the preceding 103 bytes). The field contains a pair of
+"signature" field (i.e. the preceding 102 bytes). The field contains a pair of
 integers (r, s) representing an ECDSA signature as defined in <xref
 target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as a
 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
@@ -317,15 +306,6 @@ target="RFC6090"/>, and these strings are concatenated with the r value first.
 <section title="TACK_Break_Sig fields">
 <t>
 <list style="hanging">
-	
-<t hangText="version:">
-
-This field provides a version number which controls the interpretation of the
-TACK_Break_Sig. A client who does not recognize a TACK_Break_Sig's version (which
-is always the first byte) MUST NOT attempt to process the TACK_Break_Sig.
-
-</t>
-
 
 <t hangText="public_key:">
 
@@ -338,7 +318,7 @@ to verify the following signature. The key is encoded as per TACK.public_key.
 
 This field is an ECDSA signature by the TACK_Break_Sig's public key over the 14
 byte ASCII string "TACK_break_sig" followed by the entire TACK_Break_Sig structure
-prior to the "signature" field (i.e. the preceding 65 bytes). The field contains a
+prior to the "signature" field (i.e. the preceding 64 bytes). The field contains a
 pair of integers (r, s) representing an ECDSA signature as defined in <xref
 target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated and encoded
 as per TACK.signature.
@@ -354,22 +334,15 @@ as per TACK.signature.
 <t>
 <list style="hanging">
 
-<t hangText="tacks:">
+<t hangText="tack:">
 
-This field provides the server's TACK(s). It MAY be empty, or may contain however
-many TACKs fit into 1 KB. The TACKs MUST have different version numbers, and MUST
-be ordered with the lowest versions first. A client encountering an unrecognized
-version SHALL behave as if it had reached the end of this field, i.e. it SHALL
-ignore any data in this field following the unrecognized version byte. </t>
+This field provides the server's TACK. It MAY be empty, or may contain a TACK.
+</t>
 
 <t hangText="break_sigs:">
 
-This field provides break signatures. It MAY be empty, or MAY contain however many
-break signatures fit into 2 KB. The break signatures MAY have different version
-numbers, and MUST be ordered with the lowest versions first. A client encountering
-an unrecognized version SHALL behave as if it had reached the end of this field,
-i.e. it SHALL ignore any data in this field following the unrecognized version
-byte.
+This field provides break signatures. It MAY be empty, or MAY contain up to 8
+break signatures.
 
 </t>
 <t hangText="pin_activation:">
@@ -381,7 +354,7 @@ all TLS servers for a hostname.
 
 </t> </list> </t>
 
-<t> Note that both the "tacks" and "break_sigs" fields MAY be empty. </t>
+<t> Note that both the "tack" and "break_sigs" fields MAY be empty. </t>
 
 </section>
 
@@ -404,12 +377,6 @@ Multiple host records may be associated with one key record. A "pin" refers to a
  A "key record" contains:
 
 <list style="empty">
-<t>
-
-Version: The following fields are specific to "v1" key records, which are created
-and activated by "v1" TACKs.
-
-</t>
 <t>
 
 TACK public key (or hash): A public key or a cryptographically-secure, second
@@ -475,6 +442,8 @@ connection:
  <t>Check for a valid TACK.</t>
  <t>Update and activate pins based on the valid TACK (if present).</t> 
 </list>
+<vspace blankLines="100" />	
+
 </t>
 
 <t>
@@ -497,12 +466,10 @@ NOT send or receive data on such a connection.
 <t>
 
 All key records broken by break signatures SHALL be discarded, along with their
-associated host records. A key record is broken by a v1 break signature if the
+associated host records. A key record is broken by a break signature if the
 following is true of the break signature:
 
 <list style="numbers">
-
-	<t>The "version" is v1.</t>
 
  	<t>The "public_key" is referenced by the key record.</t>
 
@@ -515,11 +482,9 @@ following is true of the break signature:
 <section title="Checking for a valid TACK"> 
 <t> 
 
-A v1 TACK is "valid" if the below checks are true.
+A TACK is "valid" if the below checks are true.
 
 <list style="numbers">
-
- <t>The "version" is v1.</t>
 
  <t>The "public_key" is referenced by the relevant active pin's key record, or
 there is no relevant active pin.</t>
@@ -548,7 +513,7 @@ SubjectPublicKeyInfo.</t>
 <section title="Updating and activating pins based on the TACK"> 
 <t>
 
-A valid v1 TACK is used to update the client's pin store. If there is a key record
+A valid TACK is used to update the client's pin store. If there is a key record
 referencing the TACK key, the key record's min_generation SHALL be set to the
 TACK's min_generation if it is larger.
 
@@ -578,7 +543,7 @@ new pin MAY be created with the following steps:
 <list style="numbers">
 <t>If the TACK key is referenced by an existing
 key record, the key record is reused, otherwise a new key record is created
-with the TACK's version, key, and min_generation.</t>
+with the TACK's key and min_generation.</t>
 <t>A new host record is created
 containing the server's hostname, an "initial timestamp" equal to the current
 time, and an empty "active period end".</t>	
@@ -644,10 +609,11 @@ Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
 A "TACK ID" MAY be used to represent a TACK public key to users in a form that is
 relatively easy to visually compare and transcribe. A TACK ID consists of five
 groups of five alphanumeric characters, each group separated by periods. The first
-character represents the TACK_Version, and is set to "b" for v1. The remaining 24
-alphanumeric characters are the base32 encoding of the first 120 bits of
-SHA256(1-byte TACK_Version followed by 64-byte TACK public_key). Base32 encoding
-is as specified in <xref target="RFC4648"/>, except lowercase characters are used.
+character is set to "b" to differentiate this TACK ID from any future TACK IDs
+defined by later specifications (see <xref target="future"/>), which should use
+"c", "d", etc. The remaining 24 alphanumeric characters are the base32 encoding
+of the first 120 bits of SHA256(TACK public_key). Base32 encoding is as specified
+in <xref target="RFC4648"/>, except lowercase is used.
 
 </t>
 <t>
@@ -770,6 +736,17 @@ over HTTPS (not HTTP) <xref target="RFC6265"/>.
 
 </t>
 
+<section title="Note on algorithm agility" anchor="future">
+
+<t>
+If the need arises for TACKs using different cryptographic algorithms (e.g., if
+SHA256 or ECDSA are shown to be weak), a "v2" version of TACKs could be defined,
+requiring assignment of a new TLS Extension number. TACKs as defined in this
+document would then be known as "v1" TACKs.
+
+</t>
+</section>
+
         </section>
 
 	<section title="IANA considerations">
@@ -781,27 +758,7 @@ defined in RFC 5246, for tack(TBD) as defined in this document.
 
  </t>
 </section>
-	<section title="New registry for TACK_Version">
-	<t>
 
-IANA is requested to establish a new registry for TLS TACK_Version. The
-initial entries in TACK_Version are 0(reserved), and 1(v1). The policy for
-adding new values to this registry, following the terminology defined in <xref
-target="RFC5226"/>, is Expert Review.
-
-	</t>
-	<t>
-
-The designated expert is expected to consult the TLS mailing list or its
-designated successor, as well as review any documentation to determine whether
-the extension will be widely useful and is fully documented. To preserve the
-limited number of code points and maximize interoperability, the presumption
-should be that a code point SHOULD NOT be granted, unless there is a
-compelling reason to the contrary.
-
- </t>
-
- </section>
 </section>
 <section title="Acknowledgements">
 <t>
@@ -844,7 +801,6 @@ Lawson, and Joseph Bonneau.
 
 			<?rfc include="bib/reference.RFC.2119.xml"?>
 			<?rfc include="bib/reference.RFC.4648.xml"?>
-			<?rfc include="bib/reference.RFC.5226.xml"?>
 			<?rfc include="bib/reference.RFC.5246.xml"?>
 			<?rfc include="bib/reference.RFC.5280.xml"?>			
 			<?rfc include="bib/reference.RFC.5480.xml"?>
