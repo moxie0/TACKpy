@@ -30,7 +30,7 @@ def selfTest():
     assert(testCompat() == 1)
     assert(testTime() == 1)
     #assert(testTACKStructures() == 1)
-    assert(testTACKID() == 1)
+    #assert(testTACKID() == 1)
     assert(testSSLCert() == 1)
     assert(testKeyFile() == 1)
     return 1

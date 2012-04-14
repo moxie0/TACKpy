@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                          April 12, 2012
-Expires: October 14, 2012
+Intended status: Standards Track                          April 14, 2012
+Expires: October 16, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -35,7 +35,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 14, 2012.
+   This Internet-Draft will expire on October 16, 2012.
 
 Copyright Notice
 
@@ -52,7 +52,7 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 1]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 1]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -71,10 +71,9 @@ Table of Contents
    4.  TACK Extension . . . . . . . . . . . . . . . . . . . . . . . .  7
      4.1.  Definition of TACK_Extension . . . . . . . . . . . . . . .  7
      4.2.  Explanation of TACK_Extension fields . . . . . . . . . . .  8
-       4.2.1.  TACK_Key fields  . . . . . . . . . . . . . . . . . . .  8
-       4.2.2.  TACK fields  . . . . . . . . . . . . . . . . . . . . .  8
-       4.2.3.  TACK_Break_Sig fields  . . . . . . . . . . . . . . . .  9
-       4.2.4.  TACK_Extension fields  . . . . . . . . . . . . . . . .  9
+       4.2.1.  TACK fields  . . . . . . . . . . . . . . . . . . . . .  8
+       4.2.2.  TACK_Break_Sig fields  . . . . . . . . . . . . . . . .  9
+       4.2.3.  TACK_Extension fields  . . . . . . . . . . . . . . . .  9
    5.  Client processing  . . . . . . . . . . . . . . . . . . . . . . 10
      5.1.  TACK pins, key records, and host records . . . . . . . . . 10
      5.2.  High-level client processing . . . . . . . . . . . . . . . 10
@@ -93,8 +92,7 @@ Table of Contents
      9.2.  New registry for TACK_Version  . . . . . . . . . . . . . . 18
    10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 19
    11. Normative references . . . . . . . . . . . . . . . . . . . . . 20
-   Appendix A.  Implementing the TACK ID alphabet . . . . . . . . . . 21
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 22
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
 
 
 
@@ -108,7 +106,9 @@ Table of Contents
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 2]
+
+
+Marlinspike & Perrin    Expires October 16, 2012                [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -164,7 +164,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 3]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 4]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -276,7 +276,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 5]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -299,7 +299,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    recovered from in reasonable time.
 
    In addition to creating and activating pins, a TLS connection can
-   alter the clients's pin store in two other ways:
+   alter the clients's pin store by publishing revocation data:
 
    Min_generation:  Each pin stores the highest "min_generation" value
       it has seen from the pinned TACK key, and rejects TACKs from
@@ -332,7 +332,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 6]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -358,19 +358,16 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    struct {
       TACK_Version version;
       opaque public_key[64];
-   } TACK_Key;  /* 65 bytes */
-
-   struct {
-      TACK_Key key;
       uint8  min_generation;
       uint8  generation;
       uint32 expiration;
-      opaque target_sha256[32];
+      opaque target_hash[32];
       opaque signature[64];
    } TACK;  /* 167 bytes */
 
    struct {
-      TACK_Key key;
+      TACK_Version version;
+      opaque public_key[64];
       opaque signature[64];
    } TACK_Break_Sig;  /* 129 bytes */
 
@@ -388,34 +385,31 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 7]
+
+
+
+Marlinspike & Perrin    Expires October 16, 2012                [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 4.2.  Explanation of TACK_Extension fields
 
-4.2.1.  TACK_Key fields
+4.2.1.  TACK fields
 
    version:  This field provides a version number which controls the
-      interpretation of TACK_Key, TACK, and TACK_Break_Sig. A client who
-      does not recognize a TACK_Key, TACK, or TACK_Break_Sig's version
-      (which is the first byte of each) MUST NOT attempt to process the
-      TACK_Key, TACK, or TACK_Break_Sig.
+      interpretation of the TACK.  A client who does not recognize a
+      TACK's version (which is always the first byte) MUST NOT attempt
+      to process the TACK.
 
-   public_key:  This field specifies the server's "TACK public key".
-      The field contains a pair of integers (x, y) representing a point
-      on the elliptic curve P-256 defined in [FIPS186-3].  Each integer
-      is encoded as a 32-byte octet string using the Integer-to-Octet-
+   public_key:  This field specifies the TACK's public key.  The field
+      contains a pair of integers (x, y) representing a point on the
+      elliptic curve P-256 defined in [FIPS186-3].  Each integer is
+      encoded as a 32-byte octet string using the Integer-to-Octet-
       String algorithm from [RFC6090], and these strings are
       concatenated with the x value first.  (NOTE: This is equivalent to
       an uncompressed subjectPublicKey from [RFC5480], except that the
       initial 0x04 byte is omitted).
-
-4.2.2.  TACK fields
-
-   key:  This field specifies the TACK key, and supplies the public key
-      used to verify the TACK's signature.
 
    min_generation:  This field publishes a min_generation value.
 
@@ -426,59 +420,71 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       considered expired.  The time is encoded as the number of minutes,
       excluding leap seconds, after midnight UTC, January 1 1970.
 
-   target_sha256:  This field is a hash of the TLS server's
+   target_hash:  This field is a hash of the TLS server's
       SubjectPublicKeyInfo [RFC5280] using the SHA256 algorithm from
       [FIPS180-2].  The SubjectPublicKeyInfo is typically conveyed as
       part of the server's X.509 certificate.
 
    signature:  This field is an ECDSA signature by the TACK's public key
-      over the ASCII string "TACK_tack" followed by the entire TACK
-      structure prior to the "signature" field (i.e. the preceding 103
-      bytes).  The field contains a pair of integers (r, s) representing
-      an ECDSA signature as defined in [FIPS186-3], using curve P-256
-      and SHA256.  Each integer is encoded as a 32-byte octet string
-      using the Integer-to-Octet-String algorithm from [RFC6090], and
-      these strings are concatenated with the r value first.
+      over the 13 byte ASCII string "TACK_tack_sig" followed by the
+      entire TACK structure prior to the "signature" field (i.e. the
+      preceding 103 bytes).  The field contains a pair of integers (r,
+      s) representing an ECDSA signature as defined in [FIPS186-3],
+      using curve P-256 and SHA256.  Each integer is encoded as a 32-
+      byte octet string using the Integer-to-Octet-String algorithm from
+      [RFC6090], and these strings are concatenated with the r value
+      first.
 
 
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012                [Page 8]
+
+
+
+
+
+Marlinspike & Perrin    Expires October 16, 2012                [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
-4.2.3.  TACK_Break_Sig fields
+4.2.2.  TACK_Break_Sig fields
 
-   key:  This field specifies the TACK key being broken, and supplies
-      the public key used to verify the following signature.
+   version:  This field provides a version number which controls the
+      interpretation of the TACK_Break_Sig. A client who does not
+      recognize a TACK_Break_Sig's version (which is always the first
+      byte) MUST NOT attempt to process the TACK_Break_Sig.
+
+   public_key:  This field specifies the TACK key being broken, and
+      supplies the public key used to verify the following signature.
+      The key is encoded as per TACK.public_key.
 
    signature:  This field is an ECDSA signature by the TACK_Break_Sig's
-      public key over the ASCII string "TACK_break" followed by the
-      entire TACK_Break_Sig structure prior to the "signature" field
-      (i.e. the preceding 65 bytes of TACK_Key).  The field contains a
-      pair of integers (r, s) representing an ECDSA signature as defined
-      in [FIPS186-3], using curve P-256 and SHA256.  It is calculated
-      and encoded as per TACK_Sig.signature.
+      public key over the 14 byte ASCII string "TACK_break_sig" followed
+      by the entire TACK_Break_Sig structure prior to the "signature"
+      field (i.e. the preceding 65 bytes).  The field contains a pair of
+      integers (r, s) representing an ECDSA signature as defined in
+      [FIPS186-3], using curve P-256 and SHA256.  It is calculated and
+      encoded as per TACK.signature.
 
-4.2.4.  TACK_Extension fields
+4.2.3.  TACK_Extension fields
 
    tacks:  This field provides the server's TACK(s).  It MAY be empty,
-      or may contain however many TACKs fit into 1 KB.  If there are
-      multiple TACKs, each TACK MUST have a different version number,
-      and the TACKs MUST be ordered with the lowest version first.  A
-      client encountering an unrecognized version SHALL behave as if it
-      had reached the end of this field, i.e. it SHALL ignore any data
-      in this field following the unrecognized version byte.
+      or may contain however many TACKs fit into 1 KB.  The TACKs MUST
+      have different version numbers, and MUST be ordered with the
+      lowest versions first.  A client encountering an unrecognized
+      version SHALL behave as if it had reached the end of this field,
+      i.e. it SHALL ignore any data in this field following the
+      unrecognized version byte.
 
    break_sigs:  This field provides break signatures.  It MAY be empty,
       or MAY contain however many break signatures fit into 2 KB.  The
-      break signatures MAY have different version values.  In this case,
-      the break signatures SHALL be ordered with the lowest versions
-      first.  A client encountering an unrecognized version SHALL behave
-      as if it had reached the end of this field, i.e. it SHALL ignore
-      any data in this field following the unrecognized version byte.
+      break signatures MAY have different version numbers, and MUST be
+      ordered with the lowest versions first.  A client encountering an
+      unrecognized version SHALL behave as if it had reached the end of
+      this field, i.e. it SHALL ignore any data in this field following
+      the unrecognized version byte.
 
    pin_activation:  If this field is "enabled", this TACK_Extension MAY
       be used by clients to activate or extend the activation of TACK
@@ -494,13 +500,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-
-
-
-
-
-Marlinspike & Perrin    Expires October 14, 2012                [Page 9]
+Marlinspike & Perrin    Expires October 16, 2012                [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -511,17 +511,18 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    A client supporting TACK SHALL have a local store of pins, consisting
    of "key records" and "host records".  Each host record is associated
-   with a key record.  Multiple host records may be associated with a
-   single key record.  A "pin" refers to a (host record, key record)
-   pair.  Different pins can share the same key record.
+   with a key record.  Multiple host records may be associated with one
+   key record.  A "pin" refers to a (host record, key record) pair.
 
    A "key record" contains:
 
-      TACK_Key (or hash): A TACK_Key or a cryptographically-secure,
-      second preimage-resistant hash of a TACK_Key. A key record
-      "matches" a TACK or break signature if the key record contains the
-      structure's TACK_Key or its hash.  A client SHALL NOT store
-      multiple key records for the same TACK_Key.
+      Version: The following fields are specific to "v1" key records,
+      which are created and activated by "v1" TACKs.
+
+      TACK public key (or hash): A public key or a cryptographically-
+      secure, second preimage-resistant hash of a public key.  A client
+      SHALL NOT store multiple key records referencing the same public
+      key.
 
       Min_generation: A single byte used to detect revoked TACKs.
 
@@ -539,108 +540,107 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 5.2.  High-level client processing
 
-   A TLS client compliant with this specification SHALL send the "tack"
-   extension defined previously, as well as the "server_name" extension
-   from [RFC6066] indicating the hostname the client is contacting.
+   A TACK client SHALL send the "tack" extension defined previously, as
+   well as the "server_name" extension from [RFC6066] indicating the
+   hostname the client is contacting.
 
    If not resuming a session, the server MAY respond with a
-   TACK_Extension.  If so, the TLS client SHALL perform the following
+   TACK_Extension.  If so, the TACK client SHALL perform the following
    steps prior to using the TLS connection:
 
    1.  Discard pins based on break signatures (if present).
 
    2.  Check for a valid TACK.
 
-   3.  Update and activate pins based on the valid TACK (if present).
 
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 10]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
+   3.  Update and activate pins based on the valid TACK (if present).
+
    If, after the above steps, there is a relevant active pin and a valid
-   matching TACK, then the connection is verified by the pin.  If there
-   is a relevant active pin but no such TACK, the connection is rejected
-   by the pin.  A rejected connection may indicate a network attack or
-   some other communication failure, and a client SHOULD NOT send or
-   receive data on such a connection.  However, the details of how a
-   client chooses to handle these different cases is out of scope of
-   this specification.
+   TACK, then the connection is verified by the pin.  If there is a
+   relevant active pin but no valid TACK, the connection is rejected by
+   the pin.  A rejected connection may indicate a network attack or some
+   other communication failure, and a client SHOULD NOT send or receive
+   data on such a connection.
 
 5.3.  Client processing details
 
 5.3.1.  Discarding pins based on break signatures
 
    All key records broken by break signatures SHALL be discarded, along
-   with their associated host records.  A key record is broken by a
-   break signature if the following statements are true:
+   with their associated host records.  A key record is broken by a v1
+   break signature if the following is true of the break signature:
 
-   1.  The break signature's version field is recognized.
+   1.  The "version" is v1.
 
-   2.  The break signature "matches" the key record.
+   2.  The "public_key" is referenced by the key record.
 
-   3.  The break signature's "signature" field is a correct ECDSA
-       signature over the break signature's contents when verified using
-       the break signature's public key.
+   3.  The "signature" is a correct ECDSA signature.
 
 5.3.2.  Checking for a valid TACK
 
-   A v1 TACK is "valid" if the below checks are true.  (Checking the
-   validity of other TACK versions is not defined in this
-   specification).
+   A v1 TACK is "valid" if the below checks are true.
 
-   1.  The version field is recognized.
+   1.  The "version" is v1.
 
-   2.  The TACK_Sig.generation is >= TACK_Sig.min_generation.
+   2.  The "public_key" is referenced by the relevant active pin's key
+       record, or there is no relevant active pin.
 
-   3.  The TACK_Sig.expiration is non-expired.
+   3.  The "generation" is >= "min_generation".
 
-   4.  The TACK_Sig.target_sha256 is equal to the SHA256 hash of the
-       server's SubjectPublicKeyInfo.
+   4.  The "generation" is >= the "min_generation" of any key record in
+       the client's store which references the TACK's public key.
 
-   5.  The TACK_Sig.signature is a correct ECDSA signature over the
-       TACK's contents when verified using the TACK's public key.
+   5.  The "expiration" is non-expired.
 
-   6.  The TACK_Sig.generation is >= the min_generation of any key
-       record in the client's store which matches the TACK.
+   6.  The "target_hash" is equal to the SHA256 hash of the server's
+       SubjectPublicKeyInfo.
 
-   7.  The TLS handshake completes successfully.
+   7.  The "signature" is a correct ECDSA signature.
 
-
+   8.  The TLS handshake completes successfully.
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 11]
+
+
+
+
+Marlinspike & Perrin    Expires October 16, 2012               [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 5.3.3.  Updating and activating pins based on the TACK
 
-   A valid TACK is used to update the client's pin store.  If there is a
-   key record matching the TACK, the key record's min_generation SHALL
-   be set to the TACK's min_generation if the TACK's value is larger.
+   A valid v1 TACK is used to update the client's pin store.  If there
+   is a key record referencing the TACK key, the key record's
+   min_generation SHALL be set to the TACK's min_generation if it is
+   larger.
 
    A valid TACK MAY also be used to modify the host records using the
    "pin activation" process described below.  Note that the following
    steps are optional; a client MAY rely on an external source of pins.
 
-   If there is a relevant pin matching the TACK, and the TACK
-   Extension's "pin_activation" is enabled, the host record's "active
-   period end" MAY be set according to the following formula (where
-   "current" is the current time, and "initial" is the "initial
-   timestamp" from the host record):
+   If there is a relevant pin and the TACK Extension's "pin_activation"
+   is enabled, the host record's "active period end" MAY be set
+   according to the following formula (where "current" is the current
+   time, and "initial" is the "initial timestamp" from the host record):
 
    active_period_end = current + MIN(30 days, current - initial)
 
-   If there is no relevant pin, or only an inactive one which does not
-   match the TACK, a new pin MAY be created with the following steps:
+   If there is no relevant pin, or an inactive one not referencing the
+   TACK key, a new pin MAY be created with the following steps:
 
-   1.  If the TACK's key matches an existing key record, the key record
-       is reused, otherwise a new key record is created with the TACK's
-       key and min_generation.
+   1.  If the TACK key is referenced by an existing key record, the key
+       record is reused, otherwise a new key record is created with the
+       TACK's version, key, and min_generation.
 
    2.  A new host record is created containing the server's hostname, an
        "initial timestamp" equal to the current time, and an empty
@@ -649,26 +649,26 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    3.  If there was an existing relevant host record, it is discarded.
 
    The following table summarizes this behavior based on whether the
-   relevant pin is active and matches the TACK.  The "(*)" means "if
-   TACK_Extension.pin_activation is enabled".
+   relevant pin is active and references the TACK's public key.  The
+   "(*)" means "if TACK_Extension.pin_activation is enabled".
 
-    +------------+-------------------+-------------------------------+
-    | Pin status | TACK matches pin? | Result                        |
-    +------------+-------------------+-------------------------------+
-    | Active     | Yes               | Extend activation period (*)  |
-    |            |                   |                               |
-    | Active     | No                | Rejected                      |
-    |            |                   |                               |
-    | Inactive   | Yes               | Activate pin (*)              |
-    |            |                   |                               |
-    | Inactive   | No                | Replace with new inactive pin |
-    |            |                   |                               |
-    | None       | -                 | Create new inactive pin       |
-    +------------+-------------------+-------------------------------+
+   +------------+---------------------+-------------------------------+
+   | Pin status | Pin references TACK | Result                        |
+   +------------+---------------------+-------------------------------+
+   | Active     | Yes                 | Extend activation period (*)  |
+   |            |                     |                               |
+   | Active     | No                  | Rejected                      |
+   |            |                     |                               |
+   | Inactive   | Yes                 | Activate pin (*)              |
+   |            |                     |                               |
+   | Inactive   | No                  | Replace with new inactive pin |
+   |            |                     |                               |
+   | None       | -                   | Create new inactive pin       |
+   +------------+---------------------+-------------------------------+
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 12]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -724,43 +724,30 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 13]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 6.  TACK IDs
 
-   A "TACK ID" MAY be used to represent a TACK_Key to users in a form
-   that is (somewhat) easy to visually compare and transcribe.  A TACK
-   ID is a string of alphanumeric characters and periods encoding 125
-   bits of data.  The first 5 bits of data contain the TACK_Key's
-   version (note that TACK IDs are not compatible with versions greater
-   than 31).  For a v1 TACK_Key, the following 120 bits contain the
-   first 120 bits of SHA256(TACK_Key).
-
-   Each of the 25 5-bit values in the TACK ID is encoded into a
-   character by representing the value as a number from 0-31, then
-   choosing the appropriate character from the below alphabet (where 0
-   is 'a', 1 is 'b', ..., 31 is '9').  The 25 encoded characters are
-   then split into five groups of five characters, separated by periods.
-
-   The TACK ID alphabet is "abcdefghijkLmn1pqrstuvwxy3456789".  The
-   alphabet is constructed of lowercase letters and numbers, with the
-   visually similar pairs ('0', 'o') and ('2', 'z') omitted, and the
-   visually similar pair ('1', 'l') disambiguated by capitalizing the
-   letter 'L'.  The alphabet is ordered so as to allow easy encoding
-   using an [RFC4648] base32 encoder (see Appendix A).
+   A "TACK ID" MAY be used to represent a TACK public key to users in a
+   form that is relatively easy to visually compare and transcribe.  A
+   TACK ID consists of five groups of five alphanumeric characters, each
+   group separated by periods.  The first character represents the
+   TACK_Version, and is set to "b" for v1.  The remaining 24
+   alphanumeric characters are the base32 encoding of the first 120 bits
+   of SHA256(1-byte TACK_Version followed by 64-byte TACK public_key).
+   Base32 encoding is as specified in [RFC4648], except lowercase
+   characters are used.
 
    Example TACK IDs:
 
-      buw81.a3sm4.8wpL6.t3vaq.gghaL
+      bbxoa.ozwo4.afxtj.6hyrs.l3pdf
 
-      bd867.imy99.k8egk.Lynjx.68c6s
+      beazc.fivev.unkid.djqqu.flwsw
 
-      baemb.9bw7r.y75tn.7d88r.fh9ua
-
-
+      bfnps.gymob.n5k5t.jznyr.76ieu
 
 
 
@@ -780,7 +767,20 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 14]
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin    Expires October 16, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -836,7 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 15]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 16]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 17]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 18]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1060,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 19]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,63 +1116,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 20]
-
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
-
-
-Appendix A.  Implementing the TACK ID alphabet
-
-   The most complex step in creating a TACK ID is encoding the first 120
-   bits from SHA256(TACK_Key) into 24 characters from the TACK ID
-   alphabet.  An [RFC4648] base32 encoder can be used to simplify the
-   process, as follows:
-
-   1.  Apply the base32 encoding from [RFC4648] to convert the 120 bits
-       to 24 lowercase base32 characters.
-
-   2.  Convert the base32 characters to TACK ID characters by adding 2
-       to all base32 numerals (changing '2' to '4', '3' to '5', etc.)
-       and converting 'l' to 'L', 'o' to '1', and 'z' to '3'.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Marlinspike & Perrin    Expires October 14, 2012               [Page 21]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1228,5 +1172,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires October 14, 2012               [Page 22]
+Marlinspike & Perrin    Expires October 16, 2012               [Page 21]
 

@@ -13,6 +13,8 @@ from .compat import b2a_base32
 def hashToTACKID(b):
     assert(len(b) == 15)
     s = b2a_base32(b).lower()
+    s = "b"+s
+    return "%s.%s.%s.%s.%s" % (s[:5],s[5:10],s[10:15],s[15:20],s[20:25])
     s2 = "b"
     for c in s:
         if c.isdigit():
