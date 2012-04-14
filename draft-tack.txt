@@ -249,15 +249,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       expires.  TACKs may also need to be replaced with later-generation
       TACKs if the TACK key's "min_generation" is updated (see next).
 
-   Revoking old TACKs:  If a TLS private key is compromised, the
-      affected TACKs can be revoked by publishing a new TACK containing
-      a higher "min_generation".
+   Revoking old TACKs:  If a TLS private key is compromised, the TACKs
+      signing this key can be revoked by publishing a new TACK
+      containing a higher "min_generation".
 
    Revoking TACK keys:  If a TACK private key is compromised, or a
-      server operator wishes to stop using TACK for any reason, a server
-      can revoke an entire TACK key (including all TACKs and pins
-      referring to it) by publishing a "break signature".
-
+      server operator wishes to stop using TACK or abruptly change its
+      TACK key for any reason, a server can revoke an entire TACK key
+      (including all TACKs and pins referring to it) by publishing a
+      "break signature".
 
 
 
@@ -422,13 +422,13 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    signature:  This field is an ECDSA signature by the TACK's public key
       over the 13 byte ASCII string "TACK_tack_sig" followed by the
-      entire TACK structure prior to the "signature" field (i.e. the
-      preceding 102 bytes).  The field contains a pair of integers (r,
-      s) representing an ECDSA signature as defined in [FIPS186-3],
-      using curve P-256 and SHA256.  Each integer is encoded as a 32-
-      byte octet string using the Integer-to-Octet-String algorithm from
-      [RFC6090], and these strings are concatenated with the r value
-      first.
+      contents of the TACK structure prior to the "signature" field
+      (i.e. the preceding 102 bytes).  The field contains a pair of
+      integers (r, s) representing an ECDSA signature as defined in
+      [FIPS186-3], using curve P-256 and SHA256.  Each integer is
+      encoded as a 32-byte octet string using the Integer-to-Octet-
+      String algorithm from [RFC6090], and these strings are
+      concatenated with the r value first.
 
 
 
@@ -518,8 +518,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
       TACK public key (or hash): A public key or a cryptographically-
       secure, second preimage-resistant hash of a public key.  A client
-      SHALL NOT store multiple key records referencing the same public
-      key.
+      SHALL NOT store multiple key records referencing the same key.
 
       Min_generation: A single byte used to detect revoked TACKs.
 
@@ -556,6 +555,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
+
 Marlinspike & Perrin    Expires October 16, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
@@ -574,7 +574,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    All key records broken by break signatures SHALL be discarded, along
    with their associated host records.  A key record is broken by a
-   break signature if the following is true of the break signature:
+   break signature if:
 
    1.  The "public_key" is referenced by the key record.
 
@@ -582,15 +582,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 5.3.2.  Checking for a valid TACK
 
-   A TACK is "valid" if the below checks are true.
+   A TACK is "valid" if:
 
    1.  The "public_key" is referenced by the relevant active pin's key
        record, or there is no relevant active pin.
 
    2.  The "generation" is >= "min_generation".
 
-   3.  The "generation" is >= the "min_generation" of any key record in
-       the client's store which references the TACK's public key.
+   3.  The "generation" is >= the "min_generation" of the key record
+       referencing the TACK public key, or there is no such key record.
 
    4.  The "expiration" is non-expired.
 
@@ -732,14 +732,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 6.  TACK IDs
 
    A "TACK ID" MAY be used to represent a TACK public key to users in a
-   form that is relatively easy to visually compare and transcribe.  A
-   TACK ID consists of five groups of five alphanumeric characters, each
-   group separated by periods.  The first character is set to "b" to
-   differentiate this TACK ID from any future TACK IDs defined by later
-   specifications (see Section 8.1), which should use "c", "d", etc.
-   The remaining 24 alphanumeric characters are the base32 encoding of
-   the first 120 bits of SHA256(TACK public_key).  Base32 encoding is as
-   specified in [RFC4648], except lowercase is used.
+   form that is relatively easy to compare and transcribe.
+
+   A TACK ID consists of five groups of five alphanumeric characters,
+   each group separated by periods.  The first character is set to "b"
+   to differentiate this TACK ID from any future TACK IDs defined by
+   later specifications (see Section 8.1), which should use "c", "d",
+   etc.  The remaining 24 alphanumeric characters are the base32
+   encoding of the first 120 bits of SHA256(TACK public_key).  Base32
+   encoding is as specified in [RFC4648], except lowercase is used.
 
    Example TACK IDs:
 
@@ -748,7 +749,6 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       beazc.fivev.unkid.djqqu.flwsw
 
       bfnps.gymob.n5k5t.jznyr.76ieu
-
 
 
 
@@ -790,9 +790,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 7.1.  For server operators
 
    Key reuse:  All servers that are pinned to a single key are able to
-      impersonate each other (in other words: a TACK from one server
-      could match a pin from any other).  Thus, different keys should be
-      used to pin hostnames with different security properties.
+      impersonate each other (in other words: a TACK from any of these
+      servers could create a TLS connection which is verified by a pin
+      based on any other server).  Thus, different keys should be used
+      to pin hostnames with different security properties.
 
    Generations:  To revoke older generations of TACKs, the server
       operator should first provide all servers with a new generation of
@@ -809,14 +810,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       Alternatively, short-lived TACK signatures may be used so that a
       compromised TLS private key has limited value to an attacker.
 
-   Break signatures:  Break signatures are useful if a server wishes to
-      abruptly change its TACK key, stop using TACKs, or advertise that
-      a TACK key is compromised and clients should stop relying on it.
-      A break signature only needs to be published for a time interval
-      equal to the maximum active period of any affected pins.  For
-      example, if a TACK has been only been published on a website for
-      24 hours, removing the TACK requires only publishing the break
-      signature for 24 hours.
+   Break signatures:  A break signature only needs to be published for a
+      time interval equal to the maximum active period of any affected
+      pins.  For example, if a TACK has been only been published on a
+      website for 24 hours, to remove the TACK only requires publishing
+      the break signature for 24 hours.
 
    Pin activation:  The pin_activation field should only be toggled to
       "enabled" once all TLS servers sharing the same hostname have a
@@ -826,6 +824,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       also be used to phase out use of TACKs for a hostname - if all
       servers at a hostname disable pin activation, existing pins will
       eventually all become deactivated (within 30 days at most).
+
+
 
 
 
@@ -849,8 +849,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       keep its pins active, or failing to receive revocation information
       (min_generation updates and break signatures).  Clients are
       advised to collaborate so that pin data can be aggregated and
-      shared.  This will likely require additional protocols and
-      infrastructure outside the scope of this document.
+      shared.  This will likely require additional protocols outside the
+      scope of this document.
 
 
 
