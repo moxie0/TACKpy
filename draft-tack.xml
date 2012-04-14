@@ -527,18 +527,18 @@ optional; a client MAY rely on an external source of pins.
 </t>
 <t>
 
-If there is a relevant pin and the TACK Extension's "pin_activation" is enabled,
-the host record's "active period end" MAY be set according to the following
-formula (where "current" is the current time, and "initial" is the "initial
-timestamp" from the host record):
+If there is a relevant pin referencing the TACK key, and the TACK Extension's
+"pin_activation" is enabled, the host record's "active period end" MAY be set
+according to the following formula (where "current" is the current time, and
+"initial" is the "initial timestamp" from the host record):
 
 </t> <figure><artwork>
 active_period_end = current + MIN(30 days, current - initial)
 </artwork></figure>	
 <t>
 
-If there is no relevant pin, or an inactive one not referencing the TACK key, a
-new pin MAY be created with the following steps:
+If there is no relevant pin, or the relevant pin is both inactive and does not
+refererence the TACK key, a new pin MAY be created:
 
 <list style="numbers">
 <t>If the TACK key is referenced by an existing
