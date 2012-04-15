@@ -612,12 +612,13 @@ relatively easy to compare and transcribe.
 </t>
 <t>
 
-A TACK ID consists of five groups of
-five alphanumeric characters, each group separated by periods. The first character
-is set to "b" to differentiate this TACK ID from any future TACK IDs defined by
-later specifications (see <xref target="future"/>), which should use "c", "d",
-etc. The remaining 24 alphanumeric characters are the base32 encoding of the first
-120 bits of SHA256(TACK public_key). Base32 encoding is as specified in <xref
+A TACK ID consists of five groups of five alphanumeric characters, each group
+separated by periods. The first character is set to "b" to differentiate this TACK
+ID from any future TACK IDs defined by later specifications (see <xref
+target="future"/>), which should use "c", "d", etc. The remaining 24 alphanumeric
+characters are the base32 encoding of the first 120 bits of a SHA256 hash output.
+The SHA256 hash is calculated on the 16 byte ASCII string "TACK_tackid_hash"
+followed by the 64 byte TACK public_key. Base32 encoding is as specified in <xref
 target="RFC4648"/>, except lowercase is used.
 
 </t>

@@ -739,8 +739,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    to differentiate this TACK ID from any future TACK IDs defined by
    later specifications (see Section 8.1), which should use "c", "d",
    etc.  The remaining 24 alphanumeric characters are the base32
-   encoding of the first 120 bits of SHA256(TACK public_key).  Base32
-   encoding is as specified in [RFC4648], except lowercase is used.
+   encoding of the first 120 bits of a SHA256 hash output.  The SHA256
+   hash is calculated on the 16 byte ASCII string "TACK_tackid_hash"
+   followed by the 64 byte TACK public_key.  Base32 encoding is as
+   specified in [RFC4648], except lowercase is used.
 
    Example TACK IDs:
 
@@ -749,8 +751,6 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       beazc.fivev.unkid.djqqu.flwsw
 
       bfnps.gymob.n5k5t.jznyr.76ieu
-
-
 
 
 
