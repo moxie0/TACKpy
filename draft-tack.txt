@@ -542,7 +542,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    If not resuming a session, the server MAY respond with a
    TACK_Extension.  If so, the TACK client SHALL perform the following
-   steps prior to using the TLS connection:
+   sequence of steps prior to using the TLS connection:
 
    1.  Discard pins based on break signatures (if present).
 
@@ -574,7 +574,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    All key records broken by break signatures SHALL be discarded, along
    with their associated host records.  A key record is broken by a
-   break signature if:
+   break signature if the break signature passes the following checks:
 
    1.  The "public_key" is referenced by the key record.
 
@@ -582,7 +582,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 5.3.2.  Checking for a valid TACK
 
-   A TACK is "valid" if:
+   A TACK is "valid" if it passes the following checks:
 
    1.  The "public_key" is referenced by the relevant active pin's key
        record, or there is no relevant active pin.
@@ -636,7 +636,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    active_period_end = current + MIN(30 days, current - initial)
 
    If there is no relevant pin, or the relevant pin is both inactive and
-   does not refererence the TACK key, a new pin MAY be created:
+   does not reference the TACK key, a new pin MAY be created:
 
    1.  If the TACK key is referenced by an existing key record, the key
        record is reused, otherwise a new key record is created with the

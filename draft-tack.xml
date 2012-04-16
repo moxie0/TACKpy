@@ -307,7 +307,7 @@ strings are concatenated with the r value first.
 <t>
 <list style="hanging">
 
-<t hangText="public_key:">
+<t hangText="public_key:"> 
 
 This field specifies the TACK key being broken. The key is encoded as per
 TACK.public_key.
@@ -432,9 +432,9 @@ client is contacting.
 </t>
 <t>
 
-If not resuming a session, the server MAY respond with a TACK_Extension. If so,
-the TACK client SHALL perform the following steps prior to using the TLS
-connection:
+If not resuming a session, the server MAY respond with a TACK_Extension. If
+so, the TACK client SHALL perform the following sequence of steps prior to
+using the TLS connection:
 
 <list style="numbers">
  <t>Discard pins based on break signatures (if present).</t>
@@ -464,8 +464,9 @@ NOT send or receive data on such a connection.
 <section title="Discarding pins based on break signatures"> 
 <t>
 
-All key records broken by break signatures SHALL be discarded, along with their
-associated host records. A key record is broken by a break signature if:
+All key records broken by break signatures SHALL be discarded, along with
+their associated host records. A key record is broken by a break signature if
+the break signature passes the following checks:
 
 <list style="numbers">
 
@@ -480,7 +481,7 @@ associated host records. A key record is broken by a break signature if:
 <section title="Checking for a valid TACK"> 
 <t> 
 
-A TACK is "valid" if:
+A TACK is "valid" if it passes the following checks:
 
 <list style="numbers">
 
@@ -536,7 +537,7 @@ active_period_end = current + MIN(30 days, current - initial)
 <t>
 
 If there is no relevant pin, or the relevant pin is both inactive and does not
-refererence the TACK key, a new pin MAY be created:
+reference the TACK key, a new pin MAY be created:
 
 <list style="numbers">
 <t>If the TACK key is referenced by an existing
