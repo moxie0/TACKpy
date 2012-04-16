@@ -316,11 +316,11 @@ TACK.public_key.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK_Break_Sig's public key over the
-entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
-preceding 64 bytes). The field contains a pair of integers (r, s) representing
-an ECDSA signature as defined in <xref target="FIPS186-3"/>, using curve P-256
-and SHA256. It is calculated and encoded as per TACK.signature.
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the 8
+byte ASCII string "break_me". The field contains a pair of integers (r, s)
+representing an ECDSA signature as defined in <xref target="FIPS186-3"/>,
+using curve P-256 and SHA256. It is calculated and encoded as per
+TACK.signature.
 
 </t>
 
