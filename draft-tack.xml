@@ -290,17 +290,16 @@ certificate.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK's public key over the 13 byte ASCII
-string "TACK_tack_sig" followed by the contents of the TACK structure prior to the
-"signature" field (i.e. the preceding 102 bytes). The field contains a pair of
-integers (r, s) representing an ECDSA signature as defined in <xref
-target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as a
-32-byte octet string using the Integer-to-Octet-String algorithm from <xref
-target="RFC6090"/>, and these strings are concatenated with the r value first.
+This field is an ECDSA signature by the TACK's public key over the contents of
+the TACK structure prior to the "signature" field (i.e. the preceding 102
+bytes). The field contains a pair of integers (r, s) representing an ECDSA
+signature as defined in <xref target="FIPS186-3"/>, using curve P-256 and
+SHA256. Each integer is encoded as a 32-byte octet string using the
+Integer-to-Octet-String algorithm from <xref target="RFC6090"/>, and these
+strings are concatenated with the r value first.
 
 </t>
 </list>
-<vspace blankLines="100" />	
 </t>
 </section>
 
@@ -310,19 +309,18 @@ target="RFC6090"/>, and these strings are concatenated with the r value first.
 
 <t hangText="public_key:">
 
-This field specifies the TACK key being broken, and supplies the public key used
-to verify the following signature. The key is encoded as per TACK.public_key.
+This field specifies the TACK key being broken. The key is encoded as per
+TACK.public_key.
 
 </t>
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK_Break_Sig's public key over the 14
-byte ASCII string "TACK_break_sig" followed by the entire TACK_Break_Sig structure
-prior to the "signature" field (i.e. the preceding 64 bytes). The field contains a
-pair of integers (r, s) representing an ECDSA signature as defined in <xref
-target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated and encoded
-as per TACK.signature.
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the
+entire TACK_Break_Sig structure prior to the "signature" field (i.e. the
+preceding 64 bytes). The field contains a pair of integers (r, s) representing
+an ECDSA signature as defined in <xref target="FIPS186-3"/>, using curve P-256
+and SHA256. It is calculated and encoded as per TACK.signature.
 
 </t>
 
@@ -606,20 +604,11 @@ Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
 <section title="TACK IDs">	
 <t>
 
-A "TACK ID" MAY be used to represent a TACK public key to users in a form that is
-relatively easy to compare and transcribe. 
-
-</t>
-<t>
-
-A TACK ID consists of five groups of five alphanumeric characters, each group
-separated by periods. The first character is set to "b" to differentiate this TACK
-ID from any future TACK IDs defined by later specifications (see <xref
-target="future"/>), which should use "c", "d", etc. The remaining 24 alphanumeric
-characters are the base32 encoding of the first 120 bits of a SHA256 hash output.
-The SHA256 hash is calculated on the 16 byte ASCII string "TACK_tackid_hash"
-followed by the 64 byte TACK public_key. Base32 encoding is as specified in <xref
-target="RFC4648"/>, except lowercase is used.
+A "TACK ID" MAY be used to represent a TACK public key to users in a form that
+is relatively easy to compare and transcribe. A TACK ID consists of the first
+25 characters from the base32 encoding of SHA256(public_key), separated into 5
+groups of 5 characters separated by periods. Base32 encoding is as specified
+in <xref target="RFC4648"/>, except lowercase is used.
 
 </t>
 <t>
@@ -627,9 +616,9 @@ Example TACK IDs:
 </t>
 <t>
 <list>
-	<t>bbxoa.ozwo4.afxtj.6hyrs.l3pdf</t>
-	<t>beazc.fivev.unkid.djqqu.flwsw</t>
-	<t>bfnps.gymob.n5k5t.jznyr.76ieu</t>	
+	<t>quxiz.kpldu.uuedc.j5znm.7mqst</t>
+	<t>a334f.bt7ts.ljb3b.y24ij.6zhwm</t>
+	<t>ebsx7.z22qt.okobu.ibhut.xzdny</t>	
 </list>
 </t>
 
