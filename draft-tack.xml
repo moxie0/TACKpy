@@ -43,13 +43,14 @@ of verifying server public keys.
 
  </t> <t>
 
-One such method is for clients to employ "pinning", in which the client uses
+"Pinning" is one emerging method for clients to obtain increased certainty in the
+authenticity of a server's public key.  Clients employing pinning use
 past connections to verify future connections by checking for some constant
 element. Unfortunately, a number of problems arise when attempting to pin
 certificate chains: the TLS servers at a given hostname may have different
-certificate chains and may change their chains at any time; the "more
-constant" elements of a chain - the CAs - may not be trustworthy; and the
-client may be oblivious to key compromise events which render the pinned data
+certificate chains simultaneously deployed and may change their chains at any 
+time, the "more constant" elements of a chain - the CAs - may not be trustworthy, 
+and the client may be oblivious to key compromise events which render the pinned data
 untrustworthy.
 
 			</t> 
@@ -62,8 +63,8 @@ key without requiring sites to modify their existing certificate chains, and
 without limiting a site's flexibility to deploy different certificate chains
 on different servers or change certificate chains at any time. Since TACK pins
 are based on TACK keys (instead of CA keys), trust in CAs is not required.
-Additionally, the TACK key may be used to revoke previous TACK signatures or
-even itself, to handle compromise of TLS or TACK private keys.
+Additionally, the TACK key may be used to revoke previous TACK signatures (or
+even itself) in order to handle the compromise of TLS or TACK private keys.
 
 	</t>
 	<t>
