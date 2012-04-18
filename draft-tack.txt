@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                          April 16, 2012
-Expires: October 18, 2012
+Intended status: Standards Track                          April 19, 2012
+Expires: October 21, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -35,7 +35,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 18, 2012.
+   This Internet-Draft will expire on October 21, 2012.
 
 Copyright Notice
 
@@ -52,7 +52,7 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 1]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 1]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -108,7 +108,7 @@ Table of Contents
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 2]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -119,14 +119,16 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    a certificate chain issued by some public CA.  TACK facilitates
    stronger methods of verifying server public keys.
 
-   One such method is for clients to employ "pinning", in which the
-   client uses past connections to verify future connections by checking
-   for some constant element.  Unfortunately, a number of problems arise
-   when attempting to pin certificate chains: the TLS servers at a given
-   hostname may have different certificate chains and may change their
-   chains at any time; the "more constant" elements of a chain - the CAs
-   - may not be trustworthy; and the client may be oblivious to key
-   compromise events which render the pinned data untrustworthy.
+   "Pinning" is one emerging method for clients to obtain increased
+   certainty in the authenticity of a server's public key.  Clients
+   employing pinning use past connections to verify future connections
+   by checking for some constant element.  Unfortunately, a number of
+   problems arise when attempting to pin certificate chains: the TLS
+   servers at a given hostname may have different certificate chains
+   simultaneously deployed and may change their chains at any time, the
+   "more constant" elements of a chain - the CAs - may not be
+   trustworthy, and the client may be oblivious to key compromise events
+   which render the pinned data untrustworthy.
 
    TACK addresses these problems by having the site sign its TLS server
    public keys with a "TACK key".  This enables clients to "pin" a
@@ -136,8 +138,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    servers or change certificate chains at any time.  Since TACK pins
    are based on TACK keys (instead of CA keys), trust in CAs is not
    required.  Additionally, the TACK key may be used to revoke previous
-   TACK signatures or even itself, to handle compromise of TLS or TACK
-   private keys.
+   TACK signatures (or even itself) in order to handle the compromise of
+   TLS or TACK private keys.
 
    If requested, a compliant server will send a TLS Extension containing
    its "TACK".  Inside the TACK is a TACK public key and TACK signature.
@@ -162,9 +164,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-
-Marlinspike & Perrin    Expires October 18, 2012                [Page 3]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 4]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -276,7 +276,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 5]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -332,7 +332,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 6]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -388,7 +388,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 7]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -435,7 +435,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       is encoded as per TACK.public_key.
 
    signature:  This field is an ECDSA signature by the TACK_Break_Sig's
-      public key over the 8 byte ASCII string "break_me".  The field
+      public key over the 9 byte ASCII string "break_sig".  The field
       contains a pair of integers (r, s) representing an ECDSA signature
       as defined in [FIPS186-3], using curve P-256 and SHA256.  It is
       calculated and encoded as per TACK.signature.
@@ -444,7 +444,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 8]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -500,7 +500,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012                [Page 9]
+Marlinspike & Perrin    Expires October 21, 2012                [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -525,8 +525,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    A "host record" contains:
 
       Hostname: A DNS hostname.  A client SHALL NOT store multiple host
-      records with the same hostname.  A pin containing the current TLS
-      connection's hostname is a "relevant" pin.
+      records with the same hostname.  A pin whose hostname exactly
+      matches the current TLS connection's hostname is a "relevant" pin.
 
       Initial timestamp: A timestamp noting when this pin was created.
 
@@ -556,7 +556,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 10]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -612,7 +612,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 11]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -668,7 +668,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 12]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -724,7 +724,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 13]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -780,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 14]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -836,7 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 15]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 16]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 17]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 18]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1060,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 19]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,7 +1116,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 20]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1172,5 +1172,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires October 18, 2012               [Page 21]
+Marlinspike & Perrin    Expires October 21, 2012               [Page 21]
 

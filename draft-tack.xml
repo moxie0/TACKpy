@@ -317,8 +317,8 @@ TACK.public_key.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK_Break_Sig's public key over the 8
-byte ASCII string "break_me". The field contains a pair of integers (r, s)
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the 9
+byte ASCII string "break_sig". The field contains a pair of integers (r, s)
 representing an ECDSA signature as defined in <xref target="FIPS186-3"/>,
 using curve P-256 and SHA256. It is calculated and encoded as per
 TACK.signature.
@@ -400,8 +400,8 @@ A "host record" contains:
 <t>
 
 Hostname: A DNS hostname. A client SHALL NOT store multiple host records with
-the same hostname. A pin containing the current TLS connection's hostname is a
-"relevant" pin.
+the same hostname. A pin whose hostname exactly matches the current TLS
+connection's hostname is a "relevant" pin.
 
 </t>
 <t>
