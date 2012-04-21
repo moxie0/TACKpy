@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                          April 19, 2012
-Expires: October 21, 2012
+Intended status: Standards Track                          April 22, 2012
+Expires: October 24, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -14,11 +14,9 @@ Abstract
 
    This document defines TACK, a TLS Extension that enables a TLS server
    to assert the authenticity of its public key.  A TACK contains a
-   "TACK signing key" and a corresponding "TACK signature" over the
-   public key from the TLS server's certificate.  Hostnames can be
-   "pinned" to a TACK key.  TLS connections to a pinnned hostname are
-   only considered verified if the server presents a valid signature
-   from the pinned key.
+   "TACK signing key" and a signature from the TACK key over the
+   server's public key.  Hostnames can be "pinned" to a TACK key.  TLS
+   connections to a pinned hostname require a TACK from the pinned key.
 
 Status of this Memo
 
@@ -35,7 +33,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 21, 2012.
+   This Internet-Draft will expire on October 24, 2012.
 
 Copyright Notice
 
@@ -49,16 +47,14 @@ Copyright Notice
    carefully, as they describe your rights and restrictions with respect
    to this document.  Code Components extracted from this document must
    include Simplified BSD License text as described in Section 4.e of
-
-
-
-Marlinspike & Perrin    Expires October 21, 2012                [Page 1]
-
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
-
-
    the Trust Legal Provisions and are provided without warranty as
    described in the Simplified BSD License.
+
+
+
+Marlinspike & Perrin    Expires October 24, 2012                [Page 1]
+
+Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 Table of Contents
@@ -80,7 +76,7 @@ Table of Contents
      5.3.  Client processing details  . . . . . . . . . . . . . . . . 11
        5.3.1.  Discarding pins based on break signatures  . . . . . . 11
        5.3.2.  Checking for a valid TACK  . . . . . . . . . . . . . . 11
-       5.3.3.  Updating and activating pins based on the TACK . . . . 12
+       5.3.3.  Updating and activating pins based on a valid TACK . . 12
        5.3.4.  Deleting pins asynchronously . . . . . . . . . . . . . 13
    6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
    7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
@@ -108,7 +104,11 @@ Table of Contents
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 2]
+
+
+
+
+Marlinspike & Perrin    Expires October 24, 2012                [Page 2]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -116,19 +116,17 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 1.  Introduction
 
    Traditionally, a TLS client verifies a TLS server's public key using
-   a certificate chain issued by some public CA.  TACK facilitates
-   stronger methods of verifying server public keys.
+   a certificate chain issued by some public CA.  "Pinning" is a way for
+   clients to obtain increased certainty in server public keys.  Clients
+   employing pinning check for some constant, "pinned" element of the
+   TLS connection when contacting a particular TLS host.
 
-   "Pinning" is one emerging method for clients to obtain increased
-   certainty in the authenticity of a server's public key.  Clients
-   employing pinning use past connections to verify future connections
-   by checking for some constant element.  Unfortunately, a number of
-   problems arise when attempting to pin certificate chains: the TLS
-   servers at a given hostname may have different certificate chains
-   simultaneously deployed and may change their chains at any time, the
-   "more constant" elements of a chain - the CAs - may not be
-   trustworthy, and the client may be oblivious to key compromise events
-   which render the pinned data untrustworthy.
+   Unfortunately, a number of problems arise when attempting to pin
+   certificate chains: the TLS servers at a given hostname may have
+   different certificate chains simultaneously deployed and may change
+   their chains at any time; the "more constant" elements of a chain -
+   the CAs - may not be trustworthy; and the client may be oblivious to
+   key compromise events which render the pinned data untrustworthy.
 
    TACK addresses these problems by having the site sign its TLS server
    public keys with a "TACK key".  This enables clients to "pin" a
@@ -142,16 +140,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    TLS or TACK private keys.
 
    If requested, a compliant server will send a TLS Extension containing
-   its "TACK".  Inside the TACK is a TACK public key and TACK signature.
-   Once a client has seen the same (hostname, TACK public key) pair
-   multiple times, the client will "activate" a pin between the hostname
-   and TACK key for a period equal to the length of time the pair has
-   been observed for.  This "pin activation" process limits the impact
-   of bad pins resulting from transient network attacks or operator
-   error.
+   its "TACK".  Inside the TACK is a public key and signature.  Once a
+   client has seen the same (hostname, TACK public key) pair multiple
+   times, the client will "activate" a pin between the hostname and TACK
+   key for a period equal to the length of time the pair has been
+   observed for.  This "pin activation" process limits the impact of bad
+   pins resulting from transient network attacks or operator error.
 
-   TACK pins are easily communicated between clients.  For example, a
-   TACK client may scan the internet to discover TACK pins, then publish
+   TACK pins are easily shared between clients.  For example, a TACK
+   client may scan the internet to discover TACK pins, then publish
    these pins for other clients to rely upon.
 
 
@@ -164,7 +161,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 3]
+
+
+
+Marlinspike & Perrin    Expires October 24, 2012                [Page 3]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -220,7 +220,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 4]
+Marlinspike & Perrin    Expires October 24, 2012                [Page 4]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -276,7 +276,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 5]
+Marlinspike & Perrin    Expires October 24, 2012                [Page 5]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -291,12 +291,11 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    time the pin was seen and the most recent time, up to a maximum
    period of 30 days.
 
-   Pin activation serves multiple purposes.  First, it prevents an
-   attacker with short-lived control of the hostname from setting long-
-   lived pins.  Second, it makes it safer for sites to experiment with
-   TACKs, as a new TACK can be discarded without causing long-lived
-   problems.  The 30 day limit guarantees that a worst-case pin can be
-   recovered from in reasonable time.
+   Pin activation prevents an attacker with short-lived control of the
+   hostname from setting long-lived pins.  It also makes it safer for
+   sites to experiment with TACKs, as a new TACK can be discarded
+   without causing long-lived problems.  The 30 day limit guarantees
+   that a worst-case pin can be recovered from in reasonable time.
 
    In addition to creating and activating pins, a TLS connection can
    alter the clients's pin store by publishing revocation data:
@@ -332,7 +331,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 6]
+
+Marlinspike & Perrin    Expires October 24, 2012                [Page 6]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -388,7 +388,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 7]
+Marlinspike & Perrin    Expires October 24, 2012                [Page 7]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -444,7 +444,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 8]
+Marlinspike & Perrin    Expires October 24, 2012                [Page 8]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -500,7 +500,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012                [Page 9]
+Marlinspike & Perrin    Expires October 24, 2012                [Page 9]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -548,7 +548,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
    2.  Check for a valid TACK.
 
-   3.  Update and activate pins based on the valid TACK (if present).
+   3.  Update and activate pins based on a valid TACK (if present).
 
 
 
@@ -556,7 +556,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 10]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 10]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -612,12 +612,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 11]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 11]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
-5.3.3.  Updating and activating pins based on the TACK
+5.3.3.  Updating and activating pins based on a valid TACK
 
    A valid TACK is used to update the client's pin store.  If there is a
    key record referencing the TACK key, the key record's min_generation
@@ -668,7 +668,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 12]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 12]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -724,7 +724,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 13]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 13]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -780,7 +780,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 14]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -792,8 +792,8 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    Key reuse:  All servers that are pinned to a single key are able to
       impersonate each other (in other words: a TACK from any of these
       servers could create a TLS connection which is verified by a pin
-      based on any other server).  Thus, different keys should be used
-      to pin hostnames with different security properties.
+      for any other server).  Thus, different keys should be used to pin
+      hostnames with different security properties.
 
    Generations:  To revoke older generations of TACKs, the server
       operator should first provide all servers with a new generation of
@@ -836,7 +836,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 15]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -892,7 +892,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 16]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -948,7 +948,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 17]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1004,7 +1004,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 18]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1060,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 19]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1116,7 +1116,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 20]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
@@ -1172,5 +1172,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires October 21, 2012               [Page 21]
+Marlinspike & Perrin    Expires October 24, 2012               [Page 21]
 

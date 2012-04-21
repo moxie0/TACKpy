@@ -24,10 +24,9 @@
 
 This document defines TACK, a TLS Extension that enables a TLS server to
 assert the authenticity of its public key. A TACK contains a "TACK signing
-key" and a corresponding "TACK signature" over the public key from the TLS
-server's certificate. Hostnames can be "pinned" to a TACK key. TLS connections
-to a pinnned hostname are only considered verified if the server presents a
-valid signature from the pinned key.
+key" and a signature from the TACK key over the server's public key. Hostnames
+can be "pinned" to a TACK key. TLS connections to a pinned hostname require a
+TACK from the pinned key.
 
 			</t>
 		</abstract>
@@ -38,20 +37,19 @@ valid signature from the pinned key.
 			<t>
 
 Traditionally, a TLS client verifies a TLS server's public key using a
-certificate chain issued by some public CA. TACK facilitates stronger methods
-of verifying server public keys.
+certificate chain issued by some public CA. "Pinning" is a way for clients to
+obtain increased certainty in server public keys. Clients employing pinning
+check for some constant, "pinned" element of the TLS connection when
+contacting a particular TLS host.
 
  </t> <t>
 
-"Pinning" is one emerging method for clients to obtain increased certainty in the
-authenticity of a server's public key.  Clients employing pinning use
-past connections to verify future connections by checking for some constant
-element. Unfortunately, a number of problems arise when attempting to pin
-certificate chains: the TLS servers at a given hostname may have different
-certificate chains simultaneously deployed and may change their chains at any 
-time, the "more constant" elements of a chain - the CAs - may not be trustworthy, 
-and the client may be oblivious to key compromise events which render the pinned data
-untrustworthy.
+Unfortunately, a number of problems arise when attempting to pin certificate
+chains: the TLS servers at a given hostname may have different certificate
+chains simultaneously deployed and may change their chains at any time; the
+"more constant" elements of a chain - the CAs - may not be trustworthy; and
+the client may be oblivious to key compromise events which render the pinned
+data untrustworthy.
 
 			</t> 
 
@@ -70,17 +68,17 @@ even itself) in order to handle the compromise of TLS or TACK private keys.
 	<t>
 
 If requested, a compliant server will send a TLS Extension containing its
-"TACK". Inside the TACK is a TACK public key and TACK signature. Once a client
-has seen the same (hostname, TACK public key) pair multiple times, the client
-will "activate" a pin between the hostname and TACK key for a period equal to
-the length of time the pair has been observed for. This "pin activation"
-process limits the impact of bad pins resulting from transient network attacks
-or operator error.
+"TACK". Inside the TACK is a public key and signature. Once a client has seen
+the same (hostname, TACK public key) pair multiple times, the client will
+"activate" a pin between the hostname and TACK key for a period equal to the
+length of time the pair has been observed for. This "pin activation" process
+limits the impact of bad pins resulting from transient network attacks or
+operator error.
 
 			</t>
 			<t>
 
-TACK pins are easily communicated between clients. For example, a TACK client
+TACK pins are easily shared between clients. For example, a TACK client
 may scan the internet to discover TACK pins, then publish these pins for other
 clients to rely upon.
 
@@ -164,11 +162,11 @@ maximum period of 30 days.
 
 </t> <t>
 
-Pin activation serves multiple purposes. First, it prevents an attacker with
-short-lived control of the hostname from setting long-lived pins. Second, it
-makes it safer for sites to experiment with TACKs, as a new TACK can be
-discarded without causing long-lived problems. The 30 day limit guarantees
-that a worst-case pin can be recovered from in reasonable time.
+Pin activation prevents an attacker with short-lived control of the hostname
+from setting long-lived pins. It also makes it safer for sites to experiment
+with TACKs, as a new TACK can be discarded without causing long-lived
+problems. The 30 day limit guarantees that a worst-case pin can be recovered
+from in reasonable time.
 
 </t>
 
@@ -440,7 +438,7 @@ using the TLS connection:
 <list style="numbers">
  <t>Discard pins based on break signatures (if present).</t>
  <t>Check for a valid TACK.</t>
- <t>Update and activate pins based on the valid TACK (if present).</t> 
+ <t>Update and activate pins based on a valid TACK (if present).</t> 
 </list>
 <vspace blankLines="100" />	
 
@@ -510,8 +508,8 @@ SubjectPublicKeyInfo.</t>
 </section> 
 
 
-<section title="Updating and activating pins based on the TACK"> 
-<t>
+<section title="Updating and activating pins based on a valid TACK"> 
+	<t>
 
 A valid TACK is used to update the client's pin store. If there is a key record
 referencing the TACK key, the key record's min_generation SHALL be set to the
@@ -633,10 +631,10 @@ Example TACK IDs:
 
 <t hangText="Key reuse:">
 
-All servers that are pinned to a single key are able to impersonate each other (in
-other words: a TACK from any of these servers could create a TLS connection which
-is verified by a pin based on any other server). Thus, different keys should be
-used to pin hostnames with different security properties.
+All servers that are pinned to a single key are able to impersonate each other
+(in other words: a TACK from any of these servers could create a TLS
+connection which is verified by a pin for any other server). Thus, different
+keys should be used to pin hostnames with different security properties.
 
 </t>
 
