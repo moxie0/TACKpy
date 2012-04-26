@@ -23,11 +23,11 @@
 			<t>
 
 This document defines TACK, a TLS Extension that enables a TLS server to
-assert the authenticity of its public key. A TACK contains a "TACK key," 
+assert the authenticity of its public key. A TACK contains a "TACK key" 
 which is used to sign the public key from the TLS server's certificate. 
 Hostnames can be "pinned" to a TACK key. TLS connections to a pinned 
 hostname require the server to present a TACK containing the pinned key
-and corresponding signature over the TLS server's public key.
+and a corresponding signature over the TLS server's public key.
 
 			</t>
 		</abstract>
@@ -104,7 +104,9 @@ described in <xref target="RFC2119"/>.</t>
 	<t hangText="Selection of a TACK key:">	
 
 The server operator first chooses the ECDSA signing key to use for a set of
-hostnames.
+hostnames. It is safest to use different signing keys for different hostnames,
+though a signing key may be safely shared between closely-related hostnames
+(such as aliases for the same host).
 
 	</t>
 	<t hangText="Creating initial TACKs under a TACK key:">	
@@ -290,13 +292,13 @@ certificate.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK's public key over the contents of
-the TACK structure prior to the "signature" field (i.e. the preceding 102
-bytes). The field contains a pair of integers (r, s) representing an ECDSA
-signature as defined in <xref target="FIPS186-3"/>, using curve P-256 and
-SHA256. Each integer is encoded as a 32-byte octet string using the
-Integer-to-Octet-String algorithm from <xref target="RFC6090"/>, and these
-strings are concatenated with the r value first.
+This field is an ECDSA signature by the TACK's public key over the 8 byte
+ASCII string "tack_sig" followed by the contents of the TACK structure prior
+to the "signature" field (i.e. the preceding 102 bytes). The field contains a
+pair of integers (r, s) representing an ECDSA signature as defined in <xref
+target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
+a 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
+target="RFC6090"/>, and these strings are concatenated with the r value first.
 
 </t>
 </list>
@@ -316,11 +318,11 @@ TACK.public_key.
 
 <t hangText="signature:">
 
-This field is an ECDSA signature by the TACK_Break_Sig's public key over the 9
-byte ASCII string "break_sig". The field contains a pair of integers (r, s)
-representing an ECDSA signature as defined in <xref target="FIPS186-3"/>,
-using curve P-256 and SHA256. It is calculated and encoded as per
-TACK.signature.
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the
+14 byte ASCII string "tack_break_sig". The field contains a pair of integers
+(r, s) representing an ECDSA signature as defined in <xref
+target="FIPS186-3"/>, using curve P-256 and SHA256. It is calculated and
+encoded as per TACK.signature.
 
 </t>
 
@@ -632,10 +634,20 @@ Example TACK IDs:
 
 <t hangText="Key reuse:">
 
-All servers that are pinned to a single key are able to impersonate each other
-(in other words: a TACK from any of these servers could create a TLS
-connection which is verified by a pin for any other server). Thus, different
-keys should be used to pin hostnames with different security properties.
+All servers that are pinned to a single key are able to impersonate each
+other, since clients will perceive their TACKs as equivalent. Thus, TACK keys
+should not be reused with different hostnames unless these hostnames are
+closely related. Examples where it would be safe to reuse a TACK key are
+hostnames aliased to the same host, or hostnames for a pool of near-identical
+servers.
+
+</t>
+
+<t hangText="Aliases:">
+
+A TLS server may be referenced by multiple hostnames. Clients may pin any of
+these hostnames. Server operators should be careful when using such DNS
+aliases that hostnames are not pinned inadvertently.
 
 </t>
 
@@ -701,8 +713,10 @@ protocols outside the scope of this document.
 
         <section title="Security considerations">
         <t>
-All servers sharing a TACK key can impersonate each other.
-Use different TACK keys for servers with different security properties.
+
+All servers sharing a TACK key can impersonate each other. Using different
+TACK keys for different hostnames is a good practice.
+
 </t>
 <t>
 
@@ -732,10 +746,11 @@ over HTTPS (not HTTP) <xref target="RFC6265"/>.
 <section title="Note on algorithm agility" anchor="future">
 
 <t>
-If the need arises for TACKs using different cryptographic algorithms (e.g., if
-SHA256 or ECDSA are shown to be weak), a "v2" version of TACKs could be defined,
-requiring assignment of a new TLS Extension number. TACKs as defined in this
-document would then be known as "v1" TACKs.
+
+If the need arises for TACKs using different cryptographic algorithms (e.g.,
+if SHA256 or ECDSA are shown to be weak), a "v2" version of TACKs could be
+defined, requiring assignment of a new TLS Extension number. TACKs as defined
+in this document would then be known as "v1" TACKs.
 
 </t>
 </section>
@@ -747,7 +762,7 @@ document would then be known as "v1" TACKs.
 	<t>
 
 IANA is requested to add an entry to the existing TLS ExtensionType registry,
-defined in RFC 5246, for tack(TBD) as defined in this document.
+defined in <xref target="RFC5246"/>, for tack(TBD) as defined in this document.
 
  </t>
 </section>
