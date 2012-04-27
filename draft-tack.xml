@@ -400,9 +400,9 @@ A "host record" contains:
 
 <t>
 
-Hostname: A DNS hostname. A client SHALL NOT store multiple host records with
-the same hostname. A pin whose hostname exactly matches the current TLS
-connection's hostname is a "relevant" pin.
+Hostname: A fully qualified DNS hostname. A client SHALL NOT store multiple
+host records with the same hostname. A pin whose hostname exactly matches the
+current TLS connection's hostname is a "relevant" pin.
 
 </t>
 <t>
