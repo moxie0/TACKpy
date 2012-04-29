@@ -17,100 +17,99 @@ TACKpy requires Python 2.6 or greater, or Python 3.
 
 Run "python setup.py install" or "make install".  This installs:
  - The "TACKpy" library for use by other Python programs (such as TLS Lite).
- - The "TACK.py" command for working with TACKs (see below).
+ - The "TACK.py" command for working with TACKs.
 
-To use TACK.py without installation you can use the self-contained version in
-"selfcontained/".
+To use TACK.py without installation you can run "selfcontained/TACK.py".
 
 If you have M2Crypto installed, TACKpy will use it for elliptic curve and AES
 operations.
 
 
-Quick start 
-============
-You will need to create one or more secret keys to "pin" your hostnames to.
-Any hosts pinned to the same key could impersonate each other, so you may need
-multiple keys for hosts with different security properties (see next section).
-Once you decide how many keys you need, and the assignment of hostnames to
-keys, do the following:
+TACK.py quick start 
+==================== 
+You will need to create one or more TACK keys to "pin" your hostnames to. You
+should use a different key for each hostname, unless those hostnames are
+closely related (such as aliases for the same host). Once you decide how many
+keys you need, and the assignment of hostnames to keys, do the following:
 
 Create a TACK secret key:
-  1) Run "TACK.py genkey > TACK_Key.pem".  
-  2) Backup the secret key where it won't be lost or stolen.
+  1) Run "TACK.py genkey > KEY.pem" (replace "KEY" with a specific name)  
+  2) The key file must be kept secret. Back it up where it won't be lost or 
+     stolen.
 
-Create a TACK for each hostname's SSL certificate:
-  1) Run "TACK.py sign -k TACK_Key.pem -c CERT > TACK.pem".
-  2) Add the TACK to your website (see below).
-  3) Test the site (if there are problems, see "Break signatures").
-  4) Whenever you change the site's certificate, you must re-sign and replace 
-     the TACK at the same time.
+If a hostname is using TACK, each server at that hostname must have a TACK
+that signs the public key in the server's certificate. To create and deploy
+these TACKs, do the following:
 
-Add the TACK to your website:
-  1) Choose one of two approaches: "TLS Extensions" or "TACK Certificates"
-    - TLS Extensions require web server support.
-    - TACK Certificates have a small risk of browser compatibility problems
-  2) For TLS Extensions, follow your web server's documentation.  
-    - For Apache with TACK support, set "SSLTackExtension On" and set
-      "SSLTackFile" to your TACK file.
-  3) For TACK Certificates, run "TACK.py tackcert -i TACK", then add the
-     resulting certificate to your SSL certificate chain.
-    - In Apache, append it to your "SSLCertificateChainFile".
+Create a TACK for a certificate's public key:
+  1) Run "TACK.py sign -k KEY.pem -c CERT > TACK.pem".
+
+Deploy TACKs to a hostname 
+  1) Deploy TACKs to each server at the hostname (see below).
+  2) Once all servers are serving a TACK, activate pinning on each.
+  3) Test the site (if there are problems, see "Removing TACKs").
+  4) Whenever you change a server's certificate, you must replace its TACK.
+
+The details of (1) and (2) above will depend on the server. For Apache with
+a TACK patch, they consist of:
+  1) Set "SSLTackExtension On" and set "SSLTackFile" to a TACK file.
+  2) Activate pinning on each server by setting "SSLTackPinActivation On".
+     (Only do this AFTER all servers at the hostname are serving a TACK)
 
 
-Assigning Hostnames to Keys
-============================
-You may use a single TACK key for different sites. This is beneficial in
-several ways, since it reduces the number of keys you have to manage, allows
-the sites to share "secure" cookies, and means all the sites will benefit from
-"break signatures" or "min_generation" updates published by any of them.
+Removing TACKs
+===============
 
-However, note that all sites sharing the same TACK key are considered
-"equivalent" by a TACK client - any of the sites could impersonate any other,
-and a "Break signature" (see below) published by any site will dissolve pins
-for all of them. Thus, you should only use the same TACK key for sites with
-similar security properties.
+Disabling pin activation
+-------------------------
+If you wish to stop using TACK for a hostname but can tolerate a "waiting
+period" before the TACKs are removed, simply disable pin activation at all
+servers for that hostname (in Apache: "SSLTackPinActivation Off"). Then wait
+for all existing client pins to become inactive.
+
+The waiting period required is equal to the length of time that pin activation
+has been enabled for any servers at the hostname, or a maximum of 30 days.
+Once the waiting period is elapsed, all TACKs for the hostname can be safely
+removed.
+
+(For example: If you start using a TACK for "example.com", then decide to
+remove it and disable pin activation at the end of the first day, you can
+remove the TACK at the end of the second day.)
+
+Break signatures
+-----------------
+If you wish to abruptly stop publishing a TACK for a hostname, or abruptly
+change the hostname's TACK key, or signal that a TACK key has been
+compromised, then you may publish a "break signature" from the TACK key as
+part of the TLS connection.
+
+This break signature must remain published at the hostname until all pins
+between the hostname and the old TACK key have become inactive (30 days at
+most; this is exactly the same as the "waiting period" described in previous
+section).
+
+A break signature from a TACK key causes any client who encounters it to
+discard all pins involving the TACK key. Thus, once a break signature is
+published for a TACK key, all existing pins and TACKS for the TACK key cease
+providing security.
+
+A server can have up to eight break signatures. However, keep in mind that
+break signatures add to TLS handshake overhead, so are best avoided.
+
+Create a break signature for a TACK:
+  1) Run "TACK.py break -k KEY.pem > TACK_Break_Sig.pem"
+  2) Add the break signature to your web server.
 
 
 Advanced uses
 ==============
 
-Break signatures
------------------
-If you wish to stop using TACK for a site, or change the site's TACK key, the
-site must publish a "break signature" from the previous TACK key. This break
-signature must remain published by the site until all pins between the site
-and the old TACK key have become inactive (30 days at most; see below).
-
-A break signature from a TACK_Key causes any client who encounters it to
-discard all pins involving the TACK_Key. Thus, once a break signature is
-published for a TACK key, all existing pins and TACKS for the TACK key cease
-providing security.
-
-At any point in time a site can have up to fifteen break signatures. However,
-keep in mind that break signatures add to TLS handshake overhead, so are best
-avoided.
-
-Creating a break signature for a TACK:
-  1) Run "TACK.py break -k TACK_Key.pem > TACK_Break_Sig.pem"
-  2) Add the break signature to your web server.
-
-Break signatures can be safely removed after 30 days, since all TACK pins
-become inactive after 30 days without reinforcement. 
-
-If a site used a TACK from the broken TACK key for a span of time shorter than
-30 days, the break signature can be removed from that site after an equally
-short span of time. (For example: If you start using a TACK for "example.com"
-with a new TACK key, then decide to publish a break signature after the first
-day, you only need to leave the break signature up at "example.com" for one
-day).
-
-
 Revoking older generations of a TACK 
 -------------------------------------
-If an SSL key has been compromised and you are switching to a new SSL key, you
-may revoke the TACK for this key by "-m <min_generation>" in the "sign"
-command. <min_generation> is a number from 0-255 that is larger than the
-generation of the TACK you wish to revoke.
+If a server's TLS public key (not its TACK key) has been compromised and you
+are switching to a new TLS key, you may revoke the TACK for the old key by "-m
+<min_generation>" in the "sign" command. <min_generation> is a number from
+0-255 that is larger than the generation of the TACK you wish to revoke.
 
 Clients who encounter the new TACK will reject older generations from then on.
 Prior to publishing a new <min_generation> you should replace all your TACKs
@@ -125,28 +124,27 @@ Security Consideration: This only provides protection if clients receive the
 new min_generation. For a more robust defense against SSL key compromise,
 consider using short-lived TACKs.
 
-
 Short-lived TACKs
 ------------------
-Every TACK contains a signature covering an SSL key. The SSL key is contained
-in an SSL certificate. By default the TACK signature is set to expire at the
-same time as the certificate, and must be replaced by an updated TACK at that
-point.
+Every TACK contains a signature covering a TLS public key. The TLS key is
+contained in a certificate. By default the TACK signature is set to expire at
+the same time as the certificate, and must be replaced by an updated TACK at
+that point.
 
 If you shorten the TACK's expiration time, then a compromised SSL certificate
 will become unusable to an attacker once the TACK expires. For example, every
 day at midnight you could deploy a new TACK that expires within 48 hours.
 
 A good way to handle short-lived TACKs is to generate a batch of them and
-store the TACKs on a secure system that distributes them to webservers. This
-way, you do not have to use your TACK key to sign new TACKs frequently.
+store the TACKs on a secure system that distributes them to servers. This way,
+you do not have to use your TACK key to sign new TACKs frequently.
 
 You can generate a batch of TACKs with the "-n NUM@INTERVAL" argument to
 "sign", specifying the number of TACKs and the interval between their
 expiration times. The "-o" argument is taken as a filename prefix, and the
 "-e" time is used as the first expiration time.  Example:
 
-TACK.py sign -k TACK_Key.pem -c CERT -n 365@1d -e 2013-01-02Z -o T1
+TACK.py sign -k KEY.pem -c CERT -n 365@1d -e 2013-01-02Z -o T1
 
 produces 365 TACKs, one expiring at midnight (UTC) each day of 2013:
   T1_0000.pem
