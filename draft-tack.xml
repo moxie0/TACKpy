@@ -584,7 +584,7 @@ TACK_Extension.pin_activation is enabled".
        </texttable>
 
 </section>
-<section title="Deleting pins asynchronously">
+<section title="Deleting pins">
 
 <t>
 
@@ -592,8 +592,11 @@ A client MAY delete pins from its local store at any time, whether to save
 space, protect privacy, or for any other reason. To delete a pin, its host
 record SHALL be removed. If this leaves a key record with no associated host
 records, the key record MAY be removed as well. Pins may be deleted regardless
-of whether they are active or inactive.
+of whether they are active or inactive, however for security concerns regarding
+pin deletion, see <xref target="security_client"/>.
 
+</t>
+<t>
 </t>
 <t>
 
@@ -711,7 +714,8 @@ protocols outside the scope of this document.
 </section> 
 </section>
 
-        <section title="Security considerations">
+        <section title="Security considerations" anchor="security">
+<section title="For server operators">	
         <t>
 
 All servers sharing a TACK key can impersonate each other. Using different
@@ -727,8 +731,8 @@ locations where they can't be compromised.
 <t>
 
 A TACK private key MUST NOT be used to perform any non-TACK cryptographic
-operations. For example, using a TACK elliptic curve key for email encryption,
-code-signing, or any other purpose MUST NOT be done.
+operations. For example, using a TACK key for email encryption, code-signing,
+or any other purpose MUST NOT be done.
 
 </t> <t>
 
@@ -737,11 +741,38 @@ network attacker who can forge web and DNS responses so as to cause a client
 to send the cookies to a phony subdomain of the pinned host. To prevent this,
 TACK HTTPS Servers SHOULD set the "secure" attribute and omit the "domain"
 attribute on all security-sensitive cookies, such as session cookies. These
-attribute settings tell the browser that the cookie should only be presented
-back to the originating host (not its subdomains), and should only be sent
-over HTTPS (not HTTP) <xref target="RFC6265"/>.
+settings tell the browser that the cookie should only be presented back to the
+originating host (not its subdomains), and should only be sent over HTTPS (not
+HTTP) <xref target="RFC6265"/>.
 
 </t>
+</section>
+
+<section title="For client implementors"  anchor="security_client">
+
+<t>
+
+Aside from rejecting TLS connections, clients SHOULD NOT take any actions
+which would reveal to a network observer the status of the client's pin store,
+as this would allow an attacker to know in advance whether a
+"man-in-the-middle" attack on a particular TLS connection will succeed or be
+detected.
+
+</t>
+
+<t>
+
+An attacker may attempt to flood a client with spurious TACKs for different
+hostnames, causing the client to delete old pins to make space for new ones.
+To defend against this, clients SHOULD NOT delete active pins to make space
+for new pins. Instead, clients SHOULD select an inactive pin for deletion at
+random. The use of randomization prevents the attacker from people able to
+predict the status of the client's pin store. Additionally, clients MAY
+implement throttling measures, such as only allowing a limited number of new
+pins to be created each day.
+
+</t>
+</section>
 
 <section title="Note on algorithm agility" anchor="future">
 
