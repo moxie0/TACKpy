@@ -923,7 +923,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 8.2.  For client implementors
 
    Aside from rejecting TLS connections, clients SHOULD NOT take any
-   actions which would reveal to a network observer the status of the
+   actions which would reveal to a network observer the state of the
    client's pin store, as this would allow an attacker to know in
    advance whether a "man-in-the-middle" attack on a particular TLS
    connection will succeed or be detected.
@@ -933,10 +933,10 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    space for new ones.  To defend against this, clients SHOULD NOT
    delete active pins to make space for new pins.  Instead, clients
    SHOULD select an inactive pin for deletion at random.  The use of
-   randomization prevents the attacker from people able to predict the
-   status of the client's pin store.  Additionally, clients MAY
-   implement throttling measures, such as only allowing a limited number
-   of new pins to be created each day.
+   randomization prevents the attacker from being able to predict the
+   state of the client's pin store.  Additionally, clients MAY implement
+   throttling measures, such as only allowing a limited number of new
+   pins to be created each day.
 
 8.3.  Note on algorithm agility
 
