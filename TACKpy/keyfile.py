@@ -124,8 +124,7 @@ class TACK_KeyFile:
 
     def writeText(self):
         s = \
-"""public_key     = 0x%s\n""" % \
-        (writeBytes(self.public_key))
+"""TACK ID        = %s\n""" % makeTACKID(self.public_key)
         return s  
 
     def writePem(self, password):
