@@ -391,7 +391,6 @@ Commands (use "help <command>" to see optional args):
   genkey
   sign   -k KEY -c CERT
   break  -k KEY
-  tackcert -i TACK
   view   FILE
   test  
   help   COMMAND
