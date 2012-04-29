@@ -7,13 +7,16 @@ TACK ID alphabet base32 encoding
 """
 
 from .compat import b2a_base32
+from .cryptomath import SHA256
 
 ################ FINGERPRINTS ###
 
+def makeTACKID(public_key):
+    return hashToTACKID(SHA256(public_key))
+
 def hashToTACKID(b):
-    assert(len(b) == 15)
-    s = b2a_base32(b).lower()
-    s = "b"+s
+    assert(len(b) == 32)
+    s = b2a_base32(b).lower()[:25]
     return "%s.%s.%s.%s.%s" % (s[:5],s[5:10],s[10:15],s[15:20],s[20:25])
     s2 = "b"
     for c in s:

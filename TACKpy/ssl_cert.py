@@ -175,8 +175,7 @@ notAfter       = %s
         writeBytes(self.key_sha256),
         posixTimeToStr(self.notAfter, True))
         if self.tackExt:        
-            s += "\n" + writeTextTACKStructures(self.tackExt.tack, 
-                                                self.tackExt.break_sigs)
+            s += "\n" + self.tackExt.writeText()
         return s
 
 def testSSLCert():

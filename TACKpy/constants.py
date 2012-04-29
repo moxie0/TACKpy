@@ -3,6 +3,8 @@
 
 ################ CONSTANTS ###
 
-class TACK_Version:
-    v1 = 1
-    strings = (None, "v1")
+class TACK_Activation:
+    disabled = 0
+    enabled = 1
+    all = (disabled, enabled)
+    strings = ["disabled", "enabled"]

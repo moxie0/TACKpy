@@ -3,12 +3,13 @@
 # Author: Trevor Perrin
 # See the LICENSE file for legal information regarding use of this file.
 
-from TACKpy import TACK, TACK_Key, TACK_Break_Sig, TACK_Extension, \
+from TACKpy import TACK, TACK_Break_Sig, TACK_Extension, \
     TACK_KeyFile, TACK_KeyFileViewer, \
     SSL_Cert, __version__, \
-    m2cryptoLoaded, TACK_Version, \
+    m2cryptoLoaded, \
     posixTimeToStr, selfTest, pemSniff, \
-    parseDurationArg, parseTimeArg
+    parseDurationArg, parseTimeArg, \
+    TACK_Activation
 
 ################ MAIN ###
 
@@ -152,7 +153,7 @@ values in the correct order.
 
     # Check that mandatory args were present
     if "k" in mandatoryString and not keyPem:
-        printError("-k missing (TACK_Key)")
+        printError("-k missing (TACK Key)")
     if "c" in mandatoryString and not inCert:
         printError("-c missing (SSL certificate)")
     if "i" in mandatoryString and not inTack:
@@ -255,8 +256,8 @@ def signCmd(argv):
     
     if not numArg: # No -n
         tack = TACK()
-        tack.create(inKey, min_generation, generation, 
-                    expiration, hash)
+        tack.create(inKey.public_key, min_generation, generation, 
+                    expiration, hash, inKey.sign)
         outputFile.write(addPemComments(tack.writePem()))
         if verbose:
             sys.stderr.write(tack.writeText()+"\n")    
@@ -268,8 +269,8 @@ def signCmd(argv):
             printError("-e required with -n")
         for x in range(numTacks):
             tack = TACK()
-            tack.create(inKey, min_generation, generation, 
-                        expiration, hash)
+            tack.create(inKey.public_key, min_generation, generation, 
+                        expiration, hash, inKey.sign)
             outputFile = open(outputFilename+"_%04d.pem" % x, "w")
             outputFile.write(addPemComments(tack.writePem()))
             outputFile.close()
@@ -282,10 +283,8 @@ def breakCmd(argv):
     password, (outputFile,_), inKey, verbose = \
         handleArgs(argv, "pok", "k", flags="v")
 
-    key = TACK_Key()
-    key.create(inKey.public_key)
     breakSig = TACK_Break_Sig()
-    breakSig.create(key, inKey.sign(key.write()))
+    breakSig.create(inKey.public_key, inKey.sign)
     outputFile.write(addPemComments(breakSig.writePem()))
     if verbose:
         sys.stderr.write(breakSig.writeText()+"\n")        
@@ -297,7 +296,7 @@ def tackcertCmd(argv):
     if isinstance(X, TACK):
         tack = X
         tackExt = TACK_Extension()
-        tackExt.create(tack, breakSigs)
+        tackExt.create(tack, breakSigs, TACK_Activation.disabled) #!!!
         tc = SSL_Cert()
         tc.create(tackExt)
         outputFile.write(tc.writePem())

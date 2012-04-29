@@ -6,7 +6,7 @@ from .rijndael import *
 from .struct_parser import *
 from .pem import *
 from .aes_wrappers import *
-from .tack_structures import TACK_Key
+from .tackid import *
 
 ################ KEY FILE ###
 
@@ -79,15 +79,7 @@ class TACK_KeyFileViewer:
             raise SyntaxError("Excess bytes in TACK Key File")
 
     def writeText(self):
-        k = TACK_Key()
-        k.create(self.public_key)
-        s = k.writeText()
-        return s
-        s = \
-"""public_key     = 0x%s\n""" % \
-        (writeBytes(self.public_key))
-        return s        
-        
+        return "TACK ID        = %s\n" % makeTACKID(self.public_key)
     
 class TACK_KeyFile:
     length = 149 # length of keyfile in bytes
