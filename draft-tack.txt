@@ -3,8 +3,8 @@
 
 TLS Working Group                                         M. Marlinspike
 Internet-Draft                                            T. Perrin, Ed.
-Intended status: Standards Track                          April 29, 2012
-Expires: October 31, 2012
+Intended status: Standards Track                             May 2, 2012
+Expires: November 3, 2012
 
 
                  Trust Assertions for Certificate Keys
@@ -35,7 +35,7 @@ Status of this Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on October 31, 2012.
+   This Internet-Draft will expire on November 3, 2012.
 
 Copyright Notice
 
@@ -52,9 +52,9 @@ Copyright Notice
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 1]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 1]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
    the Trust Legal Provisions and are provided without warranty as
@@ -75,26 +75,29 @@ Table of Contents
        4.2.2.  TACK_Break_Sig fields  . . . . . . . . . . . . . . . .  8
        4.2.3.  TACK_Extension fields  . . . . . . . . . . . . . . . .  9
    5.  Client processing  . . . . . . . . . . . . . . . . . . . . . . 10
-     5.1.  TACK pins, key records, and host records . . . . . . . . . 10
+     5.1.  TACK pins, key records, and name records . . . . . . . . . 10
      5.2.  High-level client processing . . . . . . . . . . . . . . . 10
      5.3.  Client processing details  . . . . . . . . . . . . . . . . 11
        5.3.1.  Discarding pins based on break signatures  . . . . . . 11
        5.3.2.  Checking for a valid TACK  . . . . . . . . . . . . . . 11
        5.3.3.  Updating and activating pins based on a valid TACK . . 12
        5.3.4.  Deleting pins  . . . . . . . . . . . . . . . . . . . . 13
-   6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
-   7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
-     7.1.  For server operators . . . . . . . . . . . . . . . . . . . 15
-     7.2.  For client implementors  . . . . . . . . . . . . . . . . . 16
-   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 17
+   6.  Application-specific pinning . . . . . . . . . . . . . . . . . 14
+     6.1.  General rules  . . . . . . . . . . . . . . . . . . . . . . 14
+     6.2.  SMTP . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+   7.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+   8.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
      8.1.  For server operators . . . . . . . . . . . . . . . . . . . 17
-     8.2.  For client implementors  . . . . . . . . . . . . . . . . . 17
-     8.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 17
-   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 18
-     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 18
-   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 19
-   11. Normative references . . . . . . . . . . . . . . . . . . . . . 20
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
+     8.2.  For client implementers  . . . . . . . . . . . . . . . . . 18
+   9.  Security considerations  . . . . . . . . . . . . . . . . . . . 19
+     9.1.  For server operators . . . . . . . . . . . . . . . . . . . 19
+     9.2.  For client implementers  . . . . . . . . . . . . . . . . . 19
+     9.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 19
+   10. IANA considerations  . . . . . . . . . . . . . . . . . . . . . 20
+     10.1. New entry for the TLS ExtensionType Registry . . . . . . . 20
+   11. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 21
+   12. Normative references . . . . . . . . . . . . . . . . . . . . . 22
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 23
 
 
 
@@ -105,12 +108,9 @@ Table of Contents
 
 
 
-
-
-
-Marlinspike & Perrin    Expires October 31, 2012                [Page 2]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 2]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 1.  Introduction
@@ -164,9 +164,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 3]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 3]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 2.  Requirements notation
@@ -220,9 +220,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 4]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 4]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 3.  Overview
@@ -276,9 +276,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 5]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 5]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 3.2.  Pin life cycle
@@ -332,9 +332,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 6]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 6]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 4.  TACK Extension
@@ -388,9 +388,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 7]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 7]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 4.2.  Explanation of TACK_Extension fields
@@ -444,9 +444,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 8]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 8]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 4.2.3.  TACK_Extension fields
@@ -457,9 +457,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    break_sigs:  This field provides break signatures.  It MAY be empty,
       or MAY contain up to 8 break signatures.
 
-   pin_activation:  If this field is "enabled", this TACK_Extension MAY
-      be used by clients to activate or extend the activation of TACK
-      pins.  This field is typically toggled from a disabled to an
+   pin_activation:  If pin activation is "enabled", then TACK_Extension
+      MAY be used by clients to activate or extend the activation of
+      TACK pins.  This field is typically toggled from a disabled to an
       enabled state once TACKs have been deployed to all TLS servers for
       a hostname.
 
@@ -500,19 +500,19 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012                [Page 9]
+Marlinspike & Perrin    Expires November 3, 2012                [Page 9]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 5.  Client processing
 
-5.1.  TACK pins, key records, and host records
+5.1.  TACK pins, key records, and name records
 
    A client supporting TACK SHALL have a local store of pins, consisting
-   of "key records" and "host records".  Each host record is associated
-   with a key record.  Multiple host records may be associated with one
-   key record.  A "pin" refers to a (host record, key record) pair.
+   of "key records" and "name records".  Each name record is associated
+   with a key record.  Multiple name records may be associated with one
+   key record.  A "pin" refers to a (name record, key record) pair.
 
    A "key record" contains:
 
@@ -522,12 +522,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
       Min_generation: A single byte used to detect revoked TACKs.
 
-   A "host record" contains:
+   A "name record" contains:
 
-      Hostname: A fully qualified DNS hostname.  A client SHALL NOT
-      store multiple host records with the same hostname.  A pin whose
-      hostname exactly matches the current TLS connection's hostname is
-      a "relevant" pin.
+      Name: A fully qualified DNS hostname.  A client SHALL NOT store
+      multiple name records with the same name.  The current TLS
+      hostname is considered the "relevant name", and a pin whose name
+      exactly matches that is considered a "relevant pin".
 
       Initial timestamp: A timestamp noting when this pin was created.
 
@@ -556,9 +556,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 10]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 10]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
    If, after the above steps, there is a relevant active pin and a valid
@@ -573,7 +573,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 5.3.1.  Discarding pins based on break signatures
 
    All key records broken by break signatures SHALL be discarded, along
-   with their associated host records.  A key record is broken by a
+   with their associated name records.  A key record is broken by a
    break signature if the break signature passes the following checks:
 
    1.  The "public_key" is referenced by the key record.
@@ -612,9 +612,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 11]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 11]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 5.3.3.  Updating and activating pins based on a valid TACK
@@ -623,15 +623,14 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    key record referencing the TACK key, the key record's min_generation
    SHALL be set to the TACK's min_generation if it is larger.
 
-   A valid TACK MAY also be used to modify the host records using the
+   A valid TACK MAY also be used to modify the name records using the
    "pin activation" process described below.  Note that the following
    steps are optional; a client MAY rely on an external source of pins.
 
-   If there is a relevant pin referencing the TACK key, and the TACK
-   Extension's "pin_activation" is enabled, the host record's "active
-   period end" MAY be set according to the following formula (where
-   "current" is the current time, and "initial" is the "initial
-   timestamp" from the host record):
+   If there is a relevant pin referencing the TACK key, and pin
+   activation is enabled, the name record's "active period end" MAY be
+   set using the following formula (where "current" is the current time,
+   and "initial" is the "initial timestamp" from the name record):
 
    active_period_end = current + MIN(30 days, current - initial)
 
@@ -642,15 +641,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
        record is reused, otherwise a new key record is created with the
        TACK's key and min_generation.
 
-   2.  A new host record is created containing the server's hostname, an
+   2.  A new name record is created containing the relevant name, an
        "initial timestamp" equal to the current time, and an empty
        "active period end".
 
-   3.  If there was an existing relevant host record, it is discarded.
+   3.  If there was an existing relevant name record, it is discarded.
 
    The following table summarizes this behavior based on whether the
    relevant pin is active and references the TACK's public key.  The
-   "(*)" means "if TACK_Extension.pin_activation is enabled".
+   "(*)" means "if pin activation is enabled".
 
    +------------+---------------------+-------------------------------+
    | Pin status | Pin references TACK | Result                        |
@@ -668,20 +667,21 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 12]
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 12]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 5.3.4.  Deleting pins
 
    A client MAY delete pins from its local store at any time, whether to
    save space, protect privacy, or for any other reason.  To delete a
-   pin, its host record SHALL be removed.  If this leaves a key record
-   with no associated host records, the key record MAY be removed as
+   pin, its name record SHALL be removed.  If this leaves a key record
+   with no associated name records, the key record MAY be removed as
    well.  Pins may be deleted regardless of whether they are active or
    inactive, however for security concerns regarding pin deletion, see
-   Section 8.2.
+   Section 9.2.
 
    Deleting pins obviously reduces the benefits of TACK, so SHOULD be
    avoided.
@@ -724,12 +724,124 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 13]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 13]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-6.  TACK IDs
+6.  Application-specific pinning
+
+6.1.  General rules
+
+   The previous section specifies rules for pinning DNS hostnames.
+   These rules apply to all applications using TLS.  However, some
+   applications may also require "application-specific pins", where some
+   application-layer name is pinned to a TACK key.
+
+   This requires definition of three items:
+
+   1.  A "name" field must be defined for the application-specific name
+       records.
+
+   2.  A rule must be defined for determining the "relevant name" of a
+       TLS connection for application-specific pins.
+
+   3.  A pin activation signal must be defined at the application layer.
+       Pin activation for application-layer pins SHALL only be
+       considered enabled when both TACK_Extension.pin_activation and
+       the application-layer signal are enabled.
+
+   With these items defined, application-specific pinning proceeds as
+   defined in Section 5, except that the "name" field, the "relevant
+   name", and "pin activation" are redefined as specified.
+
+   Note that a server using application-specific pins is still subject
+   to hostname pins, and a client MAY apply either or both forms of
+   pinning when checking whether the TLS connection is verified.
+
+   For an example of application-specific pinning, see the following.
+
+6.2.  SMTP
+
+   SMTP-specific pins can be used by a sending MTA to authenticate a
+   receiving MTA.  SMTP-specific pinning is useful because MX records
+   introduce a (potentially subvertable) mapping between the domain
+   specified in an email address and the receiving MTA's hostname.
+
+   An SMTP-specific pin stores a fully-qualified DNS domain name in the
+   "name" field.  The "name" value corresponds to the domain component
+   of an email address (e.g., "example.com" is the domain component of
+   "alice@example.com").
+
+   The "relevant name" for a TLS connection for SMTP is the domain name
+   component of the email address(es) that the client is sending emails
+   to.  Client MUST NOT use SMTP-specific pins if there are multiple
+   relevant names, to avoid the complexities of evaluating a connection
+
+
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 14]
+
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
+
+
+   against multiple pins, some of which may accept it, some reject it.
+
+   An SMTP-specific pin is activated by the presence of the EHLO keyword
+   "TACKPINACTIVATE" in the server's EHLO response (see [RFC5321]).
+   This keyword defines no new verbs or parameters.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 15]
+
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
+
+
+7.  TACK IDs
 
    A "TACK ID" MAY be used to represent a TACK public key to users in a
    form that is relatively easy to compare and transcribe.  A TACK ID
@@ -780,14 +892,14 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 14]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 16]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-7.  Advice
+8.  Advice
 
-7.1.  For server operators
+8.1.  For server operators
 
    Key reuse:  All servers that are pinned to a single key are able to
       impersonate each other, since clients will perceive their TACKs as
@@ -823,25 +935,25 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
       website for 24 hours, to remove the TACK only requires publishing
       the break signature for 24 hours.
 
-   Pin activation:  The pin_activation field should only be toggled to
-      "enabled" once all TLS servers sharing the same hostname have a
-      valid TACK.  Otherwise, a client may activate a pin by contacting
-      one server, then contact a different server at the same hostname
-      that does not yet have a valid TACK.  The pin_activation field can
-      also be used to phase out use of TACKs for a hostname - if all
-      servers at a hostname disable pin activation, existing pins will
-      eventually all become deactivated (within 30 days at most).
+   Pin activation:  Pin activation should only be enabled once all TLS
+      servers sharing the same hostname have a valid TACK.  Otherwise, a
+      client may activate a pin by contacting one server, then contact a
+      different server at the same hostname that does not yet have a
+      valid TACK.  The pin_activation field can also be used to phase
+      out use of TACKs for a hostname - if all servers at a hostname
+      disable pin activation, existing pins will eventually all become
+      deactivated (within 30 days at most).
 
 
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 15]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 17]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-7.2.  For client implementors
+8.2.  For client implementers
 
    Sharing pin information:  It is possible for a client to maintain a
       pin store based entirely on its own TLS connections.  However,
@@ -892,14 +1004,14 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 16]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 18]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-8.  Security considerations
+9.  Security considerations
 
-8.1.  For server operators
+9.1.  For server operators
 
    All servers sharing a TACK key can impersonate each other.  Using
    different TACK keys for different hostnames is a good practice.
@@ -920,7 +1032,7 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    cookie should only be presented back to the originating host (not its
    subdomains), and should only be sent over HTTPS (not HTTP) [RFC6265].
 
-8.2.  For client implementors
+9.2.  For client implementers
 
    Aside from rejecting TLS connections, clients SHOULD NOT take any
    actions which would reveal to a network observer the state of the
@@ -931,14 +1043,13 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
    An attacker may attempt to flood a client with spurious TACKs for
    different hostnames, causing the client to delete old pins to make
    space for new ones.  To defend against this, clients SHOULD NOT
-   delete active pins to make space for new pins.  Instead, clients
-   SHOULD select an inactive pin for deletion at random.  The use of
-   randomization prevents the attacker from being able to predict the
-   state of the client's pin store.  Additionally, clients MAY implement
-   throttling measures, such as only allowing a limited number of new
-   pins to be created each day.
+   delete active pins to make space for new pins.  Clients instead
+   SHOULD delete inactive pins.  If there are no inactive pins to
+   delete, then the pin store is full and there is no space for new
+   pins.  To select an inactive pin for deletion, the client SHOULD
+   delete the pin with the oldest "active_period_end".
 
-8.3.  Note on algorithm agility
+9.3.  Note on algorithm agility
 
    If the need arises for TACKs using different cryptographic algorithms
    (e.g., if SHA256 or ECDSA are shown to be weak), a "v2" version of
@@ -948,14 +1059,15 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 17]
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 19]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-9.  IANA considerations
+10.  IANA considerations
 
-9.1.  New entry for the TLS ExtensionType Registry
+10.1.  New entry for the TLS ExtensionType Registry
 
    IANA is requested to add an entry to the existing TLS ExtensionType
    registry, defined in [RFC5246], for tack(TBD) as defined in this
@@ -1004,12 +1116,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 18]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 20]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-10.  Acknowledgements
+11.  Acknowledgements
 
    Valuable feedback has been provided by Adam Langley, Chris Palmer,
    Nate Lawson, and Joseph Bonneau.
@@ -1060,12 +1172,12 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 19]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 21]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-11.  Normative references
+12.  Normative references
 
    [FIPS180-2]
               National Institute of Standards and Technology, "Secure
@@ -1091,6 +1203,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
               Infrastructure Certificate and Certificate Revocation List
               (CRL) Profile", RFC 5280, May 2008.
 
+   [RFC5321]  Klensin, J., "Simple Mail Transfer Protocol", RFC 5321,
+              October 2008.
+
    [RFC5480]  Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk,
               "Elliptic Curve Cryptography Subject Public Key
               Information", RFC 5480, March 2009.
@@ -1113,12 +1228,9 @@ Internet-Draft    Trust Assertions for Certificate Keys       April 2012
 
 
 
-
-
-
-Marlinspike & Perrin    Expires October 31, 2012               [Page 20]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 22]
 
-Internet-Draft    Trust Assertions for Certificate Keys       April 2012
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 Authors' Addresses
@@ -1172,5 +1284,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires October 31, 2012               [Page 21]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 23]
 
