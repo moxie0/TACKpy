@@ -73,8 +73,8 @@ Once the waiting period is elapsed, all TACKs for the hostname can be safely
 removed.
 
 (For example: If you start using a TACK for "example.com", then decide to
-remove it and disable pin activation at the end of the first day, you can
-remove the TACK at the end of the second day.)
+disable pin activation after one day, you can remove the TACK at the end of
+the second day.)
 
 Break signatures
 -----------------
