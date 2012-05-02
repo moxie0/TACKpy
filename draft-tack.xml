@@ -606,82 +606,40 @@ Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
 </t>
 </section>
 </section>	
-</section>
 
 <section title="Application-specific pinning">
 
-<section title="General rules">
-	
 <t>
 
-The previous section specifies rules for pinning DNS hostnames. These rules
-apply to all applications using TLS. However, some applications may also
-require "application-specific pins", where some application-layer name is
-pinned to a TACK key.
+In addition to the hostname-based pinning described above, some applications
+may also require "application-specific pins", where some application-layer
+name is pinned to a TACK key. For example, an SMTP MTA may wish to
+authenticate receiving MTAs by pinning email domains to the receiving MTAs'
+TACK keys.
 
 </t>
 <t>
-This requires definition of three items:
-<list style="numbers">
 
-<t>A "name" field must be defined for the application-specific name
-records.</t>
+Application-specific pins may require redefiniton of the name record's "name"
+field, the "relevant name" for the TLS connection, and the "pin activation"
+signal. With these items redefined, the client processing rules in this
+section may be reused.
 
-<t>A rule must be defined for determining the "relevant name" of a TLS
-connection for application-specific pins. </t>
-
-<t>A pin activation signal must be defined at the application layer. Pin
-activation for application-layer pins SHALL only be considered enabled when
-both TACK_Extension.pin_activation and the application-layer signal are
-enabled.</t>
-
-</list>With these items defined, application-specific pinning proceeds as
-defined in <xref target="clientproc"/>, except that the "name" field, the
-"relevant name", and "pin activation" are redefined as specified. </t>
+</t>
 
 <t>Note that a server using application-specific pins is still subject to
 hostname pins, and a client MAY apply either or both forms of pinning when
 checking whether the TLS connection is verified. </t>
-
-<t>For an example of application-specific pinning, see the following.</t>
-
-</section>
-<section title="SMTP">
-
 <t>
 
-SMTP-specific pins can be used by a sending MTA to authenticate a receiving
-MTA. SMTP-specific pinning is useful because MX records introduce a
-(potentially subvertable) mapping between the domain specified in an email
-address and the receiving MTA's hostname.
-
-</t>
-<t>
-
-An SMTP-specific pin stores a fully-qualified DNS domain name in the "name"
-field. The "name" value corresponds to the domain component of an email
-address (e.g., "example.com" is the domain component of "alice@example.com").
-
-</t>
-<t>
-
-The "relevant name" for a TLS connection for SMTP is the domain name component
-of the email address(es) that the client is sending emails to. Client MUST NOT
-use SMTP-specific pins if there are multiple relevant names, to avoid the
-complexities of evaluating a connection against multiple pins, some of which
-may accept it, some reject it.
-
-
-</t> <t>
-
-An SMTP-specific pin is activated by the presence of the EHLO keyword
-"TACKPINACTIVATE" in the server's EHLO response (see <xref
-target="RFC5321"/>). This keyword defines no new verbs or parameters.
+The specification of application-specific pinning for particular applications
+is outside the scope of this document.
 
 </t>
 
 </section>
 </section>
+
 
 <section title="TACK IDs">	
 <t>
@@ -917,7 +875,6 @@ Lawson, and Joseph Bonneau.
 			<?rfc include="bib/reference.RFC.4648.xml"?>
 			<?rfc include="bib/reference.RFC.5246.xml"?>
 			<?rfc include="bib/reference.RFC.5280.xml"?>			
-			<?rfc include="bib/reference.RFC.5321.xml"?>			
 			<?rfc include="bib/reference.RFC.5480.xml"?>
 			<?rfc include="bib/reference.RFC.6066.xml"?>			
 			<?rfc include="bib/reference.RFC.6090.xml"?>			

@@ -82,22 +82,22 @@ Table of Contents
        5.3.2.  Checking for a valid TACK  . . . . . . . . . . . . . . 11
        5.3.3.  Updating and activating pins based on a valid TACK . . 12
        5.3.4.  Deleting pins  . . . . . . . . . . . . . . . . . . . . 13
-   6.  Application-specific pinning . . . . . . . . . . . . . . . . . 14
-     6.1.  General rules  . . . . . . . . . . . . . . . . . . . . . . 14
-     6.2.  SMTP . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
-   7.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
-   8.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+     5.4.  Application-specific pinning . . . . . . . . . . . . . . . 13
+   6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+   7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+     7.1.  For server operators . . . . . . . . . . . . . . . . . . . 15
+     7.2.  For client implementers  . . . . . . . . . . . . . . . . . 16
+   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 17
      8.1.  For server operators . . . . . . . . . . . . . . . . . . . 17
-     8.2.  For client implementers  . . . . . . . . . . . . . . . . . 18
-   9.  Security considerations  . . . . . . . . . . . . . . . . . . . 19
-     9.1.  For server operators . . . . . . . . . . . . . . . . . . . 19
-     9.2.  For client implementers  . . . . . . . . . . . . . . . . . 19
-     9.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 19
-   10. IANA considerations  . . . . . . . . . . . . . . . . . . . . . 20
-     10.1. New entry for the TLS ExtensionType Registry . . . . . . . 20
-   11. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 21
-   12. Normative references . . . . . . . . . . . . . . . . . . . . . 22
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 23
+     8.2.  For client implementers  . . . . . . . . . . . . . . . . . 17
+     8.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 17
+   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 18
+     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 18
+   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 19
+   11. Normative references . . . . . . . . . . . . . . . . . . . . . 20
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
+
+
 
 
 
@@ -681,30 +681,30 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    with no associated name records, the key record MAY be removed as
    well.  Pins may be deleted regardless of whether they are active or
    inactive, however for security concerns regarding pin deletion, see
-   Section 9.2.
+   Section 8.2.
 
    Deleting pins obviously reduces the benefits of TACK, so SHOULD be
    avoided.
 
+5.4.  Application-specific pinning
 
+   In addition to the hostname-based pinning described above, some
+   applications may also require "application-specific pins", where some
+   application-layer name is pinned to a TACK key.  For example, an SMTP
+   MTA may wish to authenticate receiving MTAs by pinning email domains
+   to the receiving MTAs' TACK keys.
 
+   Application-specific pins may require redefiniton of the name
+   record's "name" field, the "relevant name" for the TLS connection,
+   and the "pin activation" signal.  With these items redefined, the
+   client processing rules in this section may be reused.
 
+   Note that a server using application-specific pins is still subject
+   to hostname pins, and a client MAY apply either or both forms of
+   pinning when checking whether the TLS connection is verified.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+   The specification of application-specific pinning for particular
+   applications is outside the scope of this document.
 
 
 
@@ -729,119 +729,7 @@ Marlinspike & Perrin    Expires November 3, 2012               [Page 13]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-6.  Application-specific pinning
-
-6.1.  General rules
-
-   The previous section specifies rules for pinning DNS hostnames.
-   These rules apply to all applications using TLS.  However, some
-   applications may also require "application-specific pins", where some
-   application-layer name is pinned to a TACK key.
-
-   This requires definition of three items:
-
-   1.  A "name" field must be defined for the application-specific name
-       records.
-
-   2.  A rule must be defined for determining the "relevant name" of a
-       TLS connection for application-specific pins.
-
-   3.  A pin activation signal must be defined at the application layer.
-       Pin activation for application-layer pins SHALL only be
-       considered enabled when both TACK_Extension.pin_activation and
-       the application-layer signal are enabled.
-
-   With these items defined, application-specific pinning proceeds as
-   defined in Section 5, except that the "name" field, the "relevant
-   name", and "pin activation" are redefined as specified.
-
-   Note that a server using application-specific pins is still subject
-   to hostname pins, and a client MAY apply either or both forms of
-   pinning when checking whether the TLS connection is verified.
-
-   For an example of application-specific pinning, see the following.
-
-6.2.  SMTP
-
-   SMTP-specific pins can be used by a sending MTA to authenticate a
-   receiving MTA.  SMTP-specific pinning is useful because MX records
-   introduce a (potentially subvertable) mapping between the domain
-   specified in an email address and the receiving MTA's hostname.
-
-   An SMTP-specific pin stores a fully-qualified DNS domain name in the
-   "name" field.  The "name" value corresponds to the domain component
-   of an email address (e.g., "example.com" is the domain component of
-   "alice@example.com").
-
-   The "relevant name" for a TLS connection for SMTP is the domain name
-   component of the email address(es) that the client is sending emails
-   to.  Client MUST NOT use SMTP-specific pins if there are multiple
-   relevant names, to avoid the complexities of evaluating a connection
-
-
-
-Marlinspike & Perrin    Expires November 3, 2012               [Page 14]
-
-Internet-Draft    Trust Assertions for Certificate Keys         May 2012
-
-
-   against multiple pins, some of which may accept it, some reject it.
-
-   An SMTP-specific pin is activated by the presence of the EHLO keyword
-   "TACKPINACTIVATE" in the server's EHLO response (see [RFC5321]).
-   This keyword defines no new verbs or parameters.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Marlinspike & Perrin    Expires November 3, 2012               [Page 15]
-
-Internet-Draft    Trust Assertions for Certificate Keys         May 2012
-
-
-7.  TACK IDs
+6.  TACK IDs
 
    A "TACK ID" MAY be used to represent a TACK public key to users in a
    form that is relatively easy to compare and transcribe.  A TACK ID
@@ -892,14 +780,14 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 16]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-8.  Advice
+7.  Advice
 
-8.1.  For server operators
+7.1.  For server operators
 
    Key reuse:  All servers that are pinned to a single key are able to
       impersonate each other, since clients will perceive their TACKs as
@@ -948,12 +836,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 17]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 15]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-8.2.  For client implementers
+7.2.  For client implementers
 
    Sharing pin information:  It is possible for a client to maintain a
       pin store based entirely on its own TLS connections.  However,
@@ -1004,14 +892,14 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 18]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 16]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-9.  Security considerations
+8.  Security considerations
 
-9.1.  For server operators
+8.1.  For server operators
 
    All servers sharing a TACK key can impersonate each other.  Using
    different TACK keys for different hostnames is a good practice.
@@ -1032,7 +920,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    cookie should only be presented back to the originating host (not its
    subdomains), and should only be sent over HTTPS (not HTTP) [RFC6265].
 
-9.2.  For client implementers
+8.2.  For client implementers
 
    Aside from rejecting TLS connections, clients SHOULD NOT take any
    actions which would reveal to a network observer the state of the
@@ -1049,7 +937,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    pins.  To select an inactive pin for deletion, the client SHOULD
    delete the pin with the oldest "active_period_end".
 
-9.3.  Note on algorithm agility
+8.3.  Note on algorithm agility
 
    If the need arises for TACKs using different cryptographic algorithms
    (e.g., if SHA256 or ECDSA are shown to be weak), a "v2" version of
@@ -1060,14 +948,14 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 19]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 17]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-10.  IANA considerations
+9.  IANA considerations
 
-10.1.  New entry for the TLS ExtensionType Registry
+9.1.  New entry for the TLS ExtensionType Registry
 
    IANA is requested to add an entry to the existing TLS ExtensionType
    registry, defined in [RFC5246], for tack(TBD) as defined in this
@@ -1116,12 +1004,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 20]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-11.  Acknowledgements
+10.  Acknowledgements
 
    Valuable feedback has been provided by Adam Langley, Chris Palmer,
    Nate Lawson, and Joseph Bonneau.
@@ -1172,12 +1060,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 21]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-12.  Normative references
+11.  Normative references
 
    [FIPS180-2]
               National Institute of Standards and Technology, "Secure
@@ -1203,9 +1091,6 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
               Infrastructure Certificate and Certificate Revocation List
               (CRL) Profile", RFC 5280, May 2008.
 
-   [RFC5321]  Klensin, J., "Simple Mail Transfer Protocol", RFC 5321,
-              October 2008.
-
    [RFC5480]  Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk,
               "Elliptic Curve Cryptography Subject Public Key
               Information", RFC 5480, March 2009.
@@ -1228,7 +1113,10 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 22]
+
+
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
@@ -1284,5 +1172,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 23]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 21]
 
