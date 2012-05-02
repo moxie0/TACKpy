@@ -32,7 +32,7 @@ should use a different key for each hostname, unless those hostnames are
 closely related (such as aliases for the same host). Once you decide how many
 keys you need, and the assignment of hostnames to keys, do the following:
 
-Create a TACK secret key:
+Create a TACK key:
   1) Run "TACK.py genkey > KEY.pem" (replace "KEY" with a specific name)  
   2) The key file must be kept secret. Back it up where it won't be lost or 
      stolen.
@@ -45,16 +45,12 @@ Create a TACK for a certificate's public key:
   1) Run "TACK.py sign -k KEY.pem -c CERT > TACK.pem".
 
 Deploy TACKs to a hostname 
-  1) Deploy TACKs to each server at the hostname (see below).
-  2) Once all servers are serving a TACK, activate pinning on each.
+  1) Deploy TACKs to each server at the hostname.
+       - Apache: Set "SSLTackFile" to a TACK file.
+  2) Once all servers are serving a TACK, activate pinning on each server.
+       - Apache: Set "SSLTackPinActivation On".
   3) Test the site (if there are problems, see "Removing TACKs").
   4) Whenever you change a server's certificate, you must replace its TACK.
-
-The details of (1) and (2) above will depend on the server. For Apache with
-a TACK patch, they consist of:
-  1) Set "SSLTackExtension On" and set "SSLTackFile" to a TACK file.
-  2) Activate pinning on each server by setting "SSLTackPinActivation On".
-     (Only do this AFTER all servers at the hostname are serving a TACK)
 
 
 Removing TACKs
@@ -64,7 +60,7 @@ Disabling pin activation
 -------------------------
 If you wish to stop using TACK for a hostname but can tolerate a "waiting
 period" before the TACKs are removed, simply disable pin activation at all
-servers for that hostname (in Apache: "SSLTackPinActivation Off"). Then wait
+servers for that hostname (Apache: "SSLTackPinActivation Off"). Then wait
 for all existing client pins to become inactive.
 
 The waiting period required is equal to the length of time that pin activation
