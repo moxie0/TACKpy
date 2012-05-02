@@ -83,6 +83,13 @@ TACK pins are easily shared between clients. For example, a TACK client
 may scan the internet to discover TACK pins, then publish these pins for other
 clients to rely upon.
 
+</t> <t>
+
+TACK and certificate chain verification are independent processes. A TACK
+client MAY additionally verify the server's certificate chain, or perform
+other processes to verify the server's public key, but these are outside the
+scope of the current document.
+
 </t>
 
  </section> 
@@ -620,7 +627,7 @@ TACK keys.
 </t>
 <t>
 
-Application-specific pins may require redefiniton of the name record's "name"
+Application-specific pins may require redefinition of the name record's "name"
 field, the "relevant name" for the TLS connection, and the "pin activation"
 signal. With these items redefined, the client processing rules in this
 section may be reused.
@@ -741,6 +748,14 @@ failing to keep its pins active, or failing to receive revocation information
 so that pin data can be aggregated and shared. This will likely require additional
 protocols outside the scope of this document.
 
+</t> <t hangText="Clock synchronization:">
+
+A client SHOULD take measures to prevent valid TACKs from being rejected due
+to an inaccurate client clock. Such methods MAY include using time
+synchronization protocols such as NTP <xref target="RFC5905"/>, or accepting
+seemingly-expired TACKs if they expired less than T minutes ago, where T is a
+"tolerance bound" set to the client's maximum expected clock error.
+
 </t>
 
 </list>
@@ -783,6 +798,17 @@ HTTP) <xref target="RFC6265"/>.
 </section>
 
 <section title="For client implementers"  anchor="security_client">
+
+<t>
+
+A TACK pin store may contain details of the client's connection history which
+the user considers private. An attacker may be able to access to this
+information by hacking or stealing the client. Some information about the
+client's connection history can also be gleaned by observing whether the
+client accepts or rejects connections to phony TLS servers. To mitigate these
+risks, a TACK client SHOULD allow the user to edit or clear the pin store.
+
+</t>
 
 <t>
 
@@ -876,6 +902,7 @@ Lawson, and Joseph Bonneau.
 			<?rfc include="bib/reference.RFC.5246.xml"?>
 			<?rfc include="bib/reference.RFC.5280.xml"?>			
 			<?rfc include="bib/reference.RFC.5480.xml"?>
+			<?rfc include="bib/reference.RFC.5905.xml"?>
 			<?rfc include="bib/reference.RFC.6066.xml"?>			
 			<?rfc include="bib/reference.RFC.6090.xml"?>			
 			<?rfc include="bib/reference.RFC.6265.xml"?>

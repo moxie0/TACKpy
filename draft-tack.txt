@@ -90,12 +90,12 @@ Table of Contents
    8.  Security considerations  . . . . . . . . . . . . . . . . . . . 17
      8.1.  For server operators . . . . . . . . . . . . . . . . . . . 17
      8.2.  For client implementers  . . . . . . . . . . . . . . . . . 17
-     8.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 17
-   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 18
-     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 18
-   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 19
-   11. Normative references . . . . . . . . . . . . . . . . . . . . . 20
-   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 21
+     8.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 18
+   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 19
+     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 19
+   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 20
+   11. Normative references . . . . . . . . . . . . . . . . . . . . . 21
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 22
 
 
 
@@ -152,10 +152,10 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    client may scan the internet to discover TACK pins, then publish
    these pins for other clients to rely upon.
 
-
-
-
-
+   TACK and certificate chain verification are independent processes.  A
+   TACK client MAY additionally verify the server's certificate chain,
+   or perform other processes to verify the server's public key, but
+   these are outside the scope of the current document.
 
 
 
@@ -694,7 +694,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    MTA may wish to authenticate receiving MTAs by pinning email domains
    to the receiving MTAs' TACK keys.
 
-   Application-specific pins may require redefiniton of the name
+   Application-specific pins may require redefinition of the name
    record's "name" field, the "relevant name" for the TLS connection,
    and the "pin activation" signal.  With these items redefined, the
    client processing rules in this section may be reused.
@@ -852,12 +852,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
       shared.  This will likely require additional protocols outside the
       scope of this document.
 
-
-
-
-
-
-
+   Clock synchronization:  A client SHOULD take measures to prevent
+      valid TACKs from being rejected due to an inaccurate client clock.
+      Such methods MAY include using time synchronization protocols such
+      as NTP [RFC5905], or accepting seemingly-expired TACKs if they
+      expired less than T minutes ago, where T is a "tolerance bound"
+      set to the client's maximum expected clock error.
 
 
 
@@ -922,6 +922,14 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 8.2.  For client implementers
 
+   A TACK pin store may contain details of the client's connection
+   history which the user considers private.  An attacker may be able to
+   access to this information by hacking or stealing the client.  Some
+   information about the client's connection history can also be gleaned
+   by observing whether the client accepts or rejects connections to
+   phony TLS servers.  To mitigate these risks, a TACK client SHOULD
+   allow the user to edit or clear the pin store.
+
    Aside from rejecting TLS connections, clients SHOULD NOT take any
    actions which would reveal to a network observer the state of the
    client's pin store, as this would allow an attacker to know in
@@ -937,6 +945,14 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    pins.  To select an inactive pin for deletion, the client SHOULD
    delete the pin with the oldest "active_period_end".
 
+
+
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 17]
+
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
+
+
 8.3.  Note on algorithm agility
 
    If the need arises for TACKs using different cryptographic algorithms
@@ -948,7 +964,47 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 17]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Marlinspike & Perrin    Expires November 3, 2012               [Page 18]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
@@ -1004,7 +1060,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 18]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 19]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
@@ -1060,7 +1116,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 19]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 20]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
@@ -1095,6 +1151,10 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
               "Elliptic Curve Cryptography Subject Public Key
               Information", RFC 5480, March 2009.
 
+   [RFC5905]  Mills, D., Martin, J., Burbank, J., and W. Kasch, "Network
+              Time Protocol Version 4: Protocol and Algorithms
+              Specification", RFC 5905, June 2010.
+
    [RFC6066]  Eastlake, D., "Transport Layer Security (TLS) Extensions:
               Extension Definitions", RFC 6066, January 2011.
 
@@ -1112,11 +1172,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-
-
-
-
-Marlinspike & Perrin    Expires November 3, 2012               [Page 20]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 21]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
@@ -1172,5 +1228,5 @@ Authors' Addresses
 
 
 
-Marlinspike & Perrin    Expires November 3, 2012               [Page 21]
+Marlinspike & Perrin    Expires November 3, 2012               [Page 22]
 
