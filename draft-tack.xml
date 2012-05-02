@@ -111,9 +111,9 @@ described in <xref target="RFC2119"/>.</t>
 	<t hangText="Selection of a TACK key:">	
 
 The server operator first chooses the ECDSA signing key to use for a set of
-hostnames. It is safest to use different signing keys for different hostnames,
-though a signing key may be safely shared between closely-related hostnames
-(such as aliases for the same host).
+hostnames. It is safest to use a different signing key for each hostname,
+though a signing key may be shared between closely-related hostnames (such as
+aliases for the same host).
 
 	</t>
 	<t hangText="Creating initial TACKs under a TACK key:">	
@@ -300,9 +300,9 @@ certificate.
 <t hangText="signature:">
 
 This field is an ECDSA signature by the TACK's public key over the 8 byte
-ASCII string "tack_sig" followed by the contents of the TACK structure prior
-to the "signature" field (i.e. the preceding 102 bytes). The field contains a
-pair of integers (r, s) representing an ECDSA signature as defined in <xref
+ASCII string "tack_sig" followed by the contents of the TACK prior to the
+"signature" field (i.e. the preceding 102 bytes). The field contains a pair of
+integers (r, s) representing an ECDSA signature as defined in <xref
 target="FIPS186-3"/>, using curve P-256 and SHA256. Each integer is encoded as
 a 32-byte octet string using the Integer-to-Octet-String algorithm from <xref
 target="RFC6090"/>, and these strings are concatenated with the r value first.
@@ -355,8 +355,8 @@ break signatures.
 </t>
 <t hangText="pin_activation:">
 
-If pin activation is "enabled", then TACK_Extension MAY be used by clients to
-activate or extend the activation of TACK pins. This field is typically
+If pin activation is enabled, then the TACK_Extension MAY be used by clients
+to activate or extend the activation of TACK pins. This field is typically
 toggled from a disabled to an enabled state once TACKs have been deployed to
 all TLS servers for a hostname.
 
@@ -408,9 +408,9 @@ A "name record" contains:
 <t>
 
 Name: A fully qualified DNS hostname. A client SHALL NOT store multiple name
-records with the same name. The current TLS hostname is considered the
-"relevant name", and a pin whose name exactly matches that is considered a
-"relevant pin".
+records with the same name. The TLS server's hostname is considered the
+"relevant name", and a pin whose name exactly matches the relevant name is
+considered a "relevant pin".
 
 </t>
 <t>
@@ -698,18 +698,17 @@ aliases that hostnames are not pinned inadvertently.
 <t hangText="Generations:">
 
 To revoke older generations of TACKs, the server operator should first provide
-all servers with a new generation of TACKs, then provide servers with new
-TACKs containing the new min_generation. This is safer then trying to update
-min_generation and generation simultaneously across a range of servers, since
-a client may receive a min_generation update from one server but then try to
-contact an older-generation server which has not yet been updated.</t>
+all servers with a new generation of TACKs, and only then provide servers with
+new TACKs containing the new min_generation. Otherwise, a client may receive a
+min_generation update from one server but then try to contact an
+older-generation server which has not yet been updated.</t>
 
 <t hangText="Signature expiration:">
 
-It is convenient to set the TACK signature expiration equal to the end-entity
+It is convenient to set the TACK expiration equal to the end-entity
 certificate expiration, so that the TACK and certificate may both be replaced
-at the same time. Alternatively, short-lived TACK signatures may be used so
-that a compromised TLS private key has limited value to an attacker.</t>
+at the same time. Alternatively, short-lived TACKs may be used so that a
+compromised TLS private key has limited value to an attacker.</t>
 
 <t hangText="Break signatures:">
 
@@ -724,10 +723,13 @@ publishing the break signature for 24 hours.
 Pin activation should only be enabled once all TLS servers sharing the same
 hostname have a valid TACK. Otherwise, a client may activate a pin by
 contacting one server, then contact a different server at the same hostname
-that does not yet have a valid TACK. The pin_activation field can also be used
-to phase out use of TACKs for a hostname - if all servers at a hostname
-disable pin activation, existing pins will eventually all become deactivated
-(within 30 days at most).
+that does not yet have a valid TACK. 
+</t>
+
+<t hangText="Pin deactivation:">The pin_activation field can be used to phase
+out TACKs for a hostname - if all servers at a hostname disable pin
+activation, existing pins will eventually all become deactivated (within 30
+days at most).
 
 </t>
 
