@@ -84,7 +84,8 @@ Table of Contents
        5.3.4.  Create and activate pins (optional)  . . . . . . . . . 12
        5.3.5.  Discard pins based on break signatures . . . . . . . . 13
        5.3.6.  Deleting pins  . . . . . . . . . . . . . . . . . . . . 13
-     5.4.  Application-specific pinning . . . . . . . . . . . . . . . 14
+     5.4.  Certificate verification and TACK  . . . . . . . . . . . . 14
+     5.5.  Application-specific pinning . . . . . . . . . . . . . . . 14
    6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
    7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
      7.1.  For server operators . . . . . . . . . . . . . . . . . . . 16
@@ -98,7 +99,6 @@ Table of Contents
    10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 21
    11. Normative references . . . . . . . . . . . . . . . . . . . . . 22
    Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 23
-
 
 
 
@@ -151,9 +151,9 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    client may scan the internet to discover TACK pins, then publish
    these pins for other clients to rely upon.
 
-   TACK and certificate chain verification are independent processes.  A
-   TACK client MAY additionally verify the server's certificate chain,
-   but that is outside the scope of this document.
+
+
+
 
 
 
@@ -452,7 +452,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 4.2.3.  TACK_Extension fields
 
    tack:  This field provides the server's TACK.  It MAY be empty, or
-      may contain a TACK.
+      MAY contain a TACK.
 
    break_sigs:  This field provides break signatures.  It MAY be empty,
       or MAY contain up to 8 break signatures.
@@ -511,7 +511,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    A client supporting TACK SHALL have a local store of pins, consisting
    of "key records" and "name records".  Each name record is associated
-   with a key record.  Multiple name records may be associated with one
+   with a key record.  Multiple name records MAY be associated with one
    key record.  A "pin" refers to a (name record, key record) pair.
 
    A "key record" contains:
@@ -570,11 +570,13 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    by the pin.  If there is a relevant active pin but no such TACK, the
    connection is rejected by the pin.
 
-   A rejected connection indicates a network attack or some
-   communication failure indistinguishable from such.  If the connection
-   is rejected the client SHOULD send a fatal "access_denied" error
-   alert, and SHOULD close the connection without sending or receiving
-   any application data on it.
+   A rejected connection might indicate a network attack.  If the
+   connection is rejected the client SHOULD send a fatal "access_denied"
+   error alert and close the connection.
+
+   A client MAY choose to perform additional verification steps before
+   using a connection verified by a pin, or a connection with no
+   relevant active pin.  See Section 5.4 for an example.
 
 5.3.  Client processing details
 
@@ -606,8 +608,6 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
        SubjectPublicKeyInfo (else "illegal_parameter").
 
    4.  "signature" is a correct ECDSA signature (else "decrypt_error").
-
-
 
 
 
@@ -707,12 +707,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 5.3.6.  Deleting pins
 
-   A client may need to delete a pin from its store as a result of the
+   A client might need to delete a pin from its store as a result of the
    algorithms in Section 5.3.4.  A client MAY also delete pins from its
    store at any time, whether to save space, protect privacy, or for any
    other reason.  To delete a pin, its name record SHALL be removed.  If
    this leaves a key record with no associated name records, the key
-   record MAY be removed as well.  Pins may be deleted regardless of
+   record MAY be removed as well.  Pins MAY be deleted regardless of
    whether they are active or inactive, however for security concerns
    regarding pin deletion, see Section 8.2.
 
@@ -729,7 +729,22 @@ Marlinspike & Perrin    Expires November 4, 2012               [Page 13]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-5.4.  Application-specific pinning
+5.4.  Certificate verification and TACK
+
+   A TACK client MAY choose to perform some form of certificate
+   verification in addition to TACK processing.  When combining
+   certificate verification and TACK processing, the TACK processing
+   described in Section 5 SHALL be followed exactly, except that TACK
+   processing MAY be terminated early if some fatal certificate error is
+   discovered.
+
+   If TACK processing and certificate verification both complete without
+   a fatal error, the client SHALL apply some policy to decide whether
+   to accept the connection.  The policy is up to the client.  An
+   example policy would be to accept the connection only if it passes
+   certificate verification and is not rejected by a pin.
+
+5.5.  Application-specific pinning
 
    In addition to the hostname-based pinning described above, some
    applications may require "application-specific pins", where an
@@ -748,21 +763,6 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    The specification of application-specific pinning for particular
    applications is outside the scope of this document.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

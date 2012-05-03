@@ -83,14 +83,7 @@ TACK pins are easily shared between clients. For example, a TACK client
 may scan the internet to discover TACK pins, then publish these pins for other
 clients to rely upon.
 
-</t> <t>
-
-TACK and certificate chain verification are independent processes. A TACK
-client MAY additionally verify the server's certificate chain, but that is
-outside the scope of this document.
-
 </t>
-
  </section> 
 
 
@@ -345,7 +338,7 @@ encoded as per TACK.signature.
 
 <t hangText="tack:">
 
-This field provides the server's TACK. It MAY be empty, or may contain a TACK.
+This field provides the server's TACK. It MAY be empty, or MAY contain a TACK.
 </t>
 
 <t hangText="break_sigs:">
@@ -377,7 +370,7 @@ all TLS servers for a hostname.
 
 A client supporting TACK SHALL have a local store of pins, consisting of "key
 records" and "name records". Each name record is associated with a key record.
-Multiple name records may be associated with one key record. A "pin" refers to
+Multiple name records MAY be associated with one key record. A "pin" refers to
 a (name record, key record) pair.
 
 </t> 
@@ -463,10 +456,13 @@ is referenced by the pin, then the connection is verified by the pin. If there
 is a relevant active pin but no such TACK, the connection is rejected by the
 pin. </t>
 
-<t> A rejected connection indicates a network attack or some communication
-failure indistinguishable from such. If the connection is rejected the client
-SHOULD send a fatal "access_denied" error alert, and SHOULD close the
-connection without sending or receiving any application data on it. </t>
+<t> A rejected connection might indicate a network attack. If the connection
+is rejected the client SHOULD send a fatal "access_denied" error alert and
+close the connection. </t>
+
+<t>A client MAY choose to perform additional verification steps before using a
+connection verified by a pin, or a connection with no relevant active pin. See
+<xref target="certver"/> for an example.</t>
 
 </section> <section title="Client processing details" anchor="details">
 
@@ -645,13 +641,13 @@ the break signature passes the following checks:
 
 <t>
 
-A client may need to delete a pin from its store as a result of the algorithms
-in <xref target="creating"/>. A client MAY also delete pins from its store at
-any time, whether to save space, protect privacy, or for any other reason. To
-delete a pin, its name record SHALL be removed. If this leaves a key record
-with no associated name records, the key record MAY be removed as well. Pins
-may be deleted regardless of whether they are active or inactive, however for
-security concerns regarding pin deletion, see <xref
+A client might need to delete a pin from its store as a result of the
+algorithms in <xref target="creating"/>. A client MAY also delete pins from
+its store at any time, whether to save space, protect privacy, or for any
+other reason. To delete a pin, its name record SHALL be removed. If this
+leaves a key record with no associated name records, the key record MAY be
+removed as well. Pins MAY be deleted regardless of whether they are active or
+inactive, however for security concerns regarding pin deletion, see <xref
 target="security_client"/>.
 
 </t>
@@ -667,6 +663,28 @@ re-activated in the future by the algorithms in <xref target="creating"/>.
 </t>
 </section>
 </section>	
+<section title="Certificate verification and TACK" anchor="certver">
+
+ <t>
+
+A TACK client MAY choose to perform some form of certificate verification in
+addition to TACK processing. When combining certificate verification and TACK
+processing, the TACK processing described in <xref target="clientproc"/> SHALL
+be followed exactly, except that TACK processing MAY be terminated early if
+some fatal certificate error is discovered.
+
+</t>
+<t>
+
+If TACK processing and certificate verification both complete without a fatal
+error, the client SHALL apply some policy to decide whether to accept the
+connection. The policy is up to the client. An example policy would be to
+accept the connection only if it passes certificate verification and is not
+rejected by a pin.
+
+</t>
+
+</section>
 
 <section title="Application-specific pinning">
 
