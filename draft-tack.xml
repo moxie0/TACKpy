@@ -48,9 +48,9 @@ contacting a particular TLS host.
 Unfortunately, a number of problems arise when attempting to pin certificate
 chains: the TLS servers at a given hostname may have different certificate
 chains simultaneously deployed and may change their chains at any time, the
-"more constant" elements of a chain (the CA certs) may not be trustworthy, and
-the client may be oblivious to key compromise events which render the pinned
-data untrustworthy.
+"more constant" elements of a chain (the CAs) may not be trustworthy, and the
+client may be oblivious to key compromise events which render the pinned data
+untrustworthy.
 
 			</t> 
 
@@ -86,9 +86,8 @@ clients to rely upon.
 </t> <t>
 
 TACK and certificate chain verification are independent processes. A TACK
-client MAY additionally verify the server's certificate chain, or perform
-other processes to verify the server's public key, but these are outside the
-scope of the current document.
+client MAY additionally verify the server's certificate chain, but that is
+outside the scope of the current document.
 
 </t>
 
@@ -522,9 +521,9 @@ the break signature passes the following checks:
 
 <list style="numbers">
 
- 	<t>The "public_key" is referenced by the key record.</t>
+ 	<t>"public_key" is referenced by the key record.</t>
 
-	<t>The "signature" is a correct ECDSA signature (else "decrypt_error"). </t>
+	<t>"signature" is a correct ECDSA signature (else "decrypt_error"). </t>
 
 </list>
 </t>
@@ -532,44 +531,39 @@ the break signature passes the following checks:
 <section title="Updating min_generation and checking generation">
 <t>
 
-If there is a key record referencing the TACK key, the key record's
+If there is a TACK and a key record referencing the TACK key, the key record's
 min_generation SHALL be set to the TACK's min_generation if the TACK's value
-is greater.
-
-</t>
-<t>
-
-If the key record's min_generation is greater than the TACK's generation, then
-the client SHALL send the "certificate_revoked" alert and close the
-connection.
+is greater. If the key record's min_generation is greater than the TACK's
+generation, then the client SHALL send the "certificate_revoked" alert and
+close the connection.
 
 </t>
 </section>
 
-<section title="Creating and activating pins (optional)">
+<section title="Creating and activating pins (optional)" anchor="creating">
 
 <t>
 
-The TLS connection MAY be used to create, delete, and activate pins using the
-algorithms described in this section. Note that this section is optional; a
-client MAY rely on an external source of pins, provided the external pins are
-produced by a client following these algorithms.
+The TLS connection MAY be used to create, delete, and activate pins as
+described in this section. Note that this section is optional; a client MAY
+rely on an external source of pins, provided the external pins are produced by
+a client following the below algorithms.
 
 </t>
 <t>
 
-If there is a relevant pin referencing the TACK key, and pin activation is
-enabled, the name record's "active period end" SHALL be set using the
-following formula (where "current" is the current time, and "initial" is the
-"initial timestamp" from the name record):
+If there is a TACK and a relevant pin referencing the TACK key, and pin
+activation is enabled, the name record's "active period end" SHALL be set
+using the below formula (where "current" is the current time, and "initial" is
+the "initial timestamp" from the name record):
 
 </t> <figure><artwork>
 active_period_end = current + MIN(30 days, current - initial)
 </artwork></figure>	
 <t>
 
-If there is a TACK but no relevant pin, or the relevant pin is both inactive
-and does not reference the TACK key, a new pin SHALL be created:
+If there is a TACK and either no relevant pin or an inactive relevant pin that
+does not reference the TACK key, a new pin SHALL be created:
 
 <list style="numbers">
 <t>If the TACK key is referenced by an existing
@@ -578,7 +572,10 @@ with the TACK's key and min_generation.</t>
 <t>A new name record is created
 containing the relevant name, an "initial timestamp" equal to the current
 time, and an empty "active period end".</t>	
-<t>If there was an existing relevant name record, it is discarded.</t>
+
+<t>If there is an existing relevant pin, the pin SHALL be deleted (see <xref
+target="deleting"/>).</t>
+
 </list>
 </t>
 
@@ -588,8 +585,8 @@ deleted (see <xref target="deleting"/>).</t>
 <t>
 
 The following table summarizes this behavior based on whether the relevant pin
-is active and references the TACK's public key. The "(*)" means "if pin
-activation is enabled".
+is active and references the TACK key. The "(*)" means "if pin activation is
+enabled".
 
 </t>
       <texttable>
@@ -622,7 +619,7 @@ activation is enabled".
 
            <c>No pin</c>
            <c>No TACK</c>
-           <c>No effect</c>
+           <c>-</c>
 
        </texttable>
 
@@ -631,19 +628,22 @@ activation is enabled".
 
 <t>
 
-A client MAY delete pins from its local store at any time, whether to save
-space, protect privacy, or for any other reason. To delete a pin, its name
-record SHALL be removed. If this leaves a key record with no associated name
-records, the key record MAY be removed as well. Pins may be deleted regardless
-of whether they are active or inactive, however for security concerns regarding
-pin deletion, see <xref target="security_client"/>.
+A client may need to delete a pin from its store as a result of the algorithms
+in <xref target="creating"/>. A client MAY also delete pins from its store at
+any time, whether to save space, protect privacy, or for any other reason. To
+delete a pin, its name record SHALL be removed. If this leaves a key record
+with no associated name records, the key record MAY be removed as well. Pins
+may be deleted regardless of whether they are active or inactive, however for
+security concerns regarding pin deletion, see <xref
+target="security_client"/>.
 
 </t>
 <t>
 </t>
 <t>
 
-Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
+Deleting pins unnecessarily will reduce the benefits of TACK, so SHOULD be
+avoided.
 
 </t>
 </section>
@@ -654,18 +654,17 @@ Deleting pins obviously reduces the benefits of TACK, so SHOULD be avoided.
 <t>
 
 In addition to the hostname-based pinning described above, some applications
-may also require "application-specific pins", where some application-layer
-name is pinned to a TACK key. For example, an SMTP MTA may wish to
-authenticate receiving MTAs by pinning email domains to the receiving MTAs'
-TACK keys.
+may require "application-specific pins", where an application-layer name is
+pinned to a TACK key. For example, an SMTP MTA may wish to authenticate
+receiving MTAs by pinning email domains to the receiving MTAs' TACK keys.
 
 </t>
 <t>
 
 Application-specific pins may require redefinition of the name record's "name"
 field, the "relevant name" for the TLS connection, and the "pin activation"
-signal. With these items redefined, the client processing rules in this
-section may be reused.
+signal. With these items redefined, the client processing rules in <xref
+target="clientproc"/> may be reused.
 
 </t>
 
@@ -762,7 +761,7 @@ have a TACK. </t>
 
 <t hangText="Pin deactivation:">The pin_activation field can be used to phase
 out TACKs for a hostname. If all servers at a hostname disable pin activation,
-existing pins will eventually all become deactivated (within 30 days at most).
+all existing pins will eventually become inactive (within 30 days at most).
 
 </t>
 
@@ -776,12 +775,12 @@ existing pins will eventually all become deactivated (within 30 days at most).
 <list style="hanging">
 <t hangText="Sharing pin information:">
 
-It is possible for a client to maintain a pin store based entirely on its own TLS
-connections. However, such a client runs the risk of creating incorrect pins,
-failing to keep its pins active, or failing to receive revocation information
-(min_generation updates and break signatures). Clients are advised to collaborate
-so that pin data can be aggregated and shared. This will likely require additional
-protocols outside the scope of this document.
+It is possible for a client to maintain a pin store based entirely on its own
+TLS connections. However, such a client runs the risk of creating incorrect
+pins, failing to keep its pins active, or failing to receive revocation
+information (min_generation updates and break signatures). Clients are advised
+to collaborate so that pin data can be aggregated and shared. This will
+require additional protocols outside the scope of this document.
 
 </t> <t hangText="Clock synchronization:">
 
@@ -839,7 +838,7 @@ HTTP) <xref target="RFC6265"/>.
 A TACK pin store may contain details of the client's connection history which
 the user considers private. An attacker may be able to access to this
 information by hacking or stealing the client. Some information about the
-client's connection history can also be gleaned by observing whether the
+client's connection history could also be gleaned by observing whether the
 client accepts or rejects connections to phony TLS servers. To mitigate these
 risks, a TACK client SHOULD allow the user to edit or clear the pin store.
 
