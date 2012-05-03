@@ -247,7 +247,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
       associated with the hostname is given a TACK.  Once this is
       completed, pin activation is enabled on the servers.
 
-   Creating new TACKs under a TACK key:  A TACK must be replaced
+   Creating new TACKs under a TACK key:  A TACK needs to be replaced
       whenever a server changes its TLS public key, or when the TACK
       expires.  TACKs may also need to be replaced with later-generation
       TACKs if the TACK key's "min_generation" is updated (see next).
@@ -847,7 +847,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    Key reuse:  All servers that are pinned to a single TACK key are able
       to impersonate each other, since clients will perceive their TACKs
-      as equivalent.  Thus, TACK keys should not be reused with
+      as equivalent.  Thus, TACK keys SHOULD NOT be reused with
       different hostnames unless these hostnames are closely related.
       Examples where it would be safe to reuse a TACK key are hostnames
       aliased to the same host, hosts sharing the same TLS key, or
@@ -859,7 +859,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
       pinned inadvertently.
 
    Generations:  To revoke older generations of TACKs, the server
-      operator should first provide all servers with a new generation of
+      operator SHOULD first provide all servers with a new generation of
       TACKs, and only then provide servers with new TACKs containing the
       new min_generation.  Otherwise, a client may receive a
       min_generation update from one server but then try to contact an
@@ -877,7 +877,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
       website for 24 hours, to remove the TACK only requires publishing
       the break signature for 24 hours.
 
-   Pin activation:  Pin activation should only be enabled once all TLS
+   Pin activation:  Pin activation SHOULD only be enabled once all TLS
       servers sharing the same hostname have a TACK.  Otherwise, a
       client may activate a pin by contacting one server, then contact a
       different server at the same hostname that does not yet have a
@@ -957,9 +957,9 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 8.1.  For server operators
 
-   All servers pinned to the same TACK key can impersonate each other.
-   Use different TACK keys for different hostnames unless you understand
-   the risk involved and are willing to accept it.
+   All servers pinned to the same TACK key can impersonate each other
+   (see Section 7.1).  Think carefully about this risk if using the same
+   TACK key for multiple hostnames.
 
    Make backup copies of the TACK private key and keep all copies in
    secure locations where they can't be compromised.
