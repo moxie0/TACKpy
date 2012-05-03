@@ -437,16 +437,14 @@ until that time.
 A TACK client SHALL send the "tack" extension defined previously, as well as
 the "server_name" extension from <xref target="RFC6066"/> indicating the
 hostname the client is contacting. If not resuming a session, the server MAY
-respond with a TACK_Extension.
-</t>
-
-<t>A TACK client SHALL perform the following steps prior to using any
-non-resumed TLS connection:
+respond with a TACK_Extension. A TACK client SHALL perform the following steps
+prior to using a non-resumed connection:
 
 <list style="numbers">
  <t>Check whether the TLS handshake is "well-formed".</t>
  <t>Discard pins based on break signatures.</t>
- <t>Update "min_generation" and check "generation".</t>
+ <t>Check the TACK generation and update min_generation.</t>
+ <t>Check whether the TACK is expired.</t>
  <t>Create and activate pins (optional).</t> 
 </list>
 
@@ -470,7 +468,7 @@ connection without sending or receiving any application data on it. </t>
 
 </section> <section title="Client processing details" anchor="details">
 
-<section title="Checking whether the TLS handshake is well-formed"
+<section title="Check whether the TLS handshake is well-formed"
 anchor="wellformed">
 
 <t>
@@ -487,8 +485,8 @@ and finishes succesfully (else see <xref target="RFC5246"/>).</t>
 TACK_Extension (else "decode_error").</t>
 
 <t>If break signatures are present, the signatures are correct (else
-"decrypt_error"). This step is optional, as break signature verification may
-be deferred till later.</t> 
+"decrypt_error"). This step is optional, as break signature verification MAY
+be deferred till later.</t>
 
 <t>If a TACK is present, it is "well-formed" by the rules below.</t>
 
@@ -499,12 +497,13 @@ be deferred till later.</t>
 A TACK is "well-formed" if:	
 <list style="numbers">
 
- <t>"generation" is >= "min_generation" (else "illegal_parameter").</t>
+ <t>"public_key" is a valid elliptic curve public key on the NIST P-256 curve
+(else "decrypt_error").</t>
 
- <t>"expiration" is non-expired (else "certificate_expired").</t>
+ <t>"generation" is >= "min_generation" (else "decode_error").</t>
 
  <t>"target_hash" is equal to the SHA256 hash of the server's
-SubjectPublicKeyInfo (else "decrypt_error").</t>
+SubjectPublicKeyInfo (else "illegal_parameter").</t>
 
  <t>"signature" is a correct ECDSA signature (else "decrypt_error").</t>
 </list>	
@@ -512,7 +511,7 @@ SubjectPublicKeyInfo (else "decrypt_error").</t>
 
 </section>
 
-<section title="Discarding pins based on break signatures">
+<section title="Discard pins based on break signatures">
 <t>
 
 All key records broken by break signatures SHALL be discarded, along with
@@ -528,19 +527,34 @@ the break signature passes the following checks:
 </list>
 </t>
 </section>
-<section title="Updating min_generation and checking generation">
+<section title="Check the TACK generation and update min_generation">
 <t>
 
-If there is a TACK and a key record referencing the TACK key, the key record's
-min_generation SHALL be set to the TACK's min_generation if the TACK's value
-is greater. If the key record's min_generation is greater than the TACK's
-generation, then the client SHALL send the "certificate_revoked" alert and
-close the connection.
+If there is a TACK and a key record referencing the TACK key, and the TACK's
+generation is less than the key record's min_generation, then the TACK is
+revoked and the client SHALL send the "certificate_revoked" alert and close
+the connection.
+</t>
+
+<t> Otherwise, if there is a TACK and a key record referencing the TACK key,
+and the TACK's min_generation is greater than the key record's min_generation,
+then the key record's min_generation SHALL be set to the TACK's value.
 
 </t>
 </section>
+<section title="Check whether the TACK is expired">
+<t>
 
-<section title="Creating and activating pins (optional)" anchor="creating">
+If there is a TACK and the TACK's "expiration" field specifies a time in the
+past, the client SHALL send the "certificate_expired" alert and close the
+connection.
+
+</t>
+
+
+</section>
+
+<section title="Create and activate pins (optional)" anchor="creating">
 
 <t>
 
