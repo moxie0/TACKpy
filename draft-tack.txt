@@ -885,8 +885,8 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    Pin deactivation:  The pin_activation field can be used to phase out
       TACKs for a hostname.  If all servers at a hostname disable pin
-      activation, all existing pins will eventually become inactive
-      (within 30 days at most).
+      activation, all existing pins for the hostname will eventually
+      become inactive, at which point the servers' TACKs can be removed.
 
 
 
