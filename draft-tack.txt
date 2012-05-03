@@ -153,7 +153,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    TACK and certificate chain verification are independent processes.  A
    TACK client MAY additionally verify the server's certificate chain,
-   but that is outside the scope of the current document.
+   but that is outside the scope of this document.
 
 
 
