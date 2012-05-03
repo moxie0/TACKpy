@@ -670,8 +670,8 @@ re-activated in the future by the algorithms in <xref target="creating"/>.
 A TACK client MAY choose to perform some form of certificate verification in
 addition to TACK processing. When combining certificate verification and TACK
 processing, the TACK processing described in <xref target="clientproc"/> SHALL
-be followed exactly, except that TACK processing MAY be terminated early if
-some fatal certificate error is discovered.
+be followed exactly. TACK processing SHALL NOT be altered or terminated early
+as a result of errors discovered during certificate verification.
 
 </t>
 <t>
