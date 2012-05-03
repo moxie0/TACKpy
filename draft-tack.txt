@@ -79,10 +79,10 @@ Table of Contents
      5.2.  High-level client processing . . . . . . . . . . . . . . . 10
      5.3.  Client processing details  . . . . . . . . . . . . . . . . 11
        5.3.1.  Check whether the TLS handshake is well-formed . . . . 11
-       5.3.2.  Discard pins based on break signatures . . . . . . . . 12
-       5.3.3.  Check the TACK generation and update min_generation  . 12
-       5.3.4.  Check whether the TACK is expired  . . . . . . . . . . 12
-       5.3.5.  Create and activate pins (optional)  . . . . . . . . . 12
+       5.3.2.  Check the TACK generation and update min_generation  . 12
+       5.3.3.  Check whether the TACK is expired  . . . . . . . . . . 12
+       5.3.4.  Create and activate pins (optional)  . . . . . . . . . 12
+       5.3.5.  Discard pins based on break signatures . . . . . . . . 13
        5.3.6.  Deleting pins  . . . . . . . . . . . . . . . . . . . . 13
      5.4.  Application-specific pinning . . . . . . . . . . . . . . . 14
    6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
@@ -234,8 +234,8 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    Selection of a TACK key:  The server operator first chooses the ECDSA
       signing key to use for a set of hostnames.  It is safest to use a
       different signing key for each hostname, though a signing key may
-      be shared between closely-related hostnames (such as aliases for
-      the same host).
+      be reused for closely-related hostnames (such as aliases for the
+      same host, or hosts sharing the same TLS key).
 
    Creating initial TACKs under a TACK key:  The TACK private key is
       then used to sign the TLS public keys for all servers associated
@@ -286,9 +286,9 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    A TACK client maintains a store of pins for verifying TLS
    connections.  Pins associate a hostname and a TACK key.  When a
    client sees a new hostname and TACK key combination, an inactive pin
-   is created.  Once the client has seen the pin more than once, the pin
-   is "activated" for a period equal to the timespan between the first
-   time the pin was seen and the most recent time, up to a maximum
+   is created.  Every subsequent time the client sees the same pin, the
+   pin is "activated" for a period equal to the timespan between the
+   first time the pin was seen and the most recent time, up to a maximum
    period of 30 days.
 
    Pin activation prevents an attacker with short-lived control of the
@@ -545,13 +545,13 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    1.  Check whether the TLS handshake is "well-formed".
 
-   2.  Discard pins based on break signatures.
+   2.  Check the TACK generation and update min_generation.
 
-   3.  Check the TACK generation and update min_generation.
+   3.  Check whether the TACK is expired.
 
-   4.  Check whether the TACK is expired.
+   4.  Create and activate pins (optional).
 
-   5.  Create and activate pins (optional).
+   5.  Discard pins based on break signatures.
 
 
 
@@ -597,8 +597,8 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    A TACK is "well-formed" if:
 
-   1.  "public_key" is a valid elliptic curve public key on the NIST
-       P-256 curve (else "decrypt_error").
+   1.  "public_key" is a valid elliptic curve public key on the curve
+       P-256 (else "decrypt_error").
 
    2.  "generation" is >= "min_generation" (else "decode_error").
 
@@ -617,17 +617,7 @@ Marlinspike & Perrin    Expires November 4, 2012               [Page 11]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-5.3.2.  Discard pins based on break signatures
-
-   All key records broken by break signatures SHALL be discarded, along
-   with their associated name records.  A key record is broken by a
-   break signature if the break signature passes the following checks:
-
-   1.  "public_key" is referenced by the key record.
-
-   2.  "signature" is a correct ECDSA signature (else "decrypt_error").
-
-5.3.3.  Check the TACK generation and update min_generation
+5.3.2.  Check the TACK generation and update min_generation
 
    If there is a TACK and a key record referencing the TACK key, and the
    TACK's generation is less than the key record's min_generation, then
@@ -639,13 +629,13 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    min_generation, then the key record's min_generation SHALL be set to
    the TACK's value.
 
-5.3.4.  Check whether the TACK is expired
+5.3.3.  Check whether the TACK is expired
 
    If there is a TACK and the TACK's "expiration" field specifies a time
    in the past, the client SHALL send the "certificate_expired" alert
    and close the connection.
 
-5.3.5.  Create and activate pins (optional)
+5.3.4.  Create and activate pins (optional)
 
    The TLS connection MAY be used to create, delete, and activate pins
    as described in this section.  Note that this section is optional; a
@@ -666,13 +656,6 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
        record is reused, otherwise a new key record is created with the
        TACK's key and min_generation.
 
-
-
-Marlinspike & Perrin    Expires November 4, 2012               [Page 12]
-
-Internet-Draft    Trust Assertions for Certificate Keys         May 2012
-
-
    2.  A new name record is created containing the relevant name, an
        "initial timestamp" equal to the current time, and an empty
        "active period end".
@@ -682,6 +665,13 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    If there is no TACK and the relevant pin is inactive, the pin SHALL
    be deleted (see Section 5.3.6).
+
+
+
+Marlinspike & Perrin    Expires November 4, 2012               [Page 12]
+
+Internet-Draft    Trust Assertions for Certificate Keys         May 2012
+
 
    The following table summarizes this behavior based on whether the
    relevant pin is active and references the TACK key.  The "(*)" means
@@ -705,10 +695,20 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    | No pin     | No TACK             | -                             |
    +------------+---------------------+-------------------------------+
 
+5.3.5.  Discard pins based on break signatures
+
+   All key records broken by break signatures SHALL be discarded, along
+   with their associated name records.  A key record is broken by a
+   break signature if the break signature passes the following checks:
+
+   1.  "public_key" is referenced by the key record.
+
+   2.  "signature" is a correct ECDSA signature (else "decrypt_error").
+
 5.3.6.  Deleting pins
 
    A client may need to delete a pin from its store as a result of the
-   algorithms in Section 5.3.5.  A client MAY also delete pins from its
+   algorithms in Section 5.3.4.  A client MAY also delete pins from its
    store at any time, whether to save space, protect privacy, or for any
    other reason.  To delete a pin, its name record SHALL be removed.  If
    this leaves a key record with no associated name records, the key
@@ -717,10 +717,10 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    regarding pin deletion, see Section 8.2.
 
    Deleting pins unnecessarily will reduce the benefits of TACK, so
-   SHOULD be avoided.
-
-
-
+   SHOULD be avoided.  Note that a pin SHOULD NOT be deleted simply
+   because it has become inactive.  Instead, such a pin SHOULD be
+   retained, so that it can be re-activated in the future by the
+   algorithms in Section 5.3.4.
 
 
 
@@ -845,13 +845,13 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 7.1.  For server operators
 
-   Key reuse:  All servers that are pinned to a single key are able to
-      impersonate each other, since clients will perceive their TACKs as
-      equivalent.  Thus, TACK keys should not be reused with different
-      hostnames unless these hostnames are closely related.  Examples
-      where it would be safe to reuse a TACK key are hostnames aliased
-      to the same host, or hostnames for a pool of near-identical
-      servers.
+   Key reuse:  All servers that are pinned to a single TACK key are able
+      to impersonate each other, since clients will perceive their TACKs
+      as equivalent.  Thus, TACK keys should not be reused with
+      different hostnames unless these hostnames are closely related.
+      Examples where it would be safe to reuse a TACK key are hostnames
+      aliased to the same host, hosts sharing the same TLS key, or
+      hostnames for a pool of near-identical servers.
 
    Aliases:  A TLS server may be referenced by multiple hostnames.
       Clients may pin any of these hostnames.  Server operators should
@@ -957,8 +957,9 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 8.1.  For server operators
 
-   All servers sharing a TACK key can impersonate each other.  Using
-   different TACK keys for different hostnames is a good practice.
+   All servers pinned to the same TACK key can impersonate each other.
+   Use different TACK keys for different hostnames unless you understand
+   the risk involved and are willing to accept it.
 
    Make backup copies of the TACK private key and keep all copies in
    secure locations where they can't be compromised.
@@ -1000,7 +1001,6 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    delete, then the pin store is full and there is no space for new
    pins.  To select an inactive pin for deletion, the client SHOULD
    delete the pin with the oldest "active_period_end".
-
 
 
 

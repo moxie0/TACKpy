@@ -87,7 +87,7 @@ clients to rely upon.
 
 TACK and certificate chain verification are independent processes. A TACK
 client MAY additionally verify the server's certificate chain, but that is
-outside the scope of the current document.
+outside the scope of this document.
 
 </t>
 
@@ -111,8 +111,8 @@ described in <xref target="RFC2119"/>.</t>
 
 The server operator first chooses the ECDSA signing key to use for a set of
 hostnames. It is safest to use a different signing key for each hostname,
-though a signing key may be shared between closely-related hostnames (such as
-aliases for the same host).
+though a signing key may be reused for closely-related hostnames (such as
+aliases for the same host, or hosts sharing the same TLS key).
 
 	</t>
 	<t hangText="Creating initial TACKs under a TACK key:">	
@@ -164,12 +164,13 @@ signature".
 
 A TACK client maintains a store of pins for verifying TLS connections. Pins
 associate a hostname and a TACK key. When a client sees a new hostname and
-TACK key combination, an inactive pin is created. Once the client has seen the
-pin more than once, the pin is "activated" for a period equal to the timespan
-between the first time the pin was seen and the most recent time, up to a
-maximum period of 30 days.
+TACK key combination, an inactive pin is created. Every subsequent time the
+client sees the same pin, the pin is "activated" for a period equal to the
+timespan between the first time the pin was seen and the most recent time, up
+to a maximum period of 30 days.
 
-</t> <t>
+</t> 
+<t>
 
 Pin activation prevents an attacker with short-lived control of the hostname
 from setting long-lived pins. It also makes it safer for sites to experiment
@@ -442,10 +443,10 @@ prior to using a non-resumed connection:
 
 <list style="numbers">
  <t>Check whether the TLS handshake is "well-formed".</t>
- <t>Discard pins based on break signatures.</t>
  <t>Check the TACK generation and update min_generation.</t>
  <t>Check whether the TACK is expired.</t>
  <t>Create and activate pins (optional).</t> 
+ <t>Discard pins based on break signatures.</t>
 </list>
 
 These steps SHALL be performed in order. If there is any error, the client
@@ -497,8 +498,8 @@ be deferred till later.</t>
 A TACK is "well-formed" if:	
 <list style="numbers">
 
- <t>"public_key" is a valid elliptic curve public key on the NIST P-256 curve
-(else "decrypt_error").</t>
+ <t>"public_key" is a valid elliptic curve public key on the curve P-256 (else
+"decrypt_error").</t>
 
  <t>"generation" is >= "min_generation" (else "decode_error").</t>
 
@@ -511,22 +512,6 @@ SubjectPublicKeyInfo (else "illegal_parameter").</t>
 
 </section>
 
-<section title="Discard pins based on break signatures">
-<t>
-
-All key records broken by break signatures SHALL be discarded, along with
-their associated name records. A key record is broken by a break signature if
-the break signature passes the following checks:
-
-<list style="numbers">
-
- 	<t>"public_key" is referenced by the key record.</t>
-
-	<t>"signature" is a correct ECDSA signature (else "decrypt_error"). </t>
-
-</list>
-</t>
-</section>
 <section title="Check the TACK generation and update min_generation">
 <t>
 
@@ -638,6 +623,23 @@ enabled".
        </texttable>
 
 </section>
+<section title="Discard pins based on break signatures">
+<t>
+
+All key records broken by break signatures SHALL be discarded, along with
+their associated name records. A key record is broken by a break signature if
+the break signature passes the following checks:
+
+<list style="numbers">
+
+ 	<t>"public_key" is referenced by the key record.</t>
+
+	<t>"signature" is a correct ECDSA signature (else "decrypt_error"). </t>
+
+</list>
+</t>
+</section>
+
 <section title="Deleting pins" anchor="deleting">
 
 <t>
@@ -657,7 +659,9 @@ target="security_client"/>.
 <t>
 
 Deleting pins unnecessarily will reduce the benefits of TACK, so SHOULD be
-avoided.
+avoided. Note that a pin SHOULD NOT be deleted simply because it has become
+inactive. Instead, such a pin SHOULD be retained, so that it can be
+re-activated in the future by the algorithms in <xref target="creating"/>.
 
 </t>
 </section>
@@ -726,12 +730,12 @@ Example TACK IDs:
 
 <t hangText="Key reuse:">
 
-All servers that are pinned to a single key are able to impersonate each
+All servers that are pinned to a single TACK key are able to impersonate each
 other, since clients will perceive their TACKs as equivalent. Thus, TACK keys
 should not be reused with different hostnames unless these hostnames are
 closely related. Examples where it would be safe to reuse a TACK key are
-hostnames aliased to the same host, or hostnames for a pool of near-identical
-servers.
+hostnames aliased to the same host, hosts sharing the same TLS key, or
+hostnames for a pool of near-identical servers.
 
 </t>
 
@@ -815,8 +819,9 @@ seemingly-expired TACKs if they expired less than T minutes ago, where T is a
 <section title="For server operators">	
         <t>
 
-All servers sharing a TACK key can impersonate each other. Using different
-TACK keys for different hostnames is a good practice.
+All servers pinned to the same TACK key can impersonate each other. Use
+different TACK keys for different hostnames unless you understand the risk
+involved and are willing to accept it.
 
 </t>
 <t>
