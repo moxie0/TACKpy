@@ -790,8 +790,8 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    A "TACK ID" MAY be used to represent a TACK public key to users in a
    form that is relatively easy to compare and transcribe.  A TACK ID
    consists of the first 25 characters from the base32 encoding of
-   SHA256(public_key), separated into 5 groups of 5 characters separated
-   by periods.  Base32 encoding is as specified in [RFC4648], except
+   SHA256(public_key), split into 5 groups of 5 characters separated by
+   periods.  Base32 encoding is as specified in [RFC4648], except
    lowercase is used.
 
    Example TACK IDs:
@@ -851,7 +851,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
       different hostnames unless these hostnames are closely related.
       Examples where it would be safe to reuse a TACK key are hostnames
       aliased to the same host, hosts sharing the same TLS key, or
-      hostnames for a pool of near-identical servers.
+      hostnames for a group of near-identical servers.
 
    Aliases:  A TLS server may be referenced by multiple hostnames.
       Clients may pin any of these hostnames.  Server operators should
