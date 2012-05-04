@@ -167,10 +167,10 @@ to a maximum period of 30 days.
 <t>
 
 Pin activation prevents an attacker with short-lived control of the hostname
-from setting long-lived pins. It also makes it safer for sites to experiment
-with TACKs, as a new TACK can be discarded without causing long-lived
-problems. The 30 day limit guarantees that a worst-case pin can be recovered
-from in reasonable time.
+from activating long-lived pins. It also makes it safer for sites to
+experiment with TACKs, as a new TACK can be discarded without causing
+long-lived problems. The 30 day limit guarantees that a worst-case pin can be
+recovered from in reasonable time.
 
 </t>
 
@@ -873,11 +873,11 @@ HTTP) <xref target="RFC6265"/>.
 
 <t>
 
-A TACK pin store may contain details of the client's connection history which
-the user considers private. An attacker may be able to access to this
-information by hacking or stealing the client. Some information about the
-client's connection history could also be gleaned by observing whether the
-client accepts or rejects connections to phony TLS servers. To mitigate these
+A TACK pin store may contain private details of the client's connection
+history. An attacker may be able to access this information by hacking or
+stealing the client. Some information about the client's connection history
+could also be gleaned by observing whether the client accepts or rejects
+connections to phony TLS servers without correct TACKs. To mitigate these
 risks, a TACK client SHOULD allow the user to edit or clear the pin store.
 
 </t>
