@@ -683,7 +683,7 @@ error, the client SHALL apply some policy to decide whether to accept the
 connection. The policy is up to the client. An example policy would be to
 accept the connection only if it passes certificate verification and is not
 rejected by a pin, or if the user elects to "connect anyway" despite
-certificate and/or TACK errors.
+certificate and/or pin failures.
 
 </t>
 
