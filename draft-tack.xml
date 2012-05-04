@@ -663,15 +663,17 @@ re-activated in the future by the algorithms in <xref target="creating"/>.
 </t>
 </section>
 </section>	
-<section title="Certificate verification and TACK" anchor="certver">
+</section>
+<section title="Variations on client processing">
+<section title="TACK and certificate verification" anchor="certver">
 
  <t>
 
 A TACK client MAY choose to perform some form of certificate verification in
 addition to TACK processing. When combining certificate verification and TACK
 processing, the TACK processing described in <xref target="clientproc"/> SHALL
-be followed exactly. TACK processing SHALL NOT be altered or terminated early
-as a result of errors discovered during certificate verification.
+be followed, with the exception that TACK processing MAY be terminated early
+(or skipped) if some fatal certificate error is discovered.
 
 </t>
 <t>
@@ -680,7 +682,8 @@ If TACK processing and certificate verification both complete without a fatal
 error, the client SHALL apply some policy to decide whether to accept the
 connection. The policy is up to the client. An example policy would be to
 accept the connection only if it passes certificate verification and is not
-rejected by a pin.
+rejected by a pin, or if the user elects to "connect anyway" despite
+certificate and/or TACK errors.
 
 </t>
 
@@ -690,10 +693,11 @@ rejected by a pin.
 
 <t>
 
-In addition to the hostname-based pinning described above, some applications
-may require "application-specific pins", where an application-layer name is
-pinned to a TACK key. For example, an SMTP MTA may wish to authenticate
-receiving MTAs by pinning email domains to the receiving MTAs' TACK keys.
+In addition to the hostname-based pinning described in <xref
+target="clientproc"/>, some applications may require "application-specific
+pins", where an application-layer name is pinned to a TACK key. For example,
+an SMTP MTA may wish to authenticate receiving MTAs by pinning email domains
+to the receiving MTAs' TACK keys.
 
 </t>
 <t>

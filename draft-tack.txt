@@ -84,22 +84,22 @@ Table of Contents
        5.3.4.  Create and activate pins (optional)  . . . . . . . . . 12
        5.3.5.  Discard pins based on break signatures . . . . . . . . 13
        5.3.6.  Deleting pins  . . . . . . . . . . . . . . . . . . . . 13
-     5.4.  Certificate verification and TACK  . . . . . . . . . . . . 14
-     5.5.  Application-specific pinning . . . . . . . . . . . . . . . 14
-   6.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
-   7.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
-     7.1.  For server operators . . . . . . . . . . . . . . . . . . . 16
-     7.2.  For client implementers  . . . . . . . . . . . . . . . . . 17
-   8.  Security considerations  . . . . . . . . . . . . . . . . . . . 18
-     8.1.  For server operators . . . . . . . . . . . . . . . . . . . 18
-     8.2.  For client implementers  . . . . . . . . . . . . . . . . . 18
-     8.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 19
-   9.  IANA considerations  . . . . . . . . . . . . . . . . . . . . . 20
-     9.1.  New entry for the TLS ExtensionType Registry . . . . . . . 20
-   10. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 21
-   11. Normative references . . . . . . . . . . . . . . . . . . . . . 22
+   6.  Variations on client processing  . . . . . . . . . . . . . . . 14
+     6.1.  TACK and certificate verification  . . . . . . . . . . . . 14
+     6.2.  Application-specific pinning . . . . . . . . . . . . . . . 14
+   7.  TACK IDs . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+   8.  Advice . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+     8.1.  For server operators . . . . . . . . . . . . . . . . . . . 16
+     8.2.  For client implementers  . . . . . . . . . . . . . . . . . 17
+   9.  Security considerations  . . . . . . . . . . . . . . . . . . . 18
+     9.1.  For server operators . . . . . . . . . . . . . . . . . . . 18
+     9.2.  For client implementers  . . . . . . . . . . . . . . . . . 18
+     9.3.  Note on algorithm agility  . . . . . . . . . . . . . . . . 19
+   10. IANA considerations  . . . . . . . . . . . . . . . . . . . . . 20
+     10.1. New entry for the TLS ExtensionType Registry . . . . . . . 20
+   11. Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 21
+   12. Normative references . . . . . . . . . . . . . . . . . . . . . 22
    Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 23
-
 
 
 
@@ -576,7 +576,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
    A client MAY choose to perform additional verification steps before
    using a connection verified by a pin, or a connection with no
-   relevant active pin.  See Section 5.4 for an example.
+   relevant active pin.  See Section 6.1 for an example.
 
 5.3.  Client processing details
 
@@ -714,7 +714,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    this leaves a key record with no associated name records, the key
    record MAY be removed as well.  Pins MAY be deleted regardless of
    whether they are active or inactive, however for security concerns
-   regarding pin deletion, see Section 8.2.
+   regarding pin deletion, see Section 9.2.
 
    Deleting pins unnecessarily will reduce the benefits of TACK, so
    SHOULD be avoided.  Note that a pin SHOULD NOT be deleted simply
@@ -729,25 +729,28 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 13]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-5.4.  Certificate verification and TACK
+6.  Variations on client processing
+
+6.1.  TACK and certificate verification
 
    A TACK client MAY choose to perform some form of certificate
    verification in addition to TACK processing.  When combining
    certificate verification and TACK processing, the TACK processing
-   described in Section 5 SHALL be followed exactly.  TACK processing
-   SHALL NOT be altered or terminated early as a result of errors
-   discovered during certificate verification.
+   described in Section 5 SHALL be followed, with the exception that
+   TACK processing MAY be terminated early (or skipped) if some fatal
+   certificate error is discovered.
 
    If TACK processing and certificate verification both complete without
    a fatal error, the client SHALL apply some policy to decide whether
    to accept the connection.  The policy is up to the client.  An
    example policy would be to accept the connection only if it passes
-   certificate verification and is not rejected by a pin.
+   certificate verification and is not rejected by a pin, or if the user
+   elects to "connect anyway" despite certificate and/or TACK errors.
 
-5.5.  Application-specific pinning
+6.2.  Application-specific pinning
 
-   In addition to the hostname-based pinning described above, some
-   applications may require "application-specific pins", where an
+   In addition to the hostname-based pinning described in Section 5,
+   some applications may require "application-specific pins", where an
    application-layer name is pinned to a TACK key.  For example, an SMTP
    MTA may wish to authenticate receiving MTAs by pinning email domains
    to the receiving MTAs' TACK keys.
@@ -777,15 +780,12 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
 
-
-
-
 Marlinspike & Perrin    Expires November 5, 2012               [Page 14]
 
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-6.  TACK IDs
+7.  TACK IDs
 
    A "TACK ID" MAY be used to represent a TACK public key to users in a
    form that is relatively easy to compare and transcribe.  A TACK ID
@@ -841,9 +841,9 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 15]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-7.  Advice
+8.  Advice
 
-7.1.  For server operators
+8.1.  For server operators
 
    Key reuse:  All servers that are pinned to a single TACK key are able
       to impersonate each other, since clients will perceive their TACKs
@@ -897,7 +897,7 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 16]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-7.2.  For client implementers
+8.2.  For client implementers
 
    Sharing pin information:  It is possible for a client to maintain a
       pin store based entirely on its own TLS connections.  However,
@@ -953,12 +953,12 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 17]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-8.  Security considerations
+9.  Security considerations
 
-8.1.  For server operators
+9.1.  For server operators
 
    All servers pinned to the same TACK key can impersonate each other
-   (see Section 7.1).  Think carefully about this risk if using the same
+   (see Section 8.1).  Think carefully about this risk if using the same
    TACK key for multiple hostnames.
 
    Make backup copies of the TACK private key and keep all copies in
@@ -977,7 +977,7 @@ Internet-Draft    Trust Assertions for Certificate Keys         May 2012
    cookie should only be presented back to the originating host (not its
    subdomains), and should only be sent over HTTPS (not HTTP) [RFC6265].
 
-8.2.  For client implementers
+9.2.  For client implementers
 
    A TACK pin store may contain private details of the client's
    connection history.  An attacker may be able to access this
@@ -1009,7 +1009,7 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 18]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-8.3.  Note on algorithm agility
+9.3.  Note on algorithm agility
 
    If the need arises for TACKs using different cryptographic algorithms
    (e.g., if SHA256 or ECDSA are shown to be weak), a "v2" version of
@@ -1065,9 +1065,9 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 19]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-9.  IANA considerations
+10.  IANA considerations
 
-9.1.  New entry for the TLS ExtensionType Registry
+10.1.  New entry for the TLS ExtensionType Registry
 
    IANA is requested to add an entry to the existing TLS ExtensionType
    registry, defined in [RFC5246], for tack(TBD) as defined in this
@@ -1121,7 +1121,7 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 20]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-10.  Acknowledgements
+11.  Acknowledgements
 
    Valuable feedback has been provided by Adam Langley, Chris Palmer,
    Nate Lawson, and Joseph Bonneau.
@@ -1177,7 +1177,7 @@ Marlinspike & Perrin    Expires November 5, 2012               [Page 21]
 Internet-Draft    Trust Assertions for Certificate Keys         May 2012
 
 
-11.  Normative references
+12.  Normative references
 
    [FIPS180-2]
               National Institute of Standards and Technology, "Secure
