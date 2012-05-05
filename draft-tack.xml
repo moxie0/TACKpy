@@ -452,17 +452,18 @@ remaining steps (see <xref target="details"/> for details).
 <t>
 
 After the above steps, if there is a relevant active pin and a TACK whose key
-is referenced by the pin, then the connection is verified by the pin. If there
-is a relevant active pin but no such TACK, the connection is rejected by the
-pin. </t>
+is referenced by the pin, then the connection is "accepted" by the pin. If
+there is a relevant active pin but no such TACK, the connection is "rejected"
+by the pin. If there is no relevant active pin, the connection is "unpinned".
+</t>
 
 <t> A rejected connection might indicate a network attack. If the connection
 is rejected the client SHOULD send a fatal "access_denied" error alert and
-close the connection. </t>
+close the connection.</t> 
 
-<t>A client MAY choose to perform additional verification steps before using a
-connection verified by a pin, or a connection with no relevant active pin. See
-<xref target="certver"/> for an example.</t>
+<t> A client MAY perform additional verification steps before using an
+accepted or unpinned connection. See <xref target="certver"/> for an
+example.</t>
 
 </section> <section title="Client processing details" anchor="details">
 
@@ -710,8 +711,7 @@ target="clientproc"/> may be reused.
 </t>
 
 <t>Note that a server using application-specific pins is still subject to
-hostname pins, and a client MAY apply either or both forms of pinning when
-checking whether the TLS connection is verified. </t>
+hostname pins, and a client MAY apply either or both forms of pinning. </t>
 <t>
 
 The specification of application-specific pinning for particular applications
