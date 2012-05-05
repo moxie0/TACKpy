@@ -65,7 +65,7 @@ class TACK_KeyFileViewer:
         self.mac = bytearray(32)
         
     def parse(self, s):
-        b = dePem(s, "TACK SECRET KEY")
+        b = dePem(s, "TACK PRIVATE KEY")
         p = Parser(b)
         self.version = p.getInt(1)
         if self.version != 1:
@@ -100,7 +100,7 @@ class TACK_KeyFile:
         return signature
 
     def parsePem(self, s, password):
-        b = dePem(s, "TACK SECRET KEY")
+        b = dePem(s, "TACK PRIVATE KEY")
         p = Parser(b)
         self.version = p.getInt(1)
         if self.version != 1:
@@ -143,18 +143,18 @@ class TACK_KeyFile:
         w.add(self.public_key, 64)
         w.add(mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?
-        b = pem(w.bytes, "TACK SECRET KEY")
+        b = pem(w.bytes, "TACK PRIVATE KEY")
         return b
 
 def testKeyFile():
     print("Testing KEY FILE")
     s = """
-    -----BEGIN TACK SECRET KEY-----
+    -----BEGIN TACK PRIVATE KEY-----
     AQAAIAAjOxiOdpiMo5qWidXwBTqJHxW5X1zRDBOA4ldqqFuKOSh6JJdrbXk1WsMN
     X/gyaVuHMBhC/g/rjtu/EnmIHoUuT9348iXeeROaLVRPdNqwr+5KEfjtTY7uXA6Q
     mhRUn+XmDePKRucRHYkcQaFPnzglrQ120Dh6aXD4PbtJMWajJtzTMvtEo9pNZhoM
     QTNZNoM=
-    -----END TACK SECRET KEY-----"""
+    -----END TACK PRIVATE KEY-----"""
     publicKey = a2b_hex("87301842fe0feb8edbbf1279881e852e"
                         "4fddf8f225de79139a2d544f74dab0af"
                         "ee4a11f8ed4d8eee5c0e909a14549fe5"

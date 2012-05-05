@@ -104,7 +104,7 @@ values in the correct order.
             try:
                 keyPem = open(arg, "rU").read()
             except IOError:
-                printError("Error opening TACK Secret Key File: %s" % arg)            
+                printError("Error opening TACK Key File: %s" % arg)            
         elif opt == "-g":
             try:
                 generation = int(arg) # Could raise ValueError
@@ -173,7 +173,7 @@ values in the correct order.
                         break
                     sys.stderr.write("PASSWORD INCORRECT!\n")
         except SyntaxError:
-            printError("Error processing TACK Secret Key File")
+            printError("Error processing TACK Key File")
 
     # If -o and not -n, then open the output file
     if outputFile[1]:
@@ -338,8 +338,8 @@ def viewCmd(argv):
     fileType = None
     try:
         if s:            
-            if pemSniff(s, "TACK SECRET KEY"):
-                fileType = "Secret Key"
+            if pemSniff(s, "TACK PRIVATE KEY"):
+                fileType = "Private Key"
                 kfv = TACK_KeyFileViewer()
                 kfv.parse(s)
                 print(kfv.writeText())
@@ -404,7 +404,7 @@ def helpCmd(argv):
     cmd = argv[0]
     if cmd == "genkey"[:len(cmd)]:
         print( \
-"""Creates a new TACK Secret Key file.
+"""Creates a new TACK key file.
 
   genkey
 
@@ -420,7 +420,7 @@ Optional arguments:
         
   sign -k KEY -c CERT
   
-  -k KEY             : Use this TACK SecretKey file
+  -k KEY             : Use this TACK key file
   -c CERT            : Sign this SSL certificate's public key
 
 Optional arguments:
@@ -441,11 +441,11 @@ Optional arguments:
 """ % (s, s[:13], s[:10], s[:4]))
     elif cmd == "break"[:len(cmd)]:
         print( \
-"""Creates a break signature based on an input TACK SecretKey file.
+"""Creates a break signature based on an input TACK key file.
 
   break -k KEY
   
-  -k KEY             : Use this TACK SecretKey file 
+  -k KEY             : Use this TACK key file 
 
 Optional arguments:
   -v                 : Verbose

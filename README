@@ -29,13 +29,13 @@ TACK.py quick start
 ==================== 
 You will need to create one or more TACK keys to "pin" your hostnames to. You
 should use a different key for each hostname, unless those hostnames are
-closely related (such as aliases for the same host). Once you decide how many
-keys you need, and the assignment of hostnames to keys, do the following:
+closely related (such as aliases for the same host, or hosts sharing a TLS
+private key). Once you decide how many TACK keys you need, and the assignment
+of hostnames to keys, do the following:
 
 Create a TACK key:
-  1) Run "TACK.py genkey > KEY.pem" (replace "KEY" with a specific name)  
-  2) The key file must be kept secret. Back it up where it won't be lost or 
-     stolen.
+  1) Run "TACK.py genkey > KEY.pem" (replace "KEY" with a specific name)
+  2) Back up the key file where it won't be lost or stolen.
 
 If a hostname is using TACK, each server at that hostname must have a TACK
 that signs the public key in the server's certificate. To create and deploy
