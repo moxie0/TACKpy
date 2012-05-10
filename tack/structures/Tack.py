@@ -1,5 +1,4 @@
-from tack.crypto.ECDSA import ecdsa256Verify
-from tack.structures.TackId import TackId
+from tack.crypto.ECPublicKey import ECPublicKey
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter
 from tack.util.Util import Util
@@ -13,7 +12,7 @@ class Tack(TlsStructure):
     def __init__(self, data=None):
         TlsStructure.__init__(self, data)
         if data is not None:
-            self.public_key     = self.getBytes(64)
+            self.public_key     = ECPublicKey(self.getBytes(64))
             self.min_generation = self.getInt(1)
             self.generation     = self.getInt(1)
             self.expiration     = self.getInt(4)
@@ -36,7 +35,7 @@ class Tack(TlsStructure):
 
     @classmethod
     def createFromParameters(cls, public_key, private_key, min_generation, generation, expiration, target_hash):
-        assert(len(public_key) == 64)
+        assert(len(public_key.getRawKey()) == 64)
         assert(0 <= min_generation <= 255)
         assert(0 <= generation <= 255 and
                generation >= min_generation)
@@ -54,7 +53,7 @@ class Tack(TlsStructure):
         return tack
 
     def getTackId(self):
-        return str(TackId(self.public_key))
+        return str(self.public_key)
 
     def serialize(self):
         writer = TlsStructureWriter(64)
@@ -66,7 +65,7 @@ class Tack(TlsStructure):
 
     def _serializePrelude(self):
         writer = TlsStructureWriter(Tack.LENGTH - 64)
-        writer.add(self.public_key, 64)
+        writer.add(self.public_key.getRawKey(), 64)
         writer.add(self.min_generation, 1)
         writer.add(self.generation, 1)
         writer.add(self.expiration, 4)
@@ -78,7 +77,7 @@ class Tack(TlsStructure):
 
     def _verifySignature(self):
         bytesToVerify = self._getDataToSign()
-        return ecdsa256Verify(self.public_key, bytesToVerify, self.signature)
+        return self.public_key.verify(bytesToVerify, self.signature)
 
     def __str__(self):
         """Return a readable string describing this TACK.

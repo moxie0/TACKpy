@@ -7,7 +7,8 @@ class TlsStructure:
     def getInt(self, elementLength):
         """Reads an integer of 'length' bytes"""
         if self.index + elementLength > len(self.bytes):
-            raise SyntaxError("Reading %s at index %s but only %s bytes remaining." % (elementLength, self.index, len(self.bytes)))
+            raise SyntaxError("Reading %s at index %s but only %s bytes remaining." \
+                              % (elementLength, self.index, len(self.bytes)))
         x = 0
         for count in range(elementLength):
             x <<= 8

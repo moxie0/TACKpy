@@ -1,9 +1,8 @@
 import unittest
-from TACKpy.ecdsa_wrappers import ecdsa256Verify
 from tack.compat import a2b_hex
 from tack.crypto.AES import AES
 from tack.crypto.ASN1 import asn1Length, toAsn1IntBytes, fromAsn1IntBytes
-from tack.crypto.ECDSA import ec256Generate, ecdsa256Sign
+from tack.crypto.ECGenerator import ECGenerator
 
 class CryptoTest(unittest.TestCase):
 
@@ -17,12 +16,13 @@ class CryptoTest(unittest.TestCase):
         assert(AES(key, IV).decrypt(ciphertext) == plaintext)
 
     def test_ECDSA(self):
-        privateKey, publicKey = ec256Generate()
+        publicKey, privateKey = ECGenerator().generateECKeyPair()
         data = bytearray([0,1,2,3])
         badData = bytearray([0,1,2,4])
-        signature = ecdsa256Sign(privateKey, publicKey, data)
-        assert(ecdsa256Verify(publicKey, data, signature))
-        assert(not ecdsa256Verify(publicKey, badData, signature))
+
+        signature = privateKey.getSignature(data)
+        assert(publicKey.verify(data, signature))
+        assert(not publicKey.verify(badData, signature))
 
     def test_ASN1(self):
         assert(asn1Length(7) == bytearray([7]))

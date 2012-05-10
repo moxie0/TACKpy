@@ -24,7 +24,7 @@ class SignCommand(Command):
 
     def execute(self):
         if not self.numArg:
-            tack = Tack.createFromParameters(self.key.getPublicKey(), self.key, self.min_generation,
+            tack = Tack.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
                                              self.generation, self.expiration, self.certificate.key_sha256)
 
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
