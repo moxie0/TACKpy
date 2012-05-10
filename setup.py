@@ -4,6 +4,10 @@ from distutils.core import setup
 
 # Author: Trevor Perrin
 # See the LICENSE file for legal information regarding use of this file.
+import os
+import shutil
+
+shutil.copyfile("tack.py", "tack/tack")
 
 setup(name="TACKpy",
       version="0.9.6",
@@ -12,5 +16,15 @@ setup(name="TACKpy",
       url="https://github.com/trevp/TACKpy",
       description="TACKpy implements TACK in python",
       license="public domain",
-      scripts=["scripts/TACK.py"],
-      packages=["TACKpy"])
+      scripts=["tack/tack"],
+      packages=["tack"],
+      install_requires=['M2Crypto'])
+
+print "Cleaning up..."
+if os.path.exists("build/"):
+    shutil.rmtree("build/")
+
+try:
+    os.remove("tack/tack")
+except:
+    pass
