@@ -18,7 +18,7 @@ PDUV0rzIIYjXP58T5pphGKRgLlK3Aw==
 
         t = Tack().createFromPem(s)
 
-        assert(t.public_key == a2b_hex("4c09ac019229cd1f8c63042bb2e8"
+        assert(t.public_key.getRawKey() == a2b_hex("4c09ac019229cd1f8c63042bb2e8"
                                        "cb85eb2fa6eddd45ce513a17e0c9"
                                        "2a94564535a7585d5e8f8fc10ae6"
                                        "690a3d07dfa885e711ad6125877c"
@@ -84,14 +84,14 @@ PgegVlKuDULIASht9fvs6xTfxcFJDUgNaenZfcqAgAI=
         privateKey = a2b_hex("fc815de8b1de13a436e9cd69742cbf2c"
                              "d4c1c9bb33e023401d9291cf2781b754")
         kf = TackKeyFile.createFromPem(s, "asdf")
-        assert(kf.public_key == publicKey)
-        assert(kf.private_key == privateKey)
+        assert(kf.getPublicKey().getRawKey() == publicKey)
+        assert(kf.getPrivateKey().getRawKey() == privateKey)
         kf2 = TackKeyFile.createFromPem(kf.serializeAsPem(), "asdf")
-        assert(kf2.public_key == publicKey)
-        assert(kf2.private_key == privateKey)
+        assert(kf2.getPublicKey().getRawKey() == publicKey)
+        assert(kf2.getPrivateKey().getRawKey() == privateKey)
         kf3 = TackKeyFile.createRandom("123")
         kf4 = TackKeyFile.createFromPem(kf3.serializeAsPem(), "123")
-        assert(kf3.public_key == kf4.public_key)
+        assert(kf3.getPublicKey().getRawKey() == kf4.getPublicKey().getRawKey())
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,4 @@
-from tack.crypto.ECDSA import ecdsa256Verify
-from tack.structures.TackId import TackId
+from tack.crypto.ECPublicKey import ECPublicKey
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter
 from tack.util.PEMDecoder import PEMDecoder
@@ -15,7 +14,7 @@ class TackBreakSig(TlsStructure):
             raise SyntaxError("Break signature is the wrong size. Is %s and should be %s." % (len(data), TackBreakSig.LENGTH))
 
         if data is not None:
-            self.public_key = self.getBytes(64)
+            self.public_key = ECPublicKey(self.getBytes(64))
             self.signature  = self.getBytes(64)
 
             if not self._verifySignature():
@@ -53,7 +52,7 @@ class TackBreakSig(TlsStructure):
     def serialize(self):
         """Return a bytearray containing the TACK_Break_Sig."""
         w = TlsStructureWriter(TackBreakSig.LENGTH)
-        w.add(self.public_key, 64)
+        w.add(self.public_key.getRawKey(), 64)
         w.add(self.signature, 64)
         assert(w.index == len(w.bytes))
         return w.getBytes()
@@ -62,10 +61,10 @@ class TackBreakSig(TlsStructure):
         return PEMEncoder(self.serialize()).getEncoded("TACK BREAK SIG")
 
     def getTackId(self):
-        return str(TackId(self.public_key))
+        return str(self.public_key)
 
     def _verifySignature(self):
-        return ecdsa256Verify(self.public_key, bytearray("tack_break_sig", "ascii"), self.signature)
+        return self.public_key.verify(bytearray("tack_break_sig"), self.signature)
 
     def __str__(self):
         """Return a readable string describing this TACK_Break_Sig.

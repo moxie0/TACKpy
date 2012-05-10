@@ -22,11 +22,12 @@ derived from a password via PBKDF2-HMAC-SHA26:
 """
 import os
 from tack.InvalidPasswordException import InvalidPasswordException
+from tack.crypto.ECGenerator import ECGenerator
+from tack.crypto.ECPrivateKey import ECPrivateKey
+from tack.crypto.ECPublicKey import ECPublicKey
 from tack.crypto.PBKDF2 import PBKDF2
 from tack.crypto.AES import AES
 from tack.crypto.Digest import Digest
-from tack.crypto.ECDSA import ec256Generate, ecdsa256Sign
-from tack.structures.TackId import TackId
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter
 from tack.util.Util import Util
@@ -48,12 +49,13 @@ class TackKeyFile(TlsStructure):
             self.iter_count  = self.getInt(4)
             self.salt        = self.getBytes(16)
             self.ciphertext  = self.getBytes(32)
-            self.public_key  = self.getBytes(64)
+            self.public_key  = ECPublicKey(self.getBytes(64))
             self.mac         = bytearray(self.getBytes(32))
 
             if self.password is not None:
-                self.private_key = self._decryptKey(password, self.salt, self.ciphertext,
-                                                    self.iter_count, self.public_key, self.mac)
+                rawPrivateKey = self._decryptKey(password, self.salt, self.ciphertext,
+                                                 self.iter_count, self.public_key, self.mac)
+                self.private_key = ECPrivateKey(rawPrivateKey, self.public_key.getRawKey())
 
     @classmethod
     def createRandom(cls, password):
@@ -62,11 +64,11 @@ class TackKeyFile(TlsStructure):
         tackKeyFile.version    = 1
         tackKeyFile.iter_count = 8192
         tackKeyFile.salt       = bytearray(os.urandom(16))
-        tackKeyFile.private_key, tackKeyFile.public_key = ec256Generate()
-        tackKeyFile.ciphertext, tackKeyFile.mac = tackKeyFile._encryptKey(password, tackKeyFile.salt,
-                                                                          tackKeyFile.iter_count,
-                                                                          tackKeyFile.public_key,
-                                                                          tackKeyFile.private_key)
+        tackKeyFile.public_key, tackKeyFile.private_key = ECGenerator().generateECKeyPair()
+        tackKeyFile.ciphertext, tackKeyFile.mac         = tackKeyFile._encryptKey(password, tackKeyFile.salt,
+                                                                                  tackKeyFile.iter_count,
+                                                                                  tackKeyFile.public_key,
+                                                                                  tackKeyFile.private_key)
         return tackKeyFile
 
     @classmethod
@@ -76,8 +78,8 @@ class TackKeyFile(TlsStructure):
     def getPublicKey(self):
         return self.public_key
 
-    def getSignature(self, data):
-        return ecdsa256Sign(self.private_key, self.public_key, data)
+    def getPrivateKey(self):
+        return self.private_key
 
     def serialize(self):
         w = TlsStructureWriter(TackKeyFile.LENGTH)
@@ -85,7 +87,7 @@ class TackKeyFile(TlsStructure):
         w.add(self.iter_count, 4)
         w.add(self.salt, 16)
         w.add(self.ciphertext, 32)
-        w.add(self.public_key, 64)
+        w.add(self.public_key.getRawKey(), 64)
         w.add(self.mac, 32)
         assert(w.index == len(w.bytes)) # did we fill entire bytearray?
 
@@ -96,15 +98,15 @@ class TackKeyFile(TlsStructure):
 
     def _encryptKey(self, password, salt, iter_count, public_key, private_key):
         encKey, authKey = self._deriveKeys(password, salt, iter_count)
-        ciphertext      = AES(encKey, bytearray(16)).encrypt(private_key)
-        macData         = ciphertext + public_key
+        ciphertext      = AES(encKey, bytearray(16)).encrypt(private_key.getRawKey())
+        macData         = ciphertext + public_key.getRawKey()
         mac             = Digest.HMAC_SHA256(authKey, macData)
         return ciphertext, mac
 
 
     def _decryptKey(self, password, salt, ciphertext, iter_count, public_key, mac):
         encKey, authKey = self._deriveKeys(password, salt, iter_count)
-        macData         = ciphertext + public_key
+        macData         = ciphertext + public_key.getRawKey()
         calcMac         = Digest.HMAC_SHA256(authKey, macData)
 
         if not Util.constTimeCompare(calcMac, mac):
@@ -121,5 +123,5 @@ class TackKeyFile(TlsStructure):
         return encKey, authKey
 
     def __str__(self):
-        return """TACK ID        = %s\n""" % str(TackId(self.public_key))
+        return """TACK ID        = %s\n""" % str(self.public_key)
 
