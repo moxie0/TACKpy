@@ -11,7 +11,11 @@ class Tack(TlsStructure):
 
     def __init__(self, data=None):
         TlsStructure.__init__(self, data)
+
         if data is not None:
+            if len(data) != Tack.LENGTH:
+                raise SyntaxError("TACK is the wrong size. Is %s and should be %s" % (len(data), Tack.LENGTH))        
+
             self.public_key     = ECPublicKey(self.getBytes(64))
             self.min_generation = self.getInt(1)
             self.generation     = self.getInt(1)
@@ -27,12 +31,7 @@ class Tack(TlsStructure):
 
     @classmethod
     def createFromPem(cls, pem):
-        data = PEMDecoder(pem).getDecoded("TACK")
-
-        if len(data) != Tack.LENGTH:
-            raise SyntaxError("TACK is the wrong size. %s, should be %s" % (len(data), Tack.LENGTH))
-
-        return cls(data)
+        return cls(PEMDecoder(pem).getDecoded("TACK"))
 
     @classmethod
     def create(cls, public_key, private_key, min_generation, generation, expiration, target_hash):
