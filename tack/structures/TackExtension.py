@@ -1,6 +1,7 @@
 from tack.structures.Tack import Tack
 from tack.structures.TackActivation import TackActivation
 from tack.structures.TackBreakSig import TackBreakSig
+from tack.structures.TackActivation import TackActivation
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter
 
@@ -24,7 +25,10 @@ class TackExtension(TlsStructure):
         tackExtension                = cls()
         tackExtension.tack           = tack
         tackExtension.break_sigs     = break_sigs
-        tackExtension.pin_activation = pin_activation
+        if not pin_activation:
+            tackExtension.pin_activation = TackActivation.DISABLED
+        else:
+            tackExtension.pin_activation = TackActivation.ENABLED
 
         return tackExtension
 
