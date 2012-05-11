@@ -11,7 +11,7 @@ class BreakCommand(Command):
         self.key                             = self.getKey(self.getPassword())
 
     def execute(self):
-        breakSig = TackBreakSig.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey())
+        breakSig = TackBreakSig.create(self.key.getPublicKey(), self.key.getPrivateKey())
         self.outputFile.write(self.addPemComments(breakSig.serializeAsPem()))
 
         if self.isVerbose():

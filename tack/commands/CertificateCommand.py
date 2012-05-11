@@ -22,8 +22,8 @@ class CertificateCommand(Command):
 
     def execute(self):
         if self.inputTack is not None:
-            tackExtension = TackExtension.createFromParameters(self.inputTack, self.breakSignatures,
-                                                               TackActivation.DISABLED)
+            tackExtension = TackExtension.create(self.inputTack, self.breakSignatures,
+                                                    TackActivation.DISABLED)
             tlsCertificate = TlsCertificate()
             tlsCertificate.create(tackExtension)
 

@@ -29,8 +29,8 @@ class SignCommand(Command):
     def execute(self):
         if not self.numArg:
   
-            tack = Tack.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
-                                             self.generation, self.expiration, self.certificate.key_sha256)
+            tack = Tack.create(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
+                            self.generation, self.expiration, self.certificate.key_sha256)
 
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
 
@@ -43,8 +43,8 @@ class SignCommand(Command):
                 self.printError("-o required with -n")
 
             for x in range(numTacks):
-                tack = Tack.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
-                                                 self.generation, self.expiration, self.certificate.key_sha256)
+                tack = Tack.create(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
+                            self.generation, self.expiration, self.certificate.key_sha256)
 
                 outputFile = open(self.outputFileName + "_%04d.pem" % x, "w")
                 outputFile.write(self.addPemComments(tack.serializeAsPem()))

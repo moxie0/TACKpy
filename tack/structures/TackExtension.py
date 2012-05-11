@@ -20,7 +20,7 @@ class TackExtension(TlsStructure):
                 raise SyntaxError("Excess bytes in TACK_Extension")
 
     @classmethod
-    def createFromParameters(cls, tack, break_sigs, pin_activation):
+    def create(cls, tack, break_sigs, pin_activation):
         tackExtension                = cls()
         tackExtension.tack           = tack
         tackExtension.break_sigs     = break_sigs

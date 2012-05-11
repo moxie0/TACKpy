@@ -34,7 +34,7 @@ class Tack(TlsStructure):
         return cls(data)
 
     @classmethod
-    def createFromParameters(cls, public_key, private_key, min_generation, generation, expiration, target_hash):
+    def create(cls, public_key, private_key, min_generation, generation, expiration, target_hash):
         assert(len(public_key.getRawKey()) == 64)
         assert(0 <= min_generation <= 255)
         assert(0 <= generation <= 255 and
