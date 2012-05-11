@@ -19,8 +19,9 @@ class Tack(TlsStructure):
             self.target_hash    = self.getBytes(32)
             self.signature      = self.getBytes(64)
 
-            if not self._verifySignature():
-                raise SyntaxError("Signature verification failure")
+            if self.generation < self.min_generation:
+                raise SyntaxError("Generation less than min_generation")                
+
             if self.index != len(data):
                 raise SyntaxError("Excess bytes in TACK")
 

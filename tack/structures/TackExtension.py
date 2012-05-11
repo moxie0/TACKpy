@@ -52,6 +52,15 @@ class TackExtension(TlsStructure):
     def isEmpty(self):
         return not self.tack and not self.break_sigs
 
+    def verifySignatures(self):
+        if self.tack:
+            if not self.tack.verifySignature():
+                return False
+        for break_sig in self.break_sigs:
+            if not break_sig.verifySignature():
+                return False
+        return True
+
     def _getSerializedLength(self):
         length = 0
         if self.tack:
