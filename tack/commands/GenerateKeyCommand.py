@@ -34,7 +34,7 @@ class GenerateKeyCommand(Command):
 
     @staticmethod
     def printHelp():
-        print(\
+        print(
 """Creates a new TACK key file.
 
   genkey

@@ -91,7 +91,7 @@ class CertificateCommand(Command):
 
     @staticmethod
     def printHelp():
-        print(\
+        print(
 """Creates a TACK certificate with the input TACK and optional Break Sigs.
 
 (Alternatively, if input is a TACK certificate, writes out the TACK and/or

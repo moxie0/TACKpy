@@ -40,7 +40,7 @@ class Command:
                 try:
                     inKey = TackKeyFile.createFromPem(keyPemData, password)
                     return inKey
-                except InvalidPasswordException, ipe:
+                except InvalidPasswordException as ipe:
                     sys.stderr.write("Password incorrect!\n")
                     password = self._promptPassword()
                 except SyntaxError:

@@ -133,7 +133,7 @@ class SignCommand(Command):
     @staticmethod
     def printHelp():
         s = Time.posixTimeToStr(time.time())
-        print(\
+        print(
 """Creates a TACK based on a target certificate.
 
   sign -k KEY -c CERT

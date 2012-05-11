@@ -73,7 +73,7 @@ class ViewCommand(Command):
 
     @staticmethod
     def printHelp():
-        print(\
+        print(
 """Views a TACK, TACK Key, TACK Break Sig, or certificate.
 
 view <file>

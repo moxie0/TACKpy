@@ -19,7 +19,7 @@ class BreakCommand(Command):
 
     @staticmethod
     def printHelp():
-        print(\
+        print(
 """Creates a break signature based on an input TACK key file.
 
   break -k KEY

@@ -29,7 +29,7 @@ class HelpCommand(Command):
 
     @staticmethod
     def printHelp():
-        print(\
+        print(
 """Provides help for individual commands.
 
 help <command>
@@ -38,7 +38,7 @@ help <command>
     @staticmethod
     def printGeneralUsage(message=None):
         print "Error: %s" % message
-        print(\
+        print(
 """\ntack.py version %s
 
 Commands (use "help <command>" to see optional args):
