@@ -12,7 +12,6 @@ class SignCommand(Command):
         Command.__init__(self, argv, "kcopmgen", "v")
 
         self.password                        = self.getPassword()
-        self.outputFile, self.outputFileName = self.getOutputFile()
         self.key                             = self.getKey(self.password)
 
         self.certificate                     = self._getCertificate()
@@ -20,10 +19,16 @@ class SignCommand(Command):
         self.min_generation                  = self._getMinGeneration()
         self.expiration                      = self._getExpiration()
         self.numArg                          = self._getTackCount()
+        # If -n, then -o is a filename prefix only, so is not opened
+        if self.numArg:
+            self.outputFileName              = self.getOutputFileName()
+            return
+        self.outputFile, self.outputFileName = self.getOutputFile()
 
 
     def execute(self):
         if not self.numArg:
+  
             tack = Tack.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
                                              self.generation, self.expiration, self.certificate.key_sha256)
 
@@ -38,7 +43,7 @@ class SignCommand(Command):
                 self.printError("-o required with -n")
 
             for x in range(numTacks):
-                tack = Tack.createFromParameters(self.key.getPublicKey(), self.key, self.min_generation,
+                tack = Tack.createFromParameters(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
                                                  self.generation, self.expiration, self.certificate.key_sha256)
 
                 outputFile = open(self.outputFileName + "_%04d.pem" % x, "w")

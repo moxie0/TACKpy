@@ -57,7 +57,7 @@ class CertificateCommand(Command):
 
         contents = open(fileName, "r").read()
 
-        return TackBreakSig.createFromPem(contents)
+        return TackBreakSig.createFromPemList(contents)
 
     def _getInputTack(self):
         contents = self._getInputFileContents()

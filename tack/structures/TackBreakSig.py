@@ -42,7 +42,6 @@ class TackBreakSig(TlsStructure):
 
     @classmethod
     def createFromParameters(cls, public_key, private_key):
-        assert(len(public_key) == 64)
         tackBreakSig            = cls()
         tackBreakSig.public_key = public_key
         tackBreakSig.signature  = private_key.getSignature(bytearray("tack_break_sig", "ascii"))

@@ -175,8 +175,8 @@ class TlsCertificate:
     def writeText(self):
         s =\
         """key_sha256     = 0x%s
-        notAfter       = %s
-        """ % (\
+notAfter       = %s
+""" % (\
             Util.writeBytes(self.key_sha256),
             Time.posixTimeToStr(self.notAfter, True))
         if self.tackExt:

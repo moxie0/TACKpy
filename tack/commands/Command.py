@@ -63,6 +63,9 @@ class Command:
         except IOError:
             self.printError("Error opening output file: %s" % output)
 
+    def getOutputFileName(self):
+        return self._getOptionValue("-o")
+
     def addPemComments(self, inStr):
         """Add pre-PEM metadata/comments to PEM strings."""
         versionStr = __version__
