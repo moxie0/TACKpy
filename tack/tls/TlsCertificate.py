@@ -60,9 +60,7 @@ class TlsCertificate:
         self.parse(sslBytes)  # SyntaxError
 
     def matches(self, tack):
-        if tack.version == TackVersion.V1:
-            return self.key_sha256 == tack.sig.target_sha256
-        return False
+        return self.key_sha256 == tack.target_hash
 
     def parsePem(self, s):
         b = PEMDecoder(s).getDecoded("CERTIFICATE")
