@@ -24,7 +24,7 @@ class Command:
     def getPassword(self):
         return self._getOptionValue("-p")
 
-    def getKey(self, password):
+    def getKeyFile(self, password):
         keyPemFile = self._getOptionValue("-k")
 
         if not keyPemFile:

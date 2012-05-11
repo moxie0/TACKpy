@@ -8,10 +8,10 @@ class BreakCommand(Command):
         Command.__init__(self, argv, "pok", "v")
         self.password                        = self.getPassword()
         self.outputFile, self.outputFileName = self.getOutputFile()
-        self.key                             = self.getKey(self.getPassword())
+        self.keyfile                         = self.getKeyFile(self.getPassword())
 
     def execute(self):
-        breakSig = TackBreakSig.create(self.key.getPublicKey(), self.key.getPrivateKey())
+        breakSig = TackBreakSig.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey())
         self.outputFile.write(self.addPemComments(breakSig.serializeAsPem()))
 
         if self.isVerbose():

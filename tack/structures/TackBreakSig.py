@@ -41,7 +41,7 @@ class TackBreakSig(TlsStructure):
     def create(cls, public_key, private_key):
         tackBreakSig            = cls()
         tackBreakSig.public_key = public_key
-        tackBreakSig.signature  = private_key.getSignature(bytearray("tack_break_sig", "ascii"))
+        tackBreakSig.signature  = private_key.sign(bytearray("tack_break_sig", "ascii"))
 
         return tackBreakSig
 

@@ -17,7 +17,7 @@ class ECPrivateKey:
         if not self.ec:
             self.ec = self._constructEcFromRawKeys(rawPrivateKey, rawPublicKey)
 
-    def getSignature(self, data):
+    def sign(self, data):
         # Produce ASN.1 signature
         hash         = Digest.SHA256(data)
         asn1SigBytes = self.ec.sign_dsa_asn1(hash)

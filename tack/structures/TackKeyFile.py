@@ -22,7 +22,6 @@ derived from a password via PBKDF2-HMAC-SHA26:
 """
 import os
 from tack.InvalidPasswordException import InvalidPasswordException
-from tack.crypto.ECGenerator import ECGenerator
 from tack.crypto.ECPrivateKey import ECPrivateKey
 from tack.crypto.ECPublicKey import ECPublicKey
 from tack.crypto.PBKDF2 import PBKDF2
@@ -43,32 +42,26 @@ class TackKeyFile(TlsStructure):
             self.version = self.getInt(1)
 
             if self.version != 1:
-                raise SyntaxError("Bad version in Secret File")
+                raise SyntaxError("Bad version in Key File")
 
-            self.password    = password
             self.iter_count  = self.getInt(4)
             self.salt        = self.getBytes(16)
             self.ciphertext  = self.getBytes(32)
             self.public_key  = ECPublicKey(self.getBytes(64))
-            self.mac         = bytearray(self.getBytes(32))
+            self.mac         = self.getBytes(32)
 
-            if self.password is not None:
-                rawPrivateKey = self._decryptKey(password, self.salt, self.ciphertext,
-                                                 self.iter_count, self.public_key, self.mac)
+            if password is not None:
+                rawPrivateKey = self._decrypt(password)
                 self.private_key = ECPrivateKey(rawPrivateKey, self.public_key.getRawKey())
 
     @classmethod
-    def createRandom(cls, password):
+    def create(cls, public_key, private_key, password):
         tackKeyFile            = cls()
-        tackKeyFile.password   = password
         tackKeyFile.version    = 1
         tackKeyFile.iter_count = 8192
         tackKeyFile.salt       = bytearray(os.urandom(16))
-        tackKeyFile.public_key, tackKeyFile.private_key = ECGenerator().generateECKeyPair()
-        tackKeyFile.ciphertext, tackKeyFile.mac         = tackKeyFile._encryptKey(password, tackKeyFile.salt,
-                                                                                  tackKeyFile.iter_count,
-                                                                                  tackKeyFile.public_key,
-                                                                                  tackKeyFile.private_key)
+        tackKeyFile.public_key, tackKeyFile.private_key = public_key, private_key
+        tackKeyFile._encrypt(password)
         return tackKeyFile
 
     @classmethod
@@ -96,23 +89,23 @@ class TackKeyFile(TlsStructure):
     def serializeAsPem(self):
         return PEMEncoder(self.serialize()).getEncoded("TACK PRIVATE KEY")
 
-    def _encryptKey(self, password, salt, iter_count, public_key, private_key):
-        encKey, authKey = self._deriveKeys(password, salt, iter_count)
-        ciphertext      = AES(encKey, bytearray(16)).encrypt(private_key.getRawKey())
-        macData         = ciphertext + public_key.getRawKey()
+    def _encrypt(self, password):
+        encKey, authKey = self._deriveKeys(password, self.salt, self.iter_count)
+        ciphertext      = AES(encKey, bytearray(16)).encrypt(self.private_key.getRawKey())
+        macData         = ciphertext + self.public_key.getRawKey()
         mac             = Digest.HMAC_SHA256(authKey, macData)
-        return ciphertext, mac
+        self.ciphertext = ciphertext
+        self.mac        = mac
 
-
-    def _decryptKey(self, password, salt, ciphertext, iter_count, public_key, mac):
-        encKey, authKey = self._deriveKeys(password, salt, iter_count)
-        macData         = ciphertext + public_key.getRawKey()
+    def _decrypt(self, password):
+        encKey, authKey = self._deriveKeys(password, self.salt, self.iter_count)
+        macData         = self.ciphertext + self.public_key.getRawKey()
         calcMac         = Digest.HMAC_SHA256(authKey, macData)
 
-        if not Util.constTimeCompare(calcMac, mac):
+        if not Util.constTimeCompare(calcMac, self.mac):
             raise InvalidPasswordException("Bad password")
 
-        return AES(encKey, bytearray(16)).decrypt(ciphertext)
+        return AES(encKey, bytearray(16)).decrypt(self.ciphertext)
 
     # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
     def _deriveKeys(self, password, salt, iter_count):

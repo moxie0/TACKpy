@@ -12,13 +12,13 @@ class SignCommand(Command):
         Command.__init__(self, argv, "kcopmgen", "v")
 
         self.password                        = self.getPassword()
-        self.key                             = self.getKey(self.password)
+        self.keyfile                         = self.getKeyFile(self.password)
 
         self.certificate                     = self._getCertificate()
         self.generation                      = self._getGeneration()
         self.min_generation                  = self._getMinGeneration()
         self.expiration                      = self._getExpiration()
-        self.numArg                          = self._getTackCount()
+        self.numArg                          = self._getNumArg()
         # If -n, then -o is a filename prefix only, so is not opened
         if self.numArg:
             self.outputFileName              = self.getOutputFileName()
@@ -29,7 +29,7 @@ class SignCommand(Command):
     def execute(self):
         if not self.numArg:
   
-            tack = Tack.create(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
+            tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
                             self.generation, self.expiration, self.certificate.key_sha256)
 
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
@@ -43,7 +43,7 @@ class SignCommand(Command):
                 self.printError("-o required with -n")
 
             for x in range(numTacks):
-                tack = Tack.create(self.key.getPublicKey(), self.key.getPrivateKey(), self.min_generation,
+                tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
                             self.generation, self.expiration, self.certificate.key_sha256)
 
                 outputFile = open(self.outputFileName + "_%04d.pem" % x, "w")
@@ -73,7 +73,7 @@ class SignCommand(Command):
     def _getExpiration(self):
         expiration = self._getOptionValue("-e")
 
-        if expiration is None and self._getTackCount() is None:
+        if expiration is None and self._getNumArg() is None:
             return int(math.ceil(self._getCertificate().notAfter / 60.0))
         else:
             try:
@@ -81,21 +81,21 @@ class SignCommand(Command):
             except SyntaxError as e:
                 self.printError(e)
 
-    def _getTackCount(self):
-        tackCount = self._getOptionValue("-n")
+    def _getNumArg(self):
+        numArgRaw = self._getOptionValue("-n")
 
-        if tackCount is None:
+        if numArgRaw is None:
             return None
 
         try:
-            leftArg, rightArg = tackCount.split("@") # could raise ValueError
+            leftArg, rightArg = numArgRaw.split("@") # could raise ValueError
             numTacks = int(leftArg) # could raise ValueError
             interval = Time.parseDurationArg(rightArg) # SyntaxError
             if numTacks < 1 or numTacks >= 10000:
                 raise ValueError()
             return numTacks, interval
         except (ValueError, SyntaxError):
-            self.printError("Bad -n NUMTACKS: %s:" % tackCount)
+            self.printError("Bad -n NUMTACKS: %s:" % numArgRaw)
 
     def _getGeneration(self):
         generation = self._getOptionValue("-g")
