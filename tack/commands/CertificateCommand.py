@@ -92,7 +92,7 @@ class CertificateCommand(Command):
     @staticmethod
     def printHelp():
         print(\
-            """Creates a TACK certificate with the input TACK and optional Break Sigs.
+"""Creates a TACK certificate with the input TACK and optional Break Sigs.
 
 (Alternatively, if input is a TACK certificate, writes out the TACK and/or
 Break Signatures as PEM files).
@@ -103,4 +103,4 @@ Optional arguments:
   -v                 : Verbose
   -b BREAKSIGS       : Include Break Signatures from this file.
   -o FILE            : Write the output to this file (instead of stdout)
-  """)
+""")

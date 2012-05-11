@@ -66,9 +66,9 @@ class SignCommand(Command):
             inCert.open(certificateFile)
             return inCert
         except SyntaxError:
-            self.printError("SSL certificate malformed: %s" % certificateFile)
+            self.printError("Certificate malformed: %s" % certificateFile)
         except IOError:
-            self.printError("Error opening SSL certificate: %s" % certificateFile)
+            self.printError("Error opening certificate: %s" % certificateFile)
 
     def _getExpiration(self):
         expiration = self._getOptionValue("-e")
@@ -134,27 +134,28 @@ class SignCommand(Command):
     def printHelp():
         s = Time.posixTimeToStr(time.time())
         print(\
-            """Creates a TACK based on a target SSL certificate.
+"""Creates a TACK based on a target certificate.
 
-              sign -k KEY -c CERT
+  sign -k KEY -c CERT
 
-              -k KEY             : Use this TACK key file
-              -c CERT            : Sign this SSL certificate's public key
+  -k KEY             : Use this TACK key file
+  -c CERT            : Sign this certificate's public key
 
-            Optional arguments:
-              -v                 : Verbose
-              -o FILE            : Write the output to this file (instead of stdout)
-              -p PASSWORD        : Use this TACK key password instead of prompting
-              -m MIN_GENERATION  : Use this min_generation number (0-255)
-              -g GENERATION      : Use this generation number (0-255)
-              -e EXPIRATION      : Use this UTC time for expiration
-                                     ("%s", "%sZ",
-                                      "%sZ", "%sZ" etc.)
-                                   Or, specify a duration from current time:
-                                     ("5m", "30d", "1d12h5m", "0m", etc.)
-              - n NUM@INTERVAL   : Generate NUM TACKs, with expiration times spaced
-                                   out by INTERVAL (see -d for INTERVAL syntax).  The
-                                   -o argument is used as a filename prefix, and the
-                                   -e argument is used as the first expiration time.
-            """ % (s, s[:13], s[:10], s[:4]))
+Optional arguments:
+  -v                 : Verbose
+  -o FILE            : Write the output to this file (instead of stdout)
+  -p PASSWORD        : Use this TACK key password instead of prompting
+  -m MIN_GENERATION  : Use this min_generation number (0-255)
+  -g GENERATION      : Use this generation number (0-255)
+  -e EXPIRATION      : Use this UTC time for expiration
+                         ("%s", "%sZ",
+                          "%sZ", "%sZ" etc.)
+                       Or, specify a delta from current time:
+                       ("5m", "30d", "1d12h5m", "0m", etc.) 
+                       If not specified, the certificate's notAfter is used.
+  - n NUM@INTERVAL   : Generate NUM TACKs, with expiration times spaced
+                       out by INTERVAL (see -e for delta syntax).  The
+                       -o argument is used as a filename prefix, and the
+                       -e argument is used as the first expiration time.
+""" % (s, s[:13], s[:10], s[:4]))
 

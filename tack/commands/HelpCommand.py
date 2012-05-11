@@ -30,22 +30,21 @@ class HelpCommand(Command):
     @staticmethod
     def printHelp():
         print(\
-            """Provides help for individual commands.
+"""Provides help for individual commands.
 
-            help <command>
-            """)
+help <command>
+""")
 
     @staticmethod
     def printGeneralUsage(message=None):
         print "Error: %s" % message
         print(\
-            """\ntack.py version %s
+"""\ntack.py version %s
 
 Commands (use "help <command>" to see optional args):
   genkey
   sign     -k KEY -c CERT
   break    -k KEY
-  tackcert -i TACK
   view     FILE
   help     COMMAND
 """ % __version__)

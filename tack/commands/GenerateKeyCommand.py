@@ -35,12 +35,12 @@ class GenerateKeyCommand(Command):
     @staticmethod
     def printHelp():
         print(\
-            """Creates a new TACK key file.
+"""Creates a new TACK key file.
 
-              genkey
+  genkey
 
-            Optional arguments:
-              -v                 : Verbose
-              -o FILE            : Write the output to this file (instead of stdout)
-              -p PASSWORD        : Use this TACK key password instead of prompting
-            """)
+Optional arguments:
+  -v                 : Verbose
+  -o FILE            : Write the output to this file (instead of stdout)
+  -p PASSWORD        : Use this TACK key password instead of prompting
+""")

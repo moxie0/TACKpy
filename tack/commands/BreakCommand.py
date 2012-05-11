@@ -20,14 +20,14 @@ class BreakCommand(Command):
     @staticmethod
     def printHelp():
         print(\
-            """Creates a break signature based on an input TACK key file.
+"""Creates a break signature based on an input TACK key file.
 
-              break -k KEY
+  break -k KEY
 
-              -k KEY             : Use this TACK key file
+  -k KEY             : Use this TACK key file
 
-            Optional arguments:
-              -v                 : Verbose
-              -o FILE            : Write the output to this file (instead of stdout)
-              -p PASSWORD        : Use this TACK key password instead of prompting
-            """)
+Optional arguments:
+  -v                 : Verbose
+  -o FILE            : Write the output to this file (instead of stdout)
+  -p PASSWORD        : Use this TACK key password instead of prompting
+""")

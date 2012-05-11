@@ -4,6 +4,7 @@ TESTDIR = testoutput
 .PHONY : default
 default:
 	@echo To install tackpy run \"./setup.py install\" or \"make install\"
+	@echo
 
 .PHONY: install
 install:

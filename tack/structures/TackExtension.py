@@ -79,16 +79,16 @@ class TackExtension(TlsStructure):
         tackLen = self.getInt(1)
         if tackLen:
             if tackLen != Tack.LENGTH:
-                raise SyntaxError("TACK wrong size")
+                raise SyntaxError("TACK wrong size: %d" % tackLen)
             return Tack(self.getBytes(tackLen))
 
     def _parseBreakSigs(self):
         sigsLen = self.getInt(2)
 
         if sigsLen > 1024:
-            raise SyntaxError("break_sigs too large")
+            raise SyntaxError("break_sigs too large: %d" % sigsLen)
         elif sigsLen % TackBreakSig.LENGTH != 0:
-            raise SyntaxError("break_sigs wrong size")
+            raise SyntaxError("break_sigs wrong size: %d" % sigsLen)
 
         break_sigs = []
         b2 = self.getBytes(sigsLen)

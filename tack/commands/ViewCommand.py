@@ -61,7 +61,7 @@ class ViewCommand(Command):
                     sslc.parsePem(text)
                     print(sslc.writeText())
                     return
-                    # Is it an SSL certificate?
+                    # Is it a certificate?
             try:
                 sslc = TlsCertificate()
                 sslc.parse(binary)
@@ -74,7 +74,7 @@ class ViewCommand(Command):
     @staticmethod
     def printHelp():
         print(\
-            """Views a TACK, TACK Key, TACK Break Sig, or SSL certificate.
+"""Views a TACK, TACK Key, TACK Break Sig, or certificate.
 
-            view <file>
-            """)
+view <file>
+""")
