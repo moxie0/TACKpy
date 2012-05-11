@@ -17,7 +17,8 @@ setup(name="TACKpy",
       description="TACKpy implements TACK in python",
       license="public domain",
       scripts=["tack/tack"],
-      packages=["tack"],
+      packages=["tack", "tack/commands", "tack/crypto", "tack/structures",
+                "tack/tls", "tack/util"],
       install_requires=['M2Crypto'])
 
 print "Cleaning up..."
