@@ -42,5 +42,5 @@ class ECGenerator:
         ec.save_key_bio(bio, cipher=None)
         pemEncodedKeys = bio.getvalue()
 
-        return PEMDecoder(pemEncodedKeys).getDecoded("EC PRIVATE KEY")
+        return PEMDecoder(pemEncodedKeys).decode("EC PRIVATE KEY")
 

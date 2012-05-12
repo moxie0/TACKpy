@@ -41,7 +41,7 @@ class ECPrivateKey:
         b = bytes1 + asn1Length(len(rawPrivateKey)) + rawPrivateKey +\
             bytes2 + rawPublicKey
         b = bytearray([0x30]) + asn1Length(len(b)) + b
-        pemPrivKeyBytes = PEMEncoder(b).getEncoded("EC PRIVATE KEY")
+        pemPrivKeyBytes = PEMEncoder(b).encode("EC PRIVATE KEY")
 
         return EC.load_key_bio(BIO.MemoryBuffer(pemPrivKeyBytes))
 

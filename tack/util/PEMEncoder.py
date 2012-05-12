@@ -5,7 +5,7 @@ class PEMEncoder:
     def __init__(self, data):
         self.data = data
 
-    def getEncoded(self, name):
+    def encode(self, name):
         """Encode a payload bytearray into a PEM string.
 
         The input will be base64 encoded, then wrapped in a PEM prefix/postfix

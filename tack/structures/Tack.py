@@ -31,7 +31,7 @@ class Tack(TlsStructure):
 
     @classmethod
     def createFromPem(cls, pem):
-        return cls(PEMDecoder(pem).getDecoded("TACK"))
+        return cls(PEMDecoder(pem).decode("TACK"))
 
     @classmethod
     def create(cls, public_key, private_key, min_generation, generation, expiration, target_hash):
@@ -56,24 +56,20 @@ class Tack(TlsStructure):
         return str(self.public_key)
 
     def serialize(self):
-        writer = TlsStructureWriter(64)
-        writer.add(self.signature, 64)
-        return self._serializePrelude() + writer.getBytes()
-
-    def serializeAsPem(self):
-        return PEMEncoder(self.serialize()).getEncoded("TACK")
-
-    def _serializePrelude(self):
-        writer = TlsStructureWriter(Tack.LENGTH - 64)
+        writer = TlsStructureWriter(Tack.LENGTH)
         writer.add(self.public_key.getRawKey(), 64)
         writer.add(self.min_generation, 1)
         writer.add(self.generation, 1)
         writer.add(self.expiration, 4)
         writer.add(self.target_hash, 32)
+        writer.add(self.signature, 64)
         return writer.getBytes()
 
+    def serializeAsPem(self):
+        return PEMEncoder(self.serialize()).encode("TACK")
+
     def _getDataToSign(self):
-        return bytearray("tack_sig", "ascii") + self._serializePrelude()
+        return bytearray("tack_sig", "ascii") + self._serialize()[:-64]
 
     def _verifySignature(self):
         bytesToVerify = self._getDataToSign()

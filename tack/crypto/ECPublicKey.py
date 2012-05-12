@@ -35,7 +35,7 @@ class ECPublicKey:
         assert(len(rawPublicKey) == 64)
         bytes1         = a2b_hex("3059301306072a8648ce3d020106082a8648ce3d03010703420004")
         asn1KeyBytes   = bytes1 + rawPublicKey
-        pemPubKeyBytes = PEMEncoder(asn1KeyBytes).getEncoded("PUBLIC KEY")
+        pemPubKeyBytes = PEMEncoder(asn1KeyBytes).encode("PUBLIC KEY")
 
         return EC.load_pub_key_bio(BIO.MemoryBuffer(pemPubKeyBytes))
 

@@ -63,7 +63,7 @@ class TlsCertificate:
         return self.key_sha256 == tack.target_hash
 
     def parsePem(self, s):
-        b = PEMDecoder(s).getDecoded("CERTIFICATE")
+        b = PEMDecoder(s).decode("CERTIFICATE")
         self.parse(b)
 
     def parse(self, b):
@@ -169,7 +169,7 @@ class TlsCertificate:
 
     def writePem(self):
         b = self.write()
-        return PEMEncoder(b).getEncoded("CERTIFICATE")
+        return PEMEncoder(b).encode("CERTIFICATE")
     def writeText(self):
         s =\
         """key_sha256     = 0x%s

@@ -66,7 +66,7 @@ class TackKeyFile(TlsStructure):
 
     @classmethod
     def createFromPem(cls, pem, password):
-        return cls(PEMDecoder(pem).getDecoded("TACK PRIVATE KEY"), password)
+        return cls(PEMDecoder(pem).decode("TACK PRIVATE KEY"), password)
 
     def getPublicKey(self):
         return self.public_key
@@ -87,7 +87,7 @@ class TackKeyFile(TlsStructure):
         return w.getBytes()
 
     def serializeAsPem(self):
-        return PEMEncoder(self.serialize()).getEncoded("TACK PRIVATE KEY")
+        return PEMEncoder(self.serialize()).encode("TACK PRIVATE KEY")
 
     def _encrypt(self, password):
         encKey, authKey = self._deriveKeys(password, self.salt, self.iter_count)

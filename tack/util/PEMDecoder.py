@@ -9,7 +9,7 @@ class PEMDecoder:
         searchStr = "-----BEGIN %s-----" % name
         return searchStr in self.data
 
-    def getDecoded(self, name):
+    def decode(self, name):
         """Decode a PEM string into a bytearray of its payload.
 
         The input must contain an appropriate PEM prefix and postfix
@@ -37,7 +37,7 @@ class PEMDecoder:
         return retBytes
 
 
-    def getDecodedList(self, name):
+    def decodeList(self, name):
         """Decode a sequence of PEM blocks into a list of bytearrays.
 
            The input must contain any number of PEM blocks, each with the appropriate

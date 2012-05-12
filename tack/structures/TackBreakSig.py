@@ -22,7 +22,7 @@ class TackBreakSig(TlsStructure):
 
     @classmethod
     def createFromPem(cls, data):
-        return cls(PEMDecoder(data).getDecoded("TACK BREAK SIG"))
+        return cls(PEMDecoder(data).decode("TACK BREAK SIG"))
 
     @classmethod
     def createFromPemList(cls, data):
@@ -31,7 +31,7 @@ class TackBreakSig(TlsStructure):
         Raise a SyntaxError if input is malformed.
         """
         breakSigs = []
-        bList = PEMDecoder(data).getDecodedList("TACK BREAK SIG")
+        bList = PEMDecoder(data).decodeList("TACK BREAK SIG")
         for b in bList:
             breakSigs.append(TackBreakSig(b))
 
@@ -54,7 +54,7 @@ class TackBreakSig(TlsStructure):
         return w.getBytes()
 
     def serializeAsPem(self):
-        return PEMEncoder(self.serialize()).getEncoded("TACK BREAK SIG")
+        return PEMEncoder(self.serialize()).encode("TACK BREAK SIG")
 
     def getTackId(self):
         return str(self.public_key)
