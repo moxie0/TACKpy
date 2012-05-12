@@ -2,7 +2,6 @@ from tack.compat import a2b_hex
 from tack.crypto.ASN1 import ASN1Parser, asn1Length
 from tack.crypto.Digest import Digest
 from tack.structures.TackExtension import TackExtension
-from tack.structures.TackVersion import TackVersion
 from tack.util.PEMDecoder import PEMDecoder
 from tack.util.PEMEncoder import PEMEncoder
 from tack.util.Time import Time

@@ -28,7 +28,7 @@ class SignCommand(Command):
 
     def execute(self):
         if not self.numArg:
-  
+            #We are only signing a single TACK (this is the typical mode)
             tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
                             self.generation, self.expiration, self.certificate.key_sha256)
 
@@ -37,6 +37,7 @@ class SignCommand(Command):
             if self.isVerbose():
                 sys.stderr.write(str(tack) + "\n")
         else:
+            # We are signing multiple TACKs, since "-n" was specified
             (numTacks, interval) = self.numArg
 
             if not self.outputFileName:
