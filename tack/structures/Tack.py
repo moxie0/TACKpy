@@ -56,24 +56,26 @@ class Tack(TlsStructure):
         return str(self.public_key)
 
     def serialize(self):
-        writer = TlsStructureWriter(Tack.LENGTH)
+        return self._serializePreSig() + self.signature
+
+    def serializeAsPem(self):
+        return PEMEncoder(self.serialize()).encode("TACK")
+
+    def verifySignature(self):
+        bytesToVerify = self._getDataToSign()
+        return self.public_key.verify(bytesToVerify, self.signature)
+
+    def _getDataToSign(self):
+        return bytearray("tack_sig", "ascii") + self._serializePreSig()
+
+    def _serializePreSig(self):
+        writer = TlsStructureWriter(Tack.LENGTH-64)
         writer.add(self.public_key.getRawKey(), 64)
         writer.add(self.min_generation, 1)
         writer.add(self.generation, 1)
         writer.add(self.expiration, 4)
         writer.add(self.target_hash, 32)
-        writer.add(self.signature, 64)
         return writer.getBytes()
-
-    def serializeAsPem(self):
-        return PEMEncoder(self.serialize()).encode("TACK")
-
-    def _getDataToSign(self):
-        return bytearray("tack_sig", "ascii") + self._serialize()[:-64]
-
-    def _verifySignature(self):
-        bytesToVerify = self._getDataToSign()
-        return self.public_key.verify(bytesToVerify, self.signature)
 
     def __str__(self):
         """Return a readable string describing this TACK.

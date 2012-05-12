@@ -27,4 +27,5 @@ class TlsStructureWriter:
             self.add(e, elementLength)
 
     def getBytes(self):
+        assert(self.index == len(self.bytes))
         return self.bytes

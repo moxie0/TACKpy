@@ -172,7 +172,7 @@ class TlsCertificate:
         return PEMEncoder(b).encode("CERTIFICATE")
     def writeText(self):
         s =\
-        """key_sha256     = 0x%s
+        """key_sha256     = %s
 notAfter       = %s
 """ % (\
             Util.writeBytes(self.key_sha256),

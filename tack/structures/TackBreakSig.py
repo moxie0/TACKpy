@@ -59,7 +59,7 @@ class TackBreakSig(TlsStructure):
     def getTackId(self):
         return str(self.public_key)
 
-    def _verifySignature(self):
+    def verifySignature(self):
         return self.public_key.verify(bytearray("tack_break_sig"), self.signature)
 
     def __str__(self):
