@@ -82,8 +82,6 @@ class TackKeyFile(TlsStructure):
         w.add(self.ciphertext, 32)
         w.add(self.public_key.getRawKey(), 64)
         w.add(self.mac, 32)
-        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
-
         return w.getBytes()
 
     def serializeAsPem(self):

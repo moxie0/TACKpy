@@ -50,7 +50,6 @@ class TackExtension(TlsStructure):
 
         w.add(self.pin_activation, 1)
 
-        assert(w.index == len(w.bytes)) # did we fill entire bytearray?
         return w.getBytes()
 
     def isEmpty(self):

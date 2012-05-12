@@ -50,7 +50,6 @@ class TackBreakSig(TlsStructure):
         w = TlsStructureWriter(TackBreakSig.LENGTH)
         w.add(self.public_key.getRawKey(), 64)
         w.add(self.signature, 64)
-        assert(w.index == len(w.bytes))
         return w.getBytes()
 
     def serializeAsPem(self):
