@@ -1,0 +1,1380 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en"><head><title>Trust Assertions for Certificate Keys</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="description" content="Trust Assertions for Certificate Keys">
+<meta name="generator" content="xml2rfc v1.36 (http://xml.resource.org/)">
+<style type='text/css'><!--
+        body {
+                font-family: verdana, charcoal, helvetica, arial, sans-serif;
+                font-size: small; color: #000; background-color: #FFF;
+                margin: 2em;
+        }
+        h1, h2, h3, h4, h5, h6 {
+                font-family: helvetica, monaco, "MS Sans Serif", arial, sans-serif;
+                font-weight: bold; font-style: normal;
+        }
+        h1 { color: #900; background-color: transparent; text-align: right; }
+        h3 { color: #333; background-color: transparent; }
+
+        td.RFCbug {
+                font-size: x-small; text-decoration: none;
+                width: 30px; height: 30px; padding-top: 2px;
+                text-align: justify; vertical-align: middle;
+                background-color: #000;
+        }
+        td.RFCbug span.RFC {
+                font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+                font-weight: bold; color: #666;
+        }
+        td.RFCbug span.hotText {
+                font-family: charcoal, monaco, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+                font-weight: normal; text-align: center; color: #FFF;
+        }
+
+        table.TOCbug { width: 30px; height: 15px; }
+        td.TOCbug {
+                text-align: center; width: 30px; height: 15px;
+                color: #FFF; background-color: #900;
+        }
+        td.TOCbug a {
+                font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, sans-serif;
+                font-weight: bold; font-size: x-small; text-decoration: none;
+                color: #FFF; background-color: transparent;
+        }
+
+        td.header {
+                font-family: arial, helvetica, sans-serif; font-size: x-small;
+                vertical-align: top; width: 33%;
+                color: #FFF; background-color: #666;
+        }
+        td.author { font-weight: bold; font-size: x-small; margin-left: 4em; }
+        td.author-text { font-size: x-small; }
+
+        /* info code from SantaKlauss at http://www.madaboutstyle.com/tooltip2.html */
+        a.info {
+                /* This is the key. */
+                position: relative;
+                z-index: 24;
+                text-decoration: none;
+        }
+        a.info:hover {
+                z-index: 25;
+                color: #FFF; background-color: #900;
+        }
+        a.info span { display: none; }
+        a.info:hover span.info {
+                /* The span will display just on :hover state. */
+                display: block;
+                position: absolute;
+                font-size: smaller;
+                top: 2em; left: -5em; width: 15em;
+                padding: 2px; border: 1px solid #333;
+                color: #900; background-color: #EEE;
+                text-align: left;
+        }
+
+        a { font-weight: bold; }
+        a:link    { color: #900; background-color: transparent; }
+        a:visited { color: #633; background-color: transparent; }
+        a:active  { color: #633; background-color: transparent; }
+
+        p { margin-left: 2em; margin-right: 2em; }
+        p.copyright { font-size: x-small; }
+        p.toc { font-size: small; font-weight: bold; margin-left: 3em; }
+        table.toc { margin: 0 0 0 3em; padding: 0; border: 0; vertical-align: text-top; }
+        td.toc { font-size: small; font-weight: bold; vertical-align: text-top; }
+
+        ol.text { margin-left: 2em; margin-right: 2em; }
+        ul.text { margin-left: 2em; margin-right: 2em; }
+        li      { margin-left: 3em; }
+
+        /* RFC-2629 <spanx>s and <artwork>s. */
+        em     { font-style: italic; }
+        strong { font-weight: bold; }
+        dfn    { font-weight: bold; font-style: normal; }
+        cite   { font-weight: normal; font-style: normal; }
+        tt     { color: #036; }
+        tt, pre, pre dfn, pre em, pre cite, pre span {
+                font-family: "Courier New", Courier, monospace; font-size: small;
+        }
+        pre {
+                text-align: left; padding: 4px;
+                color: #000; background-color: #CCC;
+        }
+        pre dfn  { color: #900; }
+        pre em   { color: #66F; background-color: #FFC; font-weight: normal; }
+        pre .key { color: #33C; font-weight: bold; }
+        pre .id  { color: #900; }
+        pre .str { color: #000; background-color: #CFF; }
+        pre .val { color: #066; }
+        pre .rep { color: #909; }
+        pre .oth { color: #000; background-color: #FCF; }
+        pre .err { background-color: #FCC; }
+
+        /* RFC-2629 <texttable>s. */
+        table.all, table.full, table.headers, table.none {
+                font-size: small; text-align: center; border-width: 2px;
+                vertical-align: top; border-collapse: collapse;
+        }
+        table.all, table.full { border-style: solid; border-color: black; }
+        table.headers, table.none { border-style: none; }
+        th {
+                font-weight: bold; border-color: black;
+                border-width: 2px 2px 3px 2px;
+        }
+        table.all th, table.full th { border-style: solid; }
+        table.headers th { border-style: none none solid none; }
+        table.none th { border-style: none; }
+        table.all td {
+                border-style: solid; border-color: #333;
+                border-width: 1px 2px;
+        }
+        table.full td, table.headers td, table.none td { border-style: none; }
+
+        hr { height: 1px; }
+        hr.insert {
+                width: 80%; border-style: none; border-width: 0;
+                color: #CCC; background-color: #CCC;
+        }
+--></style>
+</head>
+<body>
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
+<tr><td class="header">TLS Working Group</td><td class="header">M. Marlinspike</td></tr>
+<tr><td class="header">Internet-Draft</td><td class="header">T. Perrin, Ed.</td></tr>
+<tr><td class="header">Intended status: Standards Track</td><td class="header">May 12, 2012</td></tr>
+<tr><td class="header">Expires: November 13, 2012</td><td class="header">&nbsp;</td></tr>
+</table></td></tr></table>
+<h1><br />Trust Assertions for Certificate Keys<br />draft-tack.txt</h1>
+
+<h3>Abstract</h3>
+
+<p>
+
+This document defines TACK, a TLS Extension that enables a TLS server to
+assert the authenticity of its public key. A TACK contains a "TACK key" 
+which is used to sign the public key from the TLS server's certificate. 
+Hostnames can be "pinned" to a TACK key. TLS connections to a pinned 
+hostname require the server to present a TACK containing the pinned key
+and a corresponding signature over the TLS server's public key.
+
+			
+</p>
+<h3>Status of this Memo</h3>
+<p>
+This Internet-Draft is submitted  in full
+conformance with the provisions of BCP&nbsp;78 and BCP&nbsp;79.</p>
+<p>
+Internet-Drafts are working documents of the Internet Engineering
+Task Force (IETF).  Note that other groups may also distribute
+working documents as Internet-Drafts.  The list of current
+Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
+<p>
+Internet-Drafts are draft documents valid for a maximum of six months
+and may be updated, replaced, or obsoleted by other documents at any time.
+It is inappropriate to use Internet-Drafts as reference material or to cite
+them other than as &ldquo;work in progress.&rdquo;</p>
+<p>
+This Internet-Draft will expire on November 13, 2012.</p>
+
+<h3>Copyright Notice</h3>
+<p>
+Copyright (c) 2012 IETF Trust and the persons identified as the
+document authors.  All rights reserved.</p>
+<p>
+This document is subject to BCP 78 and the IETF Trust's Legal
+Provisions Relating to IETF Documents
+(http://trustee.ietf.org/license-info) in effect on the date of
+publication of this document.  Please review these documents
+carefully, as they describe your rights and restrictions with respect
+to this document. Code Components extracted from this document must
+include Simplified BSD License text as described in Section 4.e of
+the Trust Legal Provisions and are provided without warranty as
+described in the Simplified BSD License.</p>
+<a name="toc"></a><br /><hr />
+<h3>Table of Contents</h3>
+<p class="toc">
+<a href="#intro">1.</a>&nbsp;
+Introduction<br />
+<a href="#anchor1">2.</a>&nbsp;
+Requirements notation<br />
+<a href="#anchor2">3.</a>&nbsp;
+Overview<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor3">3.1.</a>&nbsp;
+TACK life cycle<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor4">3.2.</a>&nbsp;
+Pin life cycle<br />
+<a href="#anchor5">4.</a>&nbsp;
+TACK Extension<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor6">4.1.</a>&nbsp;
+Definition of TACK_Extension<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor7">4.2.</a>&nbsp;
+Explanation of TACK_Extension fields<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor8">4.2.1.</a>&nbsp;
+TACK fields<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor9">4.2.2.</a>&nbsp;
+TACK_Break_Sig fields<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">4.2.3.</a>&nbsp;
+TACK_Extension fields<br />
+<a href="#clientproc">5.</a>&nbsp;
+Client processing<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">5.1.</a>&nbsp;
+TACK pins, key records, and name records<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor12">5.2.</a>&nbsp;
+High-level client processing<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#details">5.3.</a>&nbsp;
+Client processing details<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#wellformed">5.3.1.</a>&nbsp;
+Check whether the TLS handshake is well-formed<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor13">5.3.2.</a>&nbsp;
+Check the TACK generation and update min_generation<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor14">5.3.3.</a>&nbsp;
+Check whether the TACK is expired<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#creating">5.3.4.</a>&nbsp;
+Create and activate pins (optional)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor15">5.3.5.</a>&nbsp;
+Discard pins based on break signatures<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#deleting">5.3.6.</a>&nbsp;
+Deleting pins<br />
+<a href="#anchor16">6.</a>&nbsp;
+Variations on client processing<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#certver">6.1.</a>&nbsp;
+TACK and certificate verification<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor17">6.2.</a>&nbsp;
+Application-specific pinning<br />
+<a href="#anchor18">7.</a>&nbsp;
+TACK IDs<br />
+<a href="#anchor19">8.</a>&nbsp;
+Advice<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#servadvice">8.1.</a>&nbsp;
+For server operators<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor20">8.2.</a>&nbsp;
+For client implementers<br />
+<a href="#security">9.</a>&nbsp;
+Security considerations<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor21">9.1.</a>&nbsp;
+For server operators<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#security_client">9.2.</a>&nbsp;
+For client implementers<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#future">9.3.</a>&nbsp;
+Note on algorithm agility<br />
+<a href="#anchor22">10.</a>&nbsp;
+IANA considerations<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor23">10.1.</a>&nbsp;
+New entry for the TLS ExtensionType Registry<br />
+<a href="#anchor24">11.</a>&nbsp;
+Acknowledgements<br />
+<a href="#rfc.references1">12.</a>&nbsp;
+Normative references<br />
+<a href="#rfc.authors">&#167;</a>&nbsp;
+Authors' Addresses<br />
+</p>
+<br clear="all" />
+
+<a name="intro"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1"></a><h3>1.&nbsp;
+Introduction</h3>
+
+<p>
+
+Traditionally, a TLS client verifies a TLS server's public key using a
+certificate chain issued by some public CA. "Pinning" is a way for clients to
+obtain increased certainty in server public keys. Clients that employ pinning
+check for some constant "pinned" element of the TLS connection when
+contacting a particular TLS host.
+
+ 
+</p>
+<p>
+
+Unfortunately, a number of problems arise when attempting to pin certificate
+chains: the TLS servers at a given hostname may have different certificate
+chains simultaneously deployed and may change their chains at any time, the
+"more constant" elements of a chain (the CAs) may not be trustworthy, and the
+client may be oblivious to key compromise events which render the pinned data
+untrustworthy.
+
+			
+</p>
+<p>
+
+TACK addresses these problems by having the site sign its TLS server public
+keys with a "TACK key". This enables clients to "pin" a hostname to the TACK
+key without requiring sites to modify their existing certificate chains, and
+without limiting a site's flexibility to deploy different certificate chains
+on different servers or change certificate chains at any time. Since TACK pins
+are based on TACK keys (instead of CA keys), trust in CAs is not required.
+Additionally, the TACK key may be used to revoke previous TACK signatures (or
+even itself) in order to handle the compromise of TLS or TACK private keys.
+
+	
+</p>
+<p>
+
+If requested, a compliant server will send a TLS Extension containing its
+"TACK". Inside the TACK is a public key and signature. Once a client has seen
+the same (hostname, TACK public key) pair multiple times, the client will
+"activate" a pin between the hostname and TACK key for a period equal to the
+length of time the pair has been observed for. This "pin activation" process
+limits the impact of bad pins resulting from transient network attacks or
+operator error.
+
+			
+</p>
+<p>
+
+TACK pins are easily shared between clients. For example, a TACK client
+may scan the internet to discover TACK pins, then publish these pins for other
+clients to rely upon.
+
+
+</p>
+<a name="anchor1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2"></a><h3>2.&nbsp;
+Requirements notation</h3>
+
+<p>The key words "MUST",
+"MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT",
+"RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as
+described in <a class='info' href='#RFC2119'>[RFC2119]<span> (</span><span class='info'>Bradner, S., &ldquo;Key words for use in RFCs to Indicate Requirement Levels,&rdquo; March&nbsp;1997.</span><span>)</span></a>.
+</p>
+<a name="anchor2"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3"></a><h3>3.&nbsp;
+Overview</h3>
+
+<a name="anchor3"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.1"></a><h3>3.1.&nbsp;
+TACK life cycle</h3>
+
+<p>A server operator using TACK may perform several processes:
+
+	</p>
+<blockquote class="text"><dl>
+<dt>Selection of a TACK key:</dt>
+<dd>	
+
+The server operator first chooses the ECDSA signing key to use for a set of
+hostnames. It is safest to use a different signing key for each hostname,
+though a signing key may be reused for closely-related hostnames (such as
+aliases for the same host, or hosts sharing the same TLS key).
+
+	
+</dd>
+<dt>Creating initial TACKs under a TACK key:</dt>
+<dd>	
+
+The TACK private key is then used to sign the TLS public keys for all servers
+associated with those hostnames. The TACK public key and signature are
+combined with some metadata into each server's "TACK".
+
+	
+</dd>
+<dt>Deploying initial TACKs:</dt>
+<dd>	
+
+For each hostname, TACKs are deployed to TLS servers in a two-stage process.
+First, each TLS server associated with the hostname is given a TACK. Once this
+is completed, pin activation is enabled on the servers.
+
+	
+</dd>
+<dt>Creating new TACKs under a TACK key:</dt>
+<dd>	
+
+A TACK needs to be replaced whenever a server changes its TLS public key, or
+when the TACK expires. TACKs may also need to be replaced with
+later-generation TACKs if the TACK key's "min_generation" is updated (see
+next).
+
+	
+</dd>
+<dt>Revoking old TACKs:</dt>
+<dd>
+
+If a TLS private key is compromised, the TACKs signing this key can be revoked by
+publishing a new TACK containing a higher "min_generation".
+
+	
+</dd>
+<dt>Revoking TACK keys:</dt>
+<dd>
+
+If a TACK private key is compromised, or a server operator wishes to stop using
+TACK or abruptly change its TACK key for any reason, a server can revoke an entire
+TACK key (including all TACKs and pins referring to it) by publishing a "break
+signature".
+
+	
+</dd>
+</dl></blockquote><p>
+		
+
+</p>
+<a name="anchor4"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.2"></a><h3>3.2.&nbsp;
+Pin life cycle</h3>
+
+<p>
+
+A TACK client maintains a store of pins for verifying TLS connections. Pins
+associate a hostname and a TACK key. When a client sees a new hostname and
+TACK key combination, an inactive pin is created. Every subsequent time the
+client sees the same pin, the pin is "activated" for a period equal to the
+timespan between the first time the pin was seen and the most recent time, up
+to a maximum period of 30 days.
+
+
+</p>
+<p>
+
+Pin activation prevents an attacker with short-lived control of the hostname
+from activating long-lived pins. It also makes it safer for sites to
+experiment with TACKs, as a new TACK can be discarded without causing
+long-lived problems. The 30 day limit guarantees that a worst-case pin can be
+recovered from in reasonable time.
+
+
+</p>
+<p>In addition to creating and activating pins, a TLS connection can alter the
+   clients's pin store by publishing revocation data:</p>
+<blockquote class="text"><dl>
+<dt>Min_generation:</dt>
+<dd>
+
+Each pin stores the highest "min_generation" value it has seen from the pinned
+TACK key, and rejects TACKs from earlier generations.
+
+	
+</dd>
+<dt>Break signatures:</dt>
+<dd>
+
+A TLS handshake may send break signatures which cause all pins for the
+broken key to be discarded.
+
+	
+</dd>
+</dl></blockquote><p>
+	
+</p>
+<a name="anchor5"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4"></a><h3>4.&nbsp;
+TACK Extension</h3>
+
+<a name="anchor6"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.1"></a><h3>4.1.&nbsp;
+Definition of TACK_Extension</h3>
+
+<p>
+
+A new TLS ExtensionType ("tack") is defined and MAY be included by a TLS
+client in the ClientHello message defined in <a class='info' href='#RFC5246'>[RFC5246]<span> (</span><span class='info'>Dierks, T. and E. Rescorla, &ldquo;The Transport Layer Security (TLS) Protocol Version 1.2,&rdquo; August&nbsp;2008.</span><span>)</span></a>.
+
+
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+enum {tack(TBD), (65535)} ExtensionType;
+</pre></div>
+<p>
+
+The "extension_data" field of this ClientHello SHALL be empty. A TLS server
+which is not resuming a TLS session MAY respond with an extension of type
+"tack" in the ServerHello. The "extension_data" field of this ServerHello
+SHALL contain a "TACK_Extension", as defined below using the TLS presentation
+language from <a class='info' href='#RFC5246'>[RFC5246]<span> (</span><span class='info'>Dierks, T. and E. Rescorla, &ldquo;The Transport Layer Security (TLS) Protocol Version 1.2,&rdquo; August&nbsp;2008.</span><span>)</span></a>.
+
+	
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+enum (disabled(0), enabled(1)} TACK_Activation;
+
+struct {
+   opaque public_key[64];
+   uint8  min_generation;
+   uint8  generation;
+   uint32 expiration;
+   opaque target_hash[32];
+   opaque signature[64];
+} TACK;  /* 166 bytes */
+
+struct {
+   opaque public_key[64];
+   opaque signature[64];
+} TACK_Break_Sig;  /* 128 bytes */
+
+struct {
+   TACK tack&lt;0...166&gt;  /* 0 or 1 TACK */
+   TACK_Break_Sig  break_sigs&lt;0...1024&gt;  /* 0...8 Break Sigs */
+   TACK_Activation pin_activation;
+} TACK_Extension;
+</pre></div>
+<p>
+	
+
+
+</p>
+<a name="anchor7"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2"></a><h3>4.2.&nbsp;
+Explanation of TACK_Extension fields</h3>
+
+<a name="anchor8"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.1"></a><h3>4.2.1.&nbsp;
+TACK fields</h3>
+
+<p>
+</p>
+<blockquote class="text"><dl>
+<dt>public_key:</dt>
+<dd>
+
+This field specifies the TACK's public key. The field contains a pair
+of integers (x, y) representing a point on the elliptic curve P-256 defined in
+<a class='info' href='#FIPS186-3'>[FIPS186&#8209;3]<span> (</span><span class='info'>National Institute of Standards and Technology, &ldquo;Digital Signature Standard,&rdquo; June&nbsp;2009.</span><span>)</span></a>. Each integer is encoded as a 32-byte octet string
+using the Integer-to-Octet-String algorithm from <a class='info' href='#RFC6090'>[RFC6090]<span> (</span><span class='info'>McGrew, D., Igoe, K., and M. Salter, &ldquo;Fundamental Elliptic Curve Cryptography Algorithms,&rdquo; February&nbsp;2011.</span><span>)</span></a>, and
+these strings are concatenated with the x value first. (NOTE: This is
+equivalent to an uncompressed subjectPublicKey from <a class='info' href='#RFC5480'>[RFC5480]<span> (</span><span class='info'>Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk, &ldquo;Elliptic Curve Cryptography Subject Public Key Information,&rdquo; March&nbsp;2009.</span><span>)</span></a>,
+except that the initial 0x04 byte is omitted).
+
+	
+</dd>
+<dt>min_generation:</dt>
+<dd> 
+
+This field publishes a min_generation value.
+
+
+</dd>
+<dt>generation:</dt>
+<dd> 
+
+This field assigns each TACK a generation. Generations less than a published
+min_generation are considered revoked.
+
+
+</dd>
+<dt>expiration:</dt>
+<dd> 
+
+This field specifies a time after which the TACK is considered expired. The
+time is encoded as the number of minutes, excluding leap seconds, after
+midnight UTC, January 1 1970. 
+</dd>
+<dt>target_hash:</dt>
+<dd> 
+
+This field is a hash of the TLS server's SubjectPublicKeyInfo <a class='info' href='#RFC5280'>[RFC5280]<span> (</span><span class='info'>Cooper, D., Santesson, S., Farrell, S., Boeyen, S., Housley, R., and W. Polk, &ldquo;Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile,&rdquo; May&nbsp;2008.</span><span>)</span></a> using the SHA256 algorithm from <a class='info' href='#FIPS180-2'>[FIPS180&#8209;2]<span> (</span><span class='info'>National Institute of Standards and Technology, &ldquo;Secure Hash Standard,&rdquo; August&nbsp;2002.</span><span>)</span></a>.
+The SubjectPublicKeyInfo is typically conveyed as part of the server's X.509
+certificate.
+
+
+</dd>
+<dt>signature:</dt>
+<dd>
+
+This field is an ECDSA signature by the TACK's public key over the 8 byte
+ASCII string "tack_sig" followed by the contents of the TACK prior to the
+"signature" field (i.e. the preceding 102 bytes). The field contains a pair of
+integers (r, s) representing an ECDSA signature as defined in <a class='info' href='#FIPS186-3'>[FIPS186&#8209;3]<span> (</span><span class='info'>National Institute of Standards and Technology, &ldquo;Digital Signature Standard,&rdquo; June&nbsp;2009.</span><span>)</span></a>, using curve P-256 and SHA256. Each integer is encoded as
+a 32-byte octet string using the Integer-to-Octet-String algorithm from <a class='info' href='#RFC6090'>[RFC6090]<span> (</span><span class='info'>McGrew, D., Igoe, K., and M. Salter, &ldquo;Fundamental Elliptic Curve Cryptography Algorithms,&rdquo; February&nbsp;2011.</span><span>)</span></a>, and these strings are concatenated with the r value first.
+
+
+</dd>
+</dl></blockquote><p>
+
+</p>
+<a name="anchor9"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.2"></a><h3>4.2.2.&nbsp;
+TACK_Break_Sig fields</h3>
+
+<p>
+</p>
+<blockquote class="text"><dl>
+<dt>public_key:</dt>
+<dd> 
+
+This field specifies the TACK key being broken. The key is encoded as per
+TACK.public_key.
+
+
+</dd>
+<dt>signature:</dt>
+<dd>
+
+This field is an ECDSA signature by the TACK_Break_Sig's public key over the
+14 byte ASCII string "tack_break_sig". The field contains a pair of integers
+(r, s) representing an ECDSA signature as defined in <a class='info' href='#FIPS186-3'>[FIPS186&#8209;3]<span> (</span><span class='info'>National Institute of Standards and Technology, &ldquo;Digital Signature Standard,&rdquo; June&nbsp;2009.</span><span>)</span></a>, using curve P-256 and SHA256. It is calculated and
+encoded as per TACK.signature.
+
+
+</dd>
+</dl></blockquote><p>
+
+</p>
+<a name="anchor10"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4.2.3"></a><h3>4.2.3.&nbsp;
+TACK_Extension fields</h3>
+
+<p>
+</p>
+<blockquote class="text"><dl>
+<dt>tack:</dt>
+<dd>
+
+This field provides the server's TACK. It MAY be empty, or MAY contain a TACK.
+
+</dd>
+<dt>break_sigs:</dt>
+<dd>
+
+This field provides break signatures. It MAY be empty, or MAY contain up to 8
+break signatures.
+
+
+</dd>
+<dt>pin_activation:</dt>
+<dd>
+
+If pin activation is enabled, then the TACK_Extension MAY be used by clients
+to activate or extend the activation of TACK pins. This field is typically
+toggled from a disabled to an enabled state once TACKs have been deployed to
+all TLS servers for a hostname.
+
+
+</dd>
+</dl></blockquote><p> 
+</p>
+<p> Note that both the "tack" and "break_sigs" fields MAY be empty. 
+</p>
+<a name="clientproc"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5"></a><h3>5.&nbsp;
+Client processing</h3>
+
+<a name="anchor11"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.1"></a><h3>5.1.&nbsp;
+TACK pins, key records, and name records</h3>
+
+<p>
+
+A client supporting TACK SHALL have a local store of pins, consisting of "key
+records" and "name records". Each name record is associated with a key record.
+Multiple name records MAY be associated with one key record. A "pin" refers to
+a (name record, key record) pair.
+
+
+</p>
+<p>
+
+ A "key record" contains:
+
+</p>
+<blockquote class="text">
+<p>
+
+TACK public key (or hash): A public key or a cryptographically-secure, second
+preimage-resistant hash of a public key. A client SHALL NOT store multiple key
+records referencing the same key.
+
+
+</p>
+<p>
+
+Min_generation: A single byte used to detect revoked TACKs.
+
+
+</p>
+</blockquote><p>
+
+</p>
+<p>
+
+A "name record" contains:
+
+</p>
+<blockquote class="text">
+<p>
+
+Name: A fully qualified DNS hostname. A client SHALL NOT store multiple name
+records with the same name. The TLS server's hostname is considered the
+"relevant name", and a pin whose name exactly matches the relevant name is
+considered a "relevant pin".
+
+
+</p>
+<p>
+
+Initial timestamp: A timestamp noting when this pin was created.
+
+
+</p>
+<p>
+
+Active period end: Empty or a timestamp. If empty or set to a time in the
+past, the pin is "inactive". If set to a future time, the pin is "active"
+until that time.
+
+
+</p>
+</blockquote><p>
+
+</p>
+<a name="anchor12"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.2"></a><h3>5.2.&nbsp;
+High-level client processing</h3>
+
+<p>
+
+A TACK client SHALL send the "tack" extension defined previously, as well as
+the "server_name" extension from <a class='info' href='#RFC6066'>[RFC6066]<span> (</span><span class='info'>Eastlake, D., &ldquo;Transport Layer Security (TLS) Extensions: Extension Definitions,&rdquo; January&nbsp;2011.</span><span>)</span></a> indicating the
+hostname the client is contacting. If not resuming a session, the server MAY
+respond with a TACK_Extension. A TACK client SHALL perform the following steps
+prior to using a non-resumed connection:
+
+</p>
+<ol class="text">
+<li>Check whether the TLS handshake is "well-formed".
+</li>
+<li>Check the TACK generation and update min_generation.
+</li>
+<li>Check whether the TACK is expired.
+</li>
+<li>Create and activate pins (optional).
+</li>
+<li>Discard pins based on break signatures.
+</li>
+</ol><p>
+
+These steps SHALL be performed in order. If there is any error, the client
+SHALL send a fatal error alert and close the connection, skipping the
+remaining steps (see <a class='info' href='#details'>Section&nbsp;5.3<span> (</span><span class='info'>Client processing details</span><span>)</span></a> for details).
+
+
+</p>
+<p>
+
+After the above steps, if there is a relevant active pin and a TACK whose key
+is referenced by the pin, then the connection is "accepted" by the pin. If
+there is a relevant active pin but no such TACK, the connection is "rejected"
+by the pin. If there is no relevant active pin, the connection is "unpinned".
+
+</p>
+<p> A rejected connection might indicate a network attack. If the connection
+is rejected the client SHOULD send a fatal "access_denied" error alert and
+close the connection.
+</p>
+<p> A client MAY perform additional verification steps before using an
+accepted or unpinned connection. See <a class='info' href='#certver'>Section&nbsp;6.1<span> (</span><span class='info'>TACK and certificate verification</span><span>)</span></a> for an
+example.
+</p>
+<a name="details"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3"></a><h3>5.3.&nbsp;
+Client processing details</h3>
+
+<a name="wellformed"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.1"></a><h3>5.3.1.&nbsp;
+Check whether the TLS handshake is well-formed</h3>
+
+<p>
+
+A TLS handshake is "well-formed" if the following are true (the error alert to
+be sent on a failure is indicated in parentheses):
+
+</p>
+<ol class="text">
+<li>The handshake protocol negotiates a cryptographically secure ciphersuite
+and finishes succesfully (else see <a class='info' href='#RFC5246'>[RFC5246]<span> (</span><span class='info'>Dierks, T. and E. Rescorla, &ldquo;The Transport Layer Security (TLS) Protocol Version 1.2,&rdquo; August&nbsp;2008.</span><span>)</span></a>).
+</li>
+<li>The handshake contains either no TACK_Extension or a syntactically-valid
+TACK_Extension (else "decode_error").
+</li>
+<li>If break signatures are present, the signatures are correct (else
+"decrypt_error"). This step is optional, as break signature verification MAY
+be deferred till later.
+</li>
+<li>If a TACK is present, it is "well-formed" by the rules below.
+</li>
+</ol><p> 
+
+</p>
+<p>
+A TACK is "well-formed" if:	
+</p>
+<ol class="text">
+<li>"public_key" is a valid elliptic curve public key on the curve P-256 (else
+"decrypt_error").
+</li>
+<li>"generation" is >= "min_generation" (else "decode_error").
+</li>
+<li>"target_hash" is equal to the SHA256 hash of the server's
+SubjectPublicKeyInfo (else "illegal_parameter").
+</li>
+<li>"signature" is a correct ECDSA signature (else "decrypt_error").
+</li>
+</ol><p>	
+
+</p>
+<a name="anchor13"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.2"></a><h3>5.3.2.&nbsp;
+Check the TACK generation and update min_generation</h3>
+
+<p>
+
+If there is a TACK and a key record referencing the TACK key, and the TACK's
+generation is less than the key record's min_generation, then the TACK is
+revoked and the client SHALL send the "certificate_revoked" alert and close
+the connection.
+
+</p>
+<p> Otherwise, if there is a TACK and a key record referencing the TACK key,
+and the TACK's min_generation is greater than the key record's min_generation,
+then the key record's min_generation SHALL be set to the TACK's value.
+
+
+</p>
+<a name="anchor14"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.3"></a><h3>5.3.3.&nbsp;
+Check whether the TACK is expired</h3>
+
+<p>
+
+If there is a TACK and the TACK's "expiration" field specifies a time in the
+past, the client SHALL send the "certificate_expired" alert and close the
+connection.
+
+
+</p>
+<a name="creating"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.4"></a><h3>5.3.4.&nbsp;
+Create and activate pins (optional)</h3>
+
+<p>
+
+The TLS connection MAY be used to create, delete, and activate pins as
+described in this section. Note that this section is optional; a client MAY
+rely on an external source of pins, provided the external pins are produced by
+a client following the below algorithms.
+
+
+</p>
+<p>
+
+If there is a TACK and a relevant pin referencing the TACK key, and pin
+activation is enabled, the name record's "active period end" SHALL be set
+using the below formula (where "current" is the current time, and "initial" is
+the "initial timestamp" from the name record):
+
+
+</p><div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+active_period_end = current + MIN(30 days, current - initial)
+</pre></div>
+<p>
+
+If there is a TACK and either no relevant pin or an inactive relevant pin that
+does not reference the TACK key, a new pin SHALL be created:
+
+</p>
+<ol class="text">
+<li>If the TACK key is referenced by an existing
+key record, the key record is reused, otherwise a new key record is created
+with the TACK's key and min_generation.
+</li>
+<li>A new name record is created
+containing the relevant name, an "initial timestamp" equal to the current
+time, and an empty "active period end".
+</li>
+<li>If there is an existing relevant pin, the pin SHALL be deleted (see <a class='info' href='#deleting'>Section&nbsp;5.3.6<span> (</span><span class='info'>Deleting pins</span><span>)</span></a>).
+</li>
+</ol><p>
+
+</p>
+<p> If there is no TACK and the relevant pin is inactive, the pin SHALL be
+deleted (see <a class='info' href='#deleting'>Section&nbsp;5.3.6<span> (</span><span class='info'>Deleting pins</span><span>)</span></a>).
+</p>
+<p>
+
+The following table summarizes this behavior based on whether the relevant pin
+is active and references the TACK key. The "(*)" means "if pin activation is
+enabled".
+
+
+</p><table class="full" align="center" border="0" cellpadding="2" cellspacing="2">
+<col align="left"><col align="left"><col align="left">
+<tr><th align="left">Pin status</th><th align="left">Pin references TACK</th><th align="left">Result</th></tr>
+<tr>
+<td align="left">Active</td>
+<td align="left">Yes</td>
+<td align="left">Extend activation period (*)</td>
+</tr>
+<tr>
+<td align="left">Active</td>
+<td align="left">No (or no TACK)</td>
+<td align="left">Rejected</td>
+</tr>
+<tr>
+<td align="left">Inactive</td>
+<td align="left">Yes</td>
+<td align="left">Activate pin (*)</td>
+</tr>
+<tr>
+<td align="left">Inactive</td>
+<td align="left">No</td>
+<td align="left">Replace with new inactive pin</td>
+</tr>
+<tr>
+<td align="left">Inactive</td>
+<td align="left">No TACK</td>
+<td align="left">Delete pin</td>
+</tr>
+<tr>
+<td align="left">No pin</td>
+<td align="left">-</td>
+<td align="left">Create new inactive pin</td>
+</tr>
+<tr>
+<td align="left">No pin</td>
+<td align="left">No TACK</td>
+<td align="left">-</td>
+</tr>
+</table>
+<br clear="all" />
+
+<a name="anchor15"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.5"></a><h3>5.3.5.&nbsp;
+Discard pins based on break signatures</h3>
+
+<p>
+
+All key records broken by break signatures SHALL be discarded, along with
+their associated name records. A key record is broken by a break signature if
+the break signature passes the following checks:
+
+</p>
+<ol class="text">
+<li>"public_key" is referenced by the key record.
+</li>
+<li>"signature" is a correct ECDSA signature (else "decrypt_error"). 
+</li>
+</ol><p>
+
+</p>
+<a name="deleting"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5.3.6"></a><h3>5.3.6.&nbsp;
+Deleting pins</h3>
+
+<p>
+
+A client might need to delete a pin from its store as a result of the
+algorithms in <a class='info' href='#creating'>Section&nbsp;5.3.4<span> (</span><span class='info'>Create and activate pins (optional)</span><span>)</span></a>. A client MAY also delete pins from
+its store at any time, whether to save space, protect privacy, or for any
+other reason. To delete a pin, its name record SHALL be removed. If this
+leaves a key record with no associated name records, the key record MAY be
+removed as well. Pins MAY be deleted regardless of whether they are active or
+inactive, however for security concerns regarding pin deletion, see <a class='info' href='#security_client'>Section&nbsp;9.2<span> (</span><span class='info'>For client implementers</span><span>)</span></a>.
+
+
+</p>
+<p>
+
+</p>
+<p>
+
+Deleting pins unnecessarily will reduce the benefits of TACK, so SHOULD be
+avoided. Note that a pin SHOULD NOT be deleted simply because it has become
+inactive. Instead, such a pin SHOULD be retained, so that it can be
+re-activated in the future by the algorithms in <a class='info' href='#creating'>Section&nbsp;5.3.4<span> (</span><span class='info'>Create and activate pins (optional)</span><span>)</span></a>.
+
+
+</p>
+<a name="anchor16"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6"></a><h3>6.&nbsp;
+Variations on client processing</h3>
+
+<a name="certver"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6.1"></a><h3>6.1.&nbsp;
+TACK and certificate verification</h3>
+
+<p>
+
+A TACK client MAY choose to perform some form of certificate verification in
+addition to TACK processing. When combining certificate verification and TACK
+processing, the TACK processing described in <a class='info' href='#clientproc'>Section&nbsp;5<span> (</span><span class='info'>Client processing</span><span>)</span></a> SHALL
+be followed, with the exception that TACK processing MAY be terminated early
+(or skipped) if some fatal certificate error is discovered.
+
+
+</p>
+<p>
+
+If TACK processing and certificate verification both complete without a fatal
+error, the client SHALL apply some policy to decide whether to accept the
+connection. The policy is up to the client. An example policy would be to
+accept the connection only if it passes certificate verification and is not
+rejected by a pin, or if the user elects to "connect anyway" despite
+certificate and/or pin failures.
+
+
+</p>
+<a name="anchor17"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6.2"></a><h3>6.2.&nbsp;
+Application-specific pinning</h3>
+
+<p>
+
+In addition to the hostname-based pinning described in <a class='info' href='#clientproc'>Section&nbsp;5<span> (</span><span class='info'>Client processing</span><span>)</span></a>, some applications may require "application-specific
+pins", where an application-layer name is pinned to a TACK key. For example,
+an SMTP MTA may wish to authenticate receiving MTAs by pinning email domains
+to the receiving MTAs' TACK keys.
+
+
+</p>
+<p>
+
+Application-specific pins may require redefinition of the name record's "name"
+field, the "relevant name" for the TLS connection, and the "pin activation"
+signal. With these items redefined, the client processing rules in <a class='info' href='#clientproc'>Section&nbsp;5<span> (</span><span class='info'>Client processing</span><span>)</span></a> may be reused.
+
+
+</p>
+<p>Note that a server using application-specific pins is still subject to
+hostname pins, and a client MAY apply either or both forms of pinning. 
+</p>
+<p>
+
+The specification of application-specific pinning for particular applications
+is outside the scope of this document.
+
+
+</p>
+<a name="anchor18"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.7"></a><h3>7.&nbsp;
+TACK IDs</h3>
+
+<p>
+
+A "TACK ID" MAY be used to represent a TACK public key to users in a form that
+is relatively easy to compare and transcribe. A TACK ID consists of the first
+25 characters from the base32 encoding of SHA256(public_key), split into 5
+groups of 5 characters separated by periods. Base32 encoding is as specified
+in <a class='info' href='#RFC4648'>[RFC4648]<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a>, except lowercase is used.
+
+
+</p>
+<p>
+Example TACK IDs:	
+
+</p>
+<p>
+</p>
+<blockquote class="text">
+<p>quxiz.kpldu.uuedc.j5znm.7mqst
+</p>
+<p>a334f.bt7ts.ljb3b.y24ij.6zhwm
+</p>
+<p>ebsx7.z22qt.okobu.ibhut.xzdny
+</p>
+</blockquote><p>
+
+</p>
+<a name="anchor19"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.8"></a><h3>8.&nbsp;
+Advice</h3>
+
+<a name="servadvice"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.8.1"></a><h3>8.1.&nbsp;
+For server operators</h3>
+
+<p>
+</p>
+<blockquote class="text"><dl>
+<dt>Key reuse:</dt>
+<dd>
+
+All servers that are pinned to a single TACK key are able to impersonate each
+other, since clients will perceive their TACKs as equivalent. Thus, TACK keys
+SHOULD NOT be reused with different hostnames unless these hostnames are
+closely related. Examples where it would be safe to reuse a TACK key are
+hostnames aliased to the same host, hosts sharing the same TLS key, or
+hostnames for a group of near-identical servers.
+
+
+</dd>
+<dt>Aliases:</dt>
+<dd>
+
+A TLS server may be referenced by multiple hostnames. Clients may pin any of
+these hostnames. Server operators should be careful when using such DNS
+aliases that hostnames are not pinned inadvertently.
+
+
+</dd>
+<dt>Generations:</dt>
+<dd>
+
+To revoke older generations of TACKs, the server operator SHOULD first provide
+all servers with a new generation of TACKs, and only then provide servers with
+new TACKs containing the new min_generation. Otherwise, a client may receive a
+min_generation update from one server but then try to contact an
+older-generation server which has not yet been updated.
+</dd>
+<dt>Signature expiration:</dt>
+<dd>
+
+It is convenient to set the TACK expiration equal to the end-entity
+certificate expiration, so that the TACK and certificate may both be replaced
+at the same time. Alternatively, short-lived TACKs may be used so that a
+compromised TLS private key has limited value to an attacker.
+</dd>
+<dt>Break signatures:</dt>
+<dd>
+
+A break signature only needs to be published for a time interval equal to the
+maximum active period of any affected pins. For example, if a TACK has been only
+been published on a website for 24 hours, to remove the TACK only requires
+publishing the break signature for 24 hours.
+
+
+</dd>
+<dt>Pin activation:</dt>
+<dd>
+
+Pin activation SHOULD only be enabled once all TLS servers sharing the same
+hostname have a TACK. Otherwise, a client may activate a pin by contacting one
+server, then contact a different server at the same hostname that does not yet
+have a TACK. 
+</dd>
+<dt>Pin deactivation:</dt>
+<dd>The pin_activation field can be used to phase
+out TACKs for a hostname. If all servers at a hostname disable pin activation,
+all existing pins for the hostname will eventually become inactive, at which
+point the servers' TACKs can be removed.
+
+
+</dd>
+</dl></blockquote><p>
+	
+
+</p>
+<a name="anchor20"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.8.2"></a><h3>8.2.&nbsp;
+For client implementers</h3>
+
+<p>
+</p>
+<blockquote class="text"><dl>
+<dt>Sharing pin information:</dt>
+<dd>
+
+It is possible for a client to maintain a pin store based entirely on its own
+TLS connections. However, such a client runs the risk of creating incorrect
+pins, failing to keep its pins active, or failing to receive revocation
+information (min_generation updates and break signatures). Clients are advised
+to collaborate so that pin data can be aggregated and shared. This will
+require additional protocols outside the scope of this document.
+
+
+</dd>
+<dt>Clock synchronization:</dt>
+<dd>
+
+A client SHOULD take measures to prevent TACKs from being erroneously rejected
+due to an inaccurate client clock. Such methods MAY include using time
+synchronization protocols such as NTP <a class='info' href='#RFC5905'>[RFC5905]<span> (</span><span class='info'>Mills, D., Martin, J., Burbank, J., and W. Kasch, &ldquo;Network Time Protocol Version 4: Protocol and Algorithms Specification,&rdquo; June&nbsp;2010.</span><span>)</span></a>, or accepting
+seemingly-expired TACKs if they expired less than T minutes ago, where T is a
+"tolerance bound" set to the client's maximum expected clock error.
+
+
+</dd>
+</dl></blockquote><p>
+
+</p>
+<a name="security"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.9"></a><h3>9.&nbsp;
+Security considerations</h3>
+
+<a name="anchor21"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.9.1"></a><h3>9.1.&nbsp;
+For server operators</h3>
+
+<p>
+
+All servers pinned to the same TACK key can impersonate each other (see <a class='info' href='#servadvice'>Section&nbsp;8.1<span> (</span><span class='info'>For server operators</span><span>)</span></a>). Think carefully about this risk if using the same TACK
+key for multiple hostnames.
+
+
+</p>
+<p>
+
+Make backup copies of the TACK private key and keep all copies in secure
+locations where they can't be compromised.
+
+
+</p>
+<p>
+
+A TACK private key MUST NOT be used to perform any non-TACK cryptographic
+operations. For example, using a TACK key for email encryption, code-signing,
+or any other purpose MUST NOT be done.
+
+
+</p>
+<p>
+
+HTTP cookies <a class='info' href='#RFC6265'>[RFC6265]<span> (</span><span class='info'>Barth, A., &ldquo;HTTP State Management Mechanism,&rdquo; April&nbsp;2011.</span><span>)</span></a> set by a pinned host can be stolen by a
+network attacker who can forge web and DNS responses so as to cause a client
+to send the cookies to a phony subdomain of the pinned host. To prevent this,
+TACK HTTPS Servers SHOULD set the "secure" attribute and omit the "domain"
+attribute on all security-sensitive cookies, such as session cookies. These
+settings tell the browser that the cookie should only be presented back to the
+originating host (not its subdomains), and should only be sent over HTTPS (not
+HTTP) <a class='info' href='#RFC6265'>[RFC6265]<span> (</span><span class='info'>Barth, A., &ldquo;HTTP State Management Mechanism,&rdquo; April&nbsp;2011.</span><span>)</span></a>.
+
+
+</p>
+<a name="security_client"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.9.2"></a><h3>9.2.&nbsp;
+For client implementers</h3>
+
+<p>
+
+A TACK pin store may contain private details of the client's connection
+history. An attacker may be able to access this information by hacking or
+stealing the client. Some information about the client's connection history
+could also be gleaned by observing whether the client accepts or rejects
+connections to phony TLS servers without correct TACKs. To mitigate these
+risks, a TACK client SHOULD allow the user to edit or clear the pin store.
+
+
+</p>
+<p>
+
+Aside from rejecting TLS connections, clients SHOULD NOT take any actions
+which would reveal to a network observer the state of the client's pin store,
+as this would allow an attacker to know in advance whether a
+"man-in-the-middle" attack on a particular TLS connection will succeed or be
+detected.
+
+
+</p>
+<p>
+
+An attacker may attempt to flood a client with spurious TACKs for different
+hostnames, causing the client to delete old pins to make space for new ones.
+To defend against this, clients SHOULD NOT delete active pins to make space
+for new pins. Clients instead SHOULD delete inactive pins. If there are no
+inactive pins to delete, then the pin store is full and there is no space for
+new pins. To select an inactive pin for deletion, the client SHOULD delete the
+pin with the oldest "active_period_end".
+
+
+</p>
+<a name="future"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.9.3"></a><h3>9.3.&nbsp;
+Note on algorithm agility</h3>
+
+<p>
+
+If the need arises for TACKs using different cryptographic algorithms (e.g.,
+if SHA256 or ECDSA are shown to be weak), a "v2" version of TACKs could be
+defined, requiring assignment of a new TLS Extension number. TACKs as defined
+in this document would then be known as "v1" TACKs.
+
+
+</p>
+<a name="anchor22"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.10"></a><h3>10.&nbsp;
+IANA considerations</h3>
+
+<a name="anchor23"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.10.1"></a><h3>10.1.&nbsp;
+New entry for the TLS ExtensionType Registry</h3>
+
+<p>
+
+IANA is requested to add an entry to the existing TLS ExtensionType registry,
+defined in <a class='info' href='#RFC5246'>[RFC5246]<span> (</span><span class='info'>Dierks, T. and E. Rescorla, &ldquo;The Transport Layer Security (TLS) Protocol Version 1.2,&rdquo; August&nbsp;2008.</span><span>)</span></a>, for tack(TBD) as defined in this document.
+
+ 
+</p>
+<a name="anchor24"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.11"></a><h3>11.&nbsp;
+Acknowledgements</h3>
+
+<p>
+
+Valuable feedback has been provided by Adam Langley, Chris Palmer, Nate
+Lawson, and Joseph Bonneau.
+
+
+</p>
+<a name="rfc.references1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>12.&nbsp;Normative references</h3>
+<table width="99%" border="0">
+<tr><td class="author-text" valign="top"><a name="FIPS180-2">[FIPS180-2]</a></td>
+<td class="author-text">National Institute of Standards and Technology, &ldquo;<a href="http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf">Secure Hash Standard</a>,&rdquo; FIPS&nbsp;PUB 180-2, August&nbsp;2002.</td></tr>
+<tr><td class="author-text" valign="top"><a name="FIPS186-3">[FIPS186-3]</a></td>
+<td class="author-text">National Institute of Standards and Technology, &ldquo;<a href="http://csrc.nist.gov/publications/fips/fips186-3/fips_186-3.pdf">Digital Signature Standard</a>,&rdquo; FIPS&nbsp;PUB 186-3, June&nbsp;2009.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2119">[RFC2119]</a></td>
+<td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="http://www.rfc-editor.org/rfc/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC4648">[RFC4648]</a></td>
+<td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4648.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC5246">[RFC5246]</a></td>
+<td class="author-text">Dierks, T. and E. Rescorla, &ldquo;<a href="http://tools.ietf.org/html/rfc5246">The Transport Layer Security (TLS) Protocol Version 1.2</a>,&rdquo; RFC&nbsp;5246, August&nbsp;2008 (<a href="http://www.rfc-editor.org/rfc/rfc5246.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC5280">[RFC5280]</a></td>
+<td class="author-text">Cooper, D., Santesson, S., Farrell, S., Boeyen, S., Housley, R., and W. Polk, &ldquo;<a href="http://tools.ietf.org/html/rfc5280">Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile</a>,&rdquo; RFC&nbsp;5280, May&nbsp;2008 (<a href="http://www.rfc-editor.org/rfc/rfc5280.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC5480">[RFC5480]</a></td>
+<td class="author-text">Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk, &ldquo;<a href="http://tools.ietf.org/html/rfc5480">Elliptic Curve Cryptography Subject Public Key Information</a>,&rdquo; RFC&nbsp;5480, March&nbsp;2009 (<a href="http://www.rfc-editor.org/rfc/rfc5480.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC5905">[RFC5905]</a></td>
+<td class="author-text">Mills, D., Martin, J., Burbank, J., and W. Kasch, &ldquo;<a href="http://tools.ietf.org/html/rfc5905">Network Time Protocol Version 4: Protocol and Algorithms Specification</a>,&rdquo; RFC&nbsp;5905, June&nbsp;2010 (<a href="http://www.rfc-editor.org/rfc/rfc5905.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC6066">[RFC6066]</a></td>
+<td class="author-text">Eastlake, D., &ldquo;<a href="http://tools.ietf.org/html/rfc6066">Transport Layer Security (TLS) Extensions: Extension Definitions</a>,&rdquo; RFC&nbsp;6066, January&nbsp;2011 (<a href="http://www.rfc-editor.org/rfc/rfc6066.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC6090">[RFC6090]</a></td>
+<td class="author-text">McGrew, D., Igoe, K., and M. Salter, &ldquo;<a href="http://tools.ietf.org/html/rfc6090">Fundamental Elliptic Curve Cryptography Algorithms</a>,&rdquo; RFC&nbsp;6090, February&nbsp;2011 (<a href="http://www.rfc-editor.org/rfc/rfc6090.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC6265">[RFC6265]</a></td>
+<td class="author-text">Barth, A., &ldquo;<a href="http://tools.ietf.org/html/rfc6265">HTTP State Management Mechanism</a>,&rdquo; RFC&nbsp;6265, April&nbsp;2011 (<a href="http://www.rfc-editor.org/rfc/rfc6265.txt">TXT</a>).</td></tr>
+</table>
+
+<a name="rfc.authors"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Authors' Addresses</h3>
+<table width="99%" border="0" cellpadding="0" cellspacing="0">
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Moxie Marlinspike</td></tr>
+<tr cellpadding="3"><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Trevor Perrin (editor)</td></tr>
+</table>
+</body></html>
