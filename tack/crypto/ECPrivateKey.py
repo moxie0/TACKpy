@@ -1,98 +1,70 @@
-from M2Crypto import EC, BIO
-import math
+import math, ctypes
 from tack.compat import a2b_hex
+from tack.compat import bytesToStrAscii
 from tack.crypto.ASN1 import toAsn1IntBytes, asn1Length, ASN1Parser
 from tack.crypto.Digest import Digest
 from tack.crypto.ECPublicKey import ECPublicKey
+from tack.crypto.OpenSSL import openssl as o
 from tack.util.PEMEncoder import PEMEncoder
 
 class ECPrivateKey:
 
-    def __init__(self, rawPrivateKey, rawPublicKey, ec=None):
+    def __init__(self, rawPrivateKey, rawPublicKey, ec_key=None):
+        self.ec_key = None # In case of early destruction
         assert(rawPrivateKey is not None and rawPublicKey is not None)
-        self.ec            = ec
+        assert(len(rawPrivateKey)==32 and len(rawPublicKey) == 64)
+
         self.rawPrivateKey = rawPrivateKey
         self.rawPublicKey  = rawPublicKey
+        if ec_key:
+            self.ec_key = o.EC_KEY_dup(ec_key)
+        else:
+            self.ec_key =  self._constructEcFromRawKey(self.rawPrivateKey)
 
-        if not self.ec:
-            self.ec = self._constructEcFromRawKeys(rawPrivateKey, rawPublicKey)
+    def __del__(self):
+        o.EC_KEY_free(self.ec_key)
 
-    def sign(self, data):
-        # Produce ASN.1 signature
-        hash         = Digest.SHA256(data)
-        asn1SigBytes = self.ec.sign_dsa_asn1(hash)
+    def sign(self, data):        
+        try:
+            ecdsa_sig = None
 
-        # Convert stupid ASN.1 signature into 64-byte signature
-        # Double-check before returning
-        sigBytes = self._convertToRawSignature(asn1SigBytes)
+            # Hash and apply ECDSA
+            hashBuf = o.bytesToBuf(Digest.SHA256(data))
+            ecdsa_sig = o.ECDSA_do_sign(hashBuf, 32, self.ec_key) # needs free
+            
+            # Encode the signature into 64 bytes
+            rBuf = ctypes.create_string_buffer(32)
+            sBuf = ctypes.create_string_buffer(32)
+            
+            rLen = o.BN_bn2bin(ecdsa_sig.contents.r, rBuf)
+            sLen = o.BN_bn2bin(ecdsa_sig.contents.s, sBuf)
+            
+            rBytes = bytearray(32-rLen) + bytearray(rBuf[:rLen])
+            sBytes = bytearray(32-sLen) + bytearray(sBuf[:sLen])
+            sigBytes = rBytes + sBytes              
+        finally:
+            o.ECDSA_SIG_free(ecdsa_sig)
 
-        assert(ECPublicKey(self.rawPublicKey, self.ec).verify(data, sigBytes))
+        # Double-check the signature before returning
+        assert(ECPublicKey(self.rawPublicKey).verify(data, sigBytes))
         return sigBytes
 
     def getRawKey(self):
         return self.rawPrivateKey
-
-    def _constructEcFromRawKeys(self, rawPrivateKey, rawPublicKey):
-        assert(len(rawPrivateKey) == 32)
-        assert(len(rawPublicKey) == 64)
-        bytes1 = a2b_hex("02010104")
-        bytes2 = a2b_hex("a00a06082a8648ce3d030107a14403420004")
-        rawPrivateKey = toAsn1IntBytes(rawPrivateKey)
-        b = bytes1 + asn1Length(len(rawPrivateKey)) + rawPrivateKey +\
-            bytes2 + rawPublicKey
-        b = bytearray([0x30]) + asn1Length(len(b)) + b
-        pemPrivKeyBytes = PEMEncoder(b).encode("EC PRIVATE KEY")
-
-        return EC.load_key_bio(BIO.MemoryBuffer(pemPrivKeyBytes))
-
-
-    def _convertToRawSignature(self, signature):
-        parser = ASN1Parser(bytearray(signature))
-        r = self._bytesToNumber(parser.getChild(0).value)
-        s = self._bytesToNumber(parser.getChild(1).value)
-        return self._numberToBytes(r, 32) + self._numberToBytes(s, 32)
+        
+    def _constructEcFromRawKey(self, rawPrivateKey):
+        try:
+            privBignum, ec_key = None, None
+            
+            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1")) # needs free
+            privBuf = o.bytesToBuf(rawPrivateKey)
+            privBignum = o.BN_new() # needs free
+            o.BN_bin2bn(privBuf, 32, privBignum)     
+            o.EC_KEY_set_private_key(ec_key, privBignum)            
+            return o.EC_KEY_dup(ec_key)
+        finally:
+            o.BN_free(privBignum)
+            o.EC_KEY_free(ec_key)
 
 
-    def _bytesToNumber(self, bytes):
-        "Convert a sequence of bytes (eg bytearray) into integer."
-        total = 0
-        multiplier = 1
-        for count in range(len(bytes)-1, -1, -1):
-            byte = bytes[count]
-            total += multiplier * byte
-            multiplier *= 256
-        return total
 
-    def _numberToBytes(self, n, howManyBytes=None):
-        """Convert an integer into a bytearray, zero-pad to howManyBytes.
-
-        The returned bytearray may be smaller than howManyBytes, but will
-        not be larger.  The returned bytearray will contain a big-endian
-        encoding of the input integer (n).
-        """
-        if not howManyBytes:
-            howManyBytes = self._numBytes(n)
-        bytes = bytearray(howManyBytes)
-        for count in range(howManyBytes-1, -1, -1):
-            bytes[count] = int(n % 256)
-            n >>= 8
-        return bytes
-
-    def _numBytes(self, n):
-        "Return the number of bytes needed to represent the integer n."
-        if not n:
-            return 0
-        bits = self._numBits(n)
-        return int(math.ceil(bits / 8.0))
-
-    def _numBits(self, n):
-        "Return the number of bits needed to represent the integer n."
-        if not n:
-            return 0
-        s = "%x" % n
-        return ((len(s)-1)*4) +\
-               {'0':0, '1':1, '2':2, '3':2,
-                '4':3, '5':3, '6':3, '7':3,
-                '8':4, '9':4, 'a':4, 'b':4,
-                'c':4, 'd':4, 'e':4, 'f':4,
-                }[s[0]]

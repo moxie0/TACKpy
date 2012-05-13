@@ -1,46 +1,39 @@
-from M2Crypto import EC, BIO
+
+import ctypes, sys
 from tack.crypto.ASN1 import ASN1Parser, fromAsn1IntBytes
 from tack.crypto.ECPrivateKey import ECPrivateKey
 from tack.crypto.ECPublicKey import ECPublicKey
+from tack.crypto.OpenSSL import openssl as o
 from tack.util.PEMDecoder import PEMDecoder
 
 class ECGenerator:
 
     def generateECKeyPair(self):
-        # Generate M2Crypto.EC.EC object
-        ec = EC.gen_params(EC.NID_X9_62_prime256v1)
-        ec.gen_key()
+        try:
+            ec_key = None
 
-        rawPrivateKey, rawPublicKey = self._constructRawKeysFromEc(ec)
+            # Generate the new key
+            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
+            o.EC_KEY_generate_key(ec_key)
 
-        return ECPublicKey(rawPublicKey, ec), ECPrivateKey(rawPrivateKey, rawPublicKey, ec)
+            # Extract the key's public and private values as byte strings
+            pubBuf = o.bytesToBuf(bytearray(1+64)) # [0x04] ...
+            privBuf = o.bytesToBuf(bytearray(32))
 
-    def _constructRawKeysFromEc(self, ec):
-        derEncodedKeys = self._getDerEncodedKeysFromEc(ec)
-        parser         = ASN1Parser(derEncodedKeys)
+            ec_point = o.EC_KEY_get0_public_key(ec_key) # doesn't need free
+            ec_group = o.EC_GROUP_new_by_curve_name(o.OBJ_txt2nid("prime256v1")) # doesn't need free            
+            o.EC_POINT_point2oct(ec_group, ec_point, o.POINT_CONVERSION_UNCOMPRESSED, pubBuf, 65, None)
 
-        # The private key is stored as an ASN.1 integer which may
-        # need to have zero padding removed (if 33 bytes) or added
-        # (if < 32 bytes):
-        rawPrivateKey = parser.getChild(1).value
-        rawPrivateKey = fromAsn1IntBytes(rawPrivateKey, 32)
+            bignum = o.EC_KEY_get0_private_key(ec_key) # doesn't need free
+            privLen = o.BN_bn2bin(bignum, privBuf)
 
-        # There is a 00 04 byte prior to the 64-byte public key
-        # I'm not sure why M2Crypto has the 00 byte there?,
-        # some ASN1 thing - the 04 byte signals "uncompressed"
-        # per SECG.  Anyways, strip both those bytes off ([2:])
-        rawPublicKey = parser.getChild(3).getTagged().value[2:]
+            # Convert the public and private keys into fixed-length 64 and 32 byte arrays
+            # Leading zeros are added to priv key, leading byte (0x04) stripped from pub key
+            publicKey =  bytearray(pubBuf[1:65])
+            privateKey = bytearray(32-privLen) + bytearray(privBuf[:privLen])
 
-        assert(len(rawPrivateKey) == 32)
-        assert(len(rawPublicKey) == 64)
-
-        return rawPrivateKey, rawPublicKey
-
-    def _getDerEncodedKeysFromEc(self, ec):
-        # Get the ASN.1 ECPrivateKey for the object
-        bio = BIO.MemoryBuffer()
-        ec.save_key_bio(bio, cipher=None)
-        pemEncodedKeys = bio.getvalue()
-
-        return PEMDecoder(pemEncodedKeys).decode("EC PRIVATE KEY")
+            return (ECPublicKey(publicKey), ECPrivateKey(privateKey, publicKey, ec_key))
+        finally:
+            o.EC_KEY_free(ec_key)
+        
 
