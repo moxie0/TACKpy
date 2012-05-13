@@ -17,8 +17,8 @@ setup(name="TACKpy",
       description="TACKpy implements TACK in python",
       license="public domain",
       scripts=["tack/tack"],
-      packages=["tack", "tack/commands", "tack/crypto", "tack/structures",
-                "tack/tls", "tack/util"])
+      packages=["tack", "tack/commands", "tack/crypto", "tack/crypto/openssl",
+                "tack/structures", "tack/tls", "tack/util"])
 
 print "Cleaning up..."
 if os.path.exists("build/"):
