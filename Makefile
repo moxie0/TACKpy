@@ -10,10 +10,15 @@ default:
 install:
 	./setup.py install
 
+.PHONY: dist
+dist:
+	./setup.py sdist
+
 .PHONY : clean
 clean:
 	rm -f `find . -name *.pyc`
 	rm -rf build
+	rm -rf dist
 	rm -rf $(TESTDIR)
 
 # Variables for testing
