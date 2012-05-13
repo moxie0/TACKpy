@@ -15,7 +15,7 @@ class BreakCommand(Command):
         self.outputFile.write(self.addPemComments(breakSig.serializeAsPem()))
 
         if self.isVerbose():
-            sys.stderr.write(str(breakSig) + "\n")
+            sys.stderr.write(str(breakSig))
 
     @staticmethod
     def printHelp():

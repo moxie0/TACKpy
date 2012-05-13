@@ -35,7 +35,7 @@ class SignCommand(Command):
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
 
             if self.isVerbose():
-                sys.stderr.write(str(tack) + "\n")
+                sys.stderr.write(str(tack))
         else:
             # We are signing multiple TACKs, since "-n" was specified
             (numTacks, interval) = self.numArg
@@ -52,7 +52,7 @@ class SignCommand(Command):
                 outputFile.close()
 
                 if self.isVerbose():
-                    sys.stderr.write(str(tack) + "\n")
+                    sys.stderr.write(str(tack))
 
                 self.expiration += interval
 

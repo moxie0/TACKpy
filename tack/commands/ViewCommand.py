@@ -1,3 +1,4 @@
+import sys
 from tack.commands.Command import Command
 from tack.structures.Tack import Tack
 from tack.structures.TackKeyFile import TackKeyFile
@@ -40,12 +41,12 @@ class ViewCommand(Command):
                 if decoder.containsEncoded("TACK PRIVATE KEY"):
                     fileType = "Private Key"
                     kf       = TackKeyFile.createFromPem(text, None)
-                    print(str(kf))
+                    sys.stdout.write(str(kf))
                     return
                 elif decoder.containsEncoded("TACK"):
                     fileType = "TACK"
                     tack     = Tack.createFromPem(text)
-                    print(str(tack))
+                    sys.stdout.write(str(tack))
                     return
                 elif decoder.containsEncoded("TACK BREAK SIG"):
                     fileType = "Break Sig"
@@ -53,19 +54,19 @@ class ViewCommand(Command):
                     s        = ""
                     for tbs in tbsList:
                         s += str(tbs)
-                    print(s)
+                    sys.stdout.write(s)
                     return
                 elif decoder.containsEncoded( "CERTIFICATE"):
                     fileType = "Certificate"
                     sslc = TlsCertificate()
                     sslc.parsePem(text)
-                    print(sslc.writeText())
+                    sys.stdout.write(sslc.writeText())
                     return
                     # Is it a certificate?
             try:
                 sslc = TlsCertificate()
                 sslc.parse(binary)
-                print(sslc.writeText())
+                sys.stdout.write(sslc.writeText())
             except SyntaxError:
                 self.printError("Unrecognized file type")
         except SyntaxError as e:

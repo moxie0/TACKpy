@@ -18,7 +18,7 @@ class GenerateKeyCommand(Command):
         self.outputFile.write(self.addPemComments(keyFile.serializeAsPem()))
 
         if self.isVerbose():
-            sys.stderr.write(str(keyFile) + "\n")
+            sys.stderr.write(str(keyFile))
 
     def _getPassword(self):
         if not self.password:

@@ -47,7 +47,7 @@ class CertificateCommand(Command):
             self.outputFile.write(s)
 
             if self.isVerbose():
-                sys.stderr.write(self.inputCertificate.writeText() + "\n")
+                sys.stderr.write(self.inputCertificate.writeText())
 
     def _getBreakSignatures(self):
         fileName = self._getOptionValue("-b")

@@ -38,10 +38,11 @@ help <command>
 
     @staticmethod
     def printGeneralUsage(message=None):
-        cryptoVersion = "(using \"%s\")" % o.SSLeay_version(0)
-        print "Error: %s" % message
-        print(
-"""\ntack.py version %s %s
+        cryptoVersion = "(%s)" % o.SSLeay_version(0)
+        if message:
+            print "Error: %s\n" % message
+        sys.stdout.write(
+"""tack.py version %s %s
 
 Commands (use "help <command>" to see optional args):
   genkey
