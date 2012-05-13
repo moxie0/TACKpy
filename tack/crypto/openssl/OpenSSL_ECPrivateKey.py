@@ -1,7 +1,5 @@
-import math, ctypes
-from tack.compat import a2b_hex
+import ctypes
 from tack.compat import bytesToStr
-from tack.crypto.ASN1 import toAsn1IntBytes, asn1Length, ASN1Parser
 from tack.crypto.Digest import Digest
 from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
 from .OpenSSL import openssl as o
@@ -41,7 +39,7 @@ class OpenSSL_ECPrivateKey:
             
             rBytes = bytearray(32-rLen) + bytearray(rBuf[:rLen])
             sBytes = bytearray(32-sLen) + bytearray(sBuf[:sLen])
-            sigBytes = rBytes + sBytes              
+            sigBytes = rBytes + sBytes   
         finally:
             o.ECDSA_SIG_free(ecdsa_sig)
 

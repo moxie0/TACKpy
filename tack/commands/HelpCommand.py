@@ -38,7 +38,10 @@ help <command>
 
     @staticmethod
     def printGeneralUsage(message=None):
-        cryptoVersion = "(%s)" % o.SSLeay_version(0)
+        if o.enabled:
+            cryptoVersion = "(%s)" % o.SSLeay_version(0)
+        else:
+            cryptoVersion = "(python crypto)"
         if message:
             print "Error: %s\n" % message
         sys.stdout.write(

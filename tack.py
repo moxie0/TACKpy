@@ -13,7 +13,6 @@ from tack.crypto.openssl.OpenSSL import openssl
 
 openssl.initialize()
 
-
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         HelpCommand.printGeneralUsage("Missing command")
