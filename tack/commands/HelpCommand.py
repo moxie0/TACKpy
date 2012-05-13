@@ -6,6 +6,7 @@ from tack.commands.Command import Command
 from tack.commands.GenerateKeyCommand import GenerateKeyCommand
 from tack.commands.SignCommand import SignCommand
 from tack.commands.ViewCommand import ViewCommand
+from tack.crypto.OpenSSL import openssl as o
 
 class HelpCommand(Command):
 
@@ -37,9 +38,10 @@ help <command>
 
     @staticmethod
     def printGeneralUsage(message=None):
+        cryptoVersion = "(using \"%s\")" % o.SSLeay_version(0)
         print "Error: %s" % message
         print(
-"""\ntack.py version %s
+"""\ntack.py version %s %s
 
 Commands (use "help <command>" to see optional args):
   genkey
@@ -47,5 +49,5 @@ Commands (use "help <command>" to see optional args):
   break    -k KEY
   view     FILE
   help     COMMAND
-""" % __version__)
+""" % (__version__, cryptoVersion))
         sys.exit(-1)
