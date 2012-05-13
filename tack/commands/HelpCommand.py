@@ -6,7 +6,7 @@ from tack.commands.Command import Command
 from tack.commands.GenerateKeyCommand import GenerateKeyCommand
 from tack.commands.SignCommand import SignCommand
 from tack.commands.ViewCommand import ViewCommand
-from tack.crypto.OpenSSL import openssl as o
+from tack.crypto.openssl.OpenSSL import openssl as o
 
 class HelpCommand(Command):
 

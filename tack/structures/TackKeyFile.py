@@ -47,12 +47,12 @@ class TackKeyFile(TlsStructure):
             self.iter_count  = self.getInt(4)
             self.salt        = self.getBytes(16)
             self.ciphertext  = self.getBytes(32)
-            self.public_key  = ECPublicKey(self.getBytes(64))
+            self.public_key  = ECPublicKey.new(self.getBytes(64))
             self.mac         = self.getBytes(32)
 
             if password is not None:
                 rawPrivateKey = self._decrypt(password)
-                self.private_key = ECPrivateKey(rawPrivateKey, self.public_key.getRawKey())
+                self.private_key = ECPrivateKey.new(rawPrivateKey, self.public_key.getRawKey())
 
     @classmethod
     def create(cls, public_key, private_key, password):
@@ -89,7 +89,7 @@ class TackKeyFile(TlsStructure):
 
     def _encrypt(self, password):
         encKey, authKey = self._deriveKeys(password, self.salt, self.iter_count)
-        ciphertext      = AES(encKey, bytearray(16)).encrypt(self.private_key.getRawKey())
+        ciphertext      = AES.new(encKey, bytearray(16)).encrypt(self.private_key.getRawKey())
         macData         = ciphertext + self.public_key.getRawKey()
         mac             = Digest.HMAC_SHA256(authKey, macData)
         self.ciphertext = ciphertext
@@ -103,7 +103,7 @@ class TackKeyFile(TlsStructure):
         if not Util.constTimeCompare(calcMac, self.mac):
             raise InvalidPasswordException("Bad password")
 
-        return AES(encKey, bytearray(16)).decrypt(self.ciphertext)
+        return AES.new(encKey, bytearray(16)).decrypt(self.ciphertext)
 
     # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
     def _deriveKeys(self, password, salt, iter_count):

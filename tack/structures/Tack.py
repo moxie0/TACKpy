@@ -16,7 +16,7 @@ class Tack(TlsStructure):
             if len(data) != Tack.LENGTH:
                 raise SyntaxError("TACK is the wrong size. Is %s and should be %s" % (len(data), Tack.LENGTH))        
 
-            self.public_key     = ECPublicKey(self.getBytes(64))
+            self.public_key     = ECPublicKey.new(self.getBytes(64))
             self.min_generation = self.getInt(1)
             self.generation     = self.getInt(1)
             self.expiration     = self.getInt(4)

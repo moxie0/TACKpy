@@ -14,7 +14,7 @@ class TackBreakSig(TlsStructure):
             if len(data) != TackBreakSig.LENGTH:
                 raise SyntaxError("Break signature is the wrong size. Is %s and should be %s." % (len(data), TackBreakSig.LENGTH))
 
-            self.public_key = ECPublicKey(self.getBytes(64))
+            self.public_key = ECPublicKey.new(self.getBytes(64))
             self.signature  = self.getBytes(64)
 
             if self.index != len(data):

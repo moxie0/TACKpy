@@ -9,7 +9,7 @@ from tack.commands.GenerateKeyCommand import GenerateKeyCommand
 from tack.commands.HelpCommand import HelpCommand
 from tack.commands.SignCommand import SignCommand
 from tack.commands.ViewCommand import ViewCommand
-from tack.crypto.OpenSSL import openssl
+from tack.crypto.openssl.OpenSSL import openssl
 
 openssl.initialize()
 
