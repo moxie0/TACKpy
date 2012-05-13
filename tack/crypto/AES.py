@@ -1,59 +1,58 @@
-from M2Crypto import m2
+import ctypes
+from tack.crypto.OpenSSL import openssl as o
+from tack.compat import bytesToStr
 
 class AES:
     def __init__(self, key, IV):
-        if len(key) not in (16, 24, 32):
-            raise AssertionError()
-
         if len(IV) != 16:
             raise AssertionError()
 
-        self.isBlockCipher = True
-        self.block_size = 16
+        self.blockSize = 16
         self.key = key
         self.IV = IV
 
         if len(key)==16:
             self.name = "aes128"
+            self.cipherType = o.EVP_aes_128_cbc()
         elif len(key)==24:
             self.name = "aes192"
+            self.cipherType = o.EVP_aes_192_cbc()
         elif len(key)==32:
             self.name = "aes256"
+            self.cipherType = o.EVP_aes_256_cbc()            
         else:
             raise AssertionError()
 
     def encrypt(self, plaintext):
-        assert(len(plaintext) % 16 == 0)
-        context = self._createContext(1)
-        ciphertext = m2.cipher_update(context, plaintext)
-        m2.cipher_ctx_free(context)
-        self.IV = ciphertext[-self.block_size:]
-        return bytearray(ciphertext)
+        return self._transform(plaintext, 1)
 
     def decrypt(self, ciphertext):
-        assert(len(ciphertext) % 16 == 0)
-        context = self._createContext(0)
-        #I think M2Crypto has a bug - it fails to decrypt and return the last block passed in.
-        #To work around this, we append sixteen zeros to the string, below:
-        plaintext = m2.cipher_update(context, ciphertext+('\0'*16))
+        return self._transform(ciphertext, 0)
+                
+    def _transform(self, inBytes, encrypt):
+        assert(len(inBytes) % 16 == 0)
+        ctx = None
+        inBuf = bytesToStr(inBytes)
+        outBuf = ctypes.create_string_buffer(len(inBytes))
+        try:
+            # Create the CIPHER_CTX
+            ctx = o.EVP_CIPHER_CTX_new()
+            o.EVP_CIPHER_CTX_init(ctx)
+            o.EVP_CipherInit(ctx, self.cipherType, bytesToStr(self.key), bytesToStr(self.IV), encrypt)
+            o.EVP_CIPHER_CTX_set_padding(ctx, 0)
 
-        #If this bug is ever fixed, then plaintext will end up having a garbage
-        #plaintext block on the end.  That's okay - the below code will discard it.
-        plaintext = plaintext[:len(ciphertext)]
-        m2.cipher_ctx_free(context)
-        self.IV = ciphertext[-self.block_size:]
-        return bytearray(plaintext)
+            # Encrypt or Decrypt
+            outLen = ctypes.c_int()
+            o.EVP_CipherUpdate(ctx, outBuf, ctypes.byref(outLen), inBuf, len(inBytes))
+            assert(outLen.value == len(inBytes))
+            outBytes = bytearray(outBuf[:len(inBytes)])
+        finally:
+            o.EVP_CIPHER_CTX_cleanup(ctx)
+            o.EVP_CIPHER_CTX_free(ctx)
 
-    def _createContext(self, encrypt):
-        context = m2.cipher_ctx_new()
-        if len(self.key)==16:
-            cipherType = m2.aes_128_cbc()
-        elif len(self.key)==24:
-            cipherType = m2.aes_192_cbc()
-        elif len(self.key)==32:
-            cipherType = m2.aes_256_cbc()
+        # Update the chaining
+        if encrypt:
+            self.IV = outBytes[-self.blockSize:]
         else:
-            raise AssertionError("Key is bad size: %s" % len(self.key))
-
-        m2.cipher_init(context, cipherType, self.key, self.IV, encrypt)
-        return context
+            self.IV = inBytes[-self.blockSize:]
+        return outBytes

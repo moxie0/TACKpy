@@ -37,7 +37,18 @@ class OpenSSL:
         self._add("BN_free", args=[c_void_p], skipWrap=True)
         self._add("BN_bn2bin", args=[c_void_p, c_void_p])
         self._add("BN_bin2bn", args=[c_void_p, c_int, c_void_p])
-
+        
+        self._add("EVP_CIPHER_CTX_new", ret=c_void_p)
+        self._add("EVP_CIPHER_CTX_init", args=[c_void_p])
+        self._add("EVP_CIPHER_CTX_cleanup", args=[c_void_p])        
+        self._add("EVP_CIPHER_CTX_free", args=[c_void_p], skipWrap=True)
+        self._add("EVP_CIPHER_CTX_set_padding", args=[c_void_p, c_int])        
+        self._add("EVP_aes_128_cbc", ret=c_void_p)
+        self._add("EVP_aes_192_cbc", ret=c_void_p)
+        self._add("EVP_aes_256_cbc", ret=c_void_p)
+        self._add("EVP_CipherInit", args=[c_void_p, c_void_p, c_void_p, c_void_p, c_int])
+        self._add("EVP_CipherUpdate", args=[c_void_p, c_void_p, c_void_p, c_void_p, c_int])
+                       
     def _add(self, name, ret=None, args=None, skipWrap=False):
         func = getattr(self._lib, name)
         if ret:
