@@ -23,11 +23,15 @@ class Tack(TlsStructure):
             self.target_hash    = self.getBytes(32)
             self.signature      = self.getBytes(64)
 
-            if self.generation < self.min_generation:
-                raise SyntaxError("Generation less than min_generation")                
-
             if self.index != len(data):
                 raise SyntaxError("Excess bytes in TACK")
+
+            if self.generation < self.min_generation:
+                raise SyntaxError("Generation less than min_generation")
+                
+            if not self.verifySignature():
+                raise SyntaxError("TACK has bad signature")
+
 
     @classmethod
     def createFromPem(cls, pem):

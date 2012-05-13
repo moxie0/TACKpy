@@ -19,6 +19,10 @@ class TackBreakSig(TlsStructure):
 
             if self.index != len(data):
                 raise SyntaxError("Excess bytes in TACK_Break_Sig")
+                
+            if not self.verifySignature():
+                raise SyntaxError("TACK_Break_Sig has bad signature")
+
 
     @classmethod
     def createFromPem(cls, data):
