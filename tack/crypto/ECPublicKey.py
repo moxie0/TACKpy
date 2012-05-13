@@ -1,7 +1,7 @@
 import ctypes
 from tack.compat import a2b_hex
 from tack.compat import b2a_base32
-from tack.compat import bytesToStrAscii
+from tack.compat import bytesToStr
 from tack.crypto.ASN1 import toAsn1IntBytes, asn1Length
 from tack.crypto.Digest import Digest
 from tack.crypto.OpenSSL import openssl as o
@@ -30,13 +30,13 @@ class ECPublicKey:
 
             # Create ECDSA_SIG
             ecdsa_sig = o.ECDSA_SIG_new()
-            rBuf = o.bytesToBuf(signature[ : 32])
-            sBuf = o.bytesToBuf(signature[32 : ])
+            rBuf = bytesToStr(signature[ : 32])
+            sBuf = bytesToStr(signature[32 : ])
             o.BN_bin2bn(rBuf, 32, ecdsa_sig.contents.r)
             o.BN_bin2bn(sBuf, 32, ecdsa_sig.contents.s)
             
             # Hash and verify ECDSA
-            hashBuf = o.bytesToBuf(Digest.SHA256(data))
+            hashBuf = bytesToStr(Digest.SHA256(data))
             retval = o.ECDSA_do_verify(hashBuf, 32, ecdsa_sig, self.ec_key)
             if retval == 1:
                 return True
@@ -58,20 +58,21 @@ class ECPublicKey:
 
     def _constructEcFromRawKey(self, rawPublicKey):
         try:
-            ec_point, ec_key = None, None
+            ec_key, ec_group, ec_point = None, None, None
 
-            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1")) # needs free
-            ec_group = o.EC_GROUP_new_by_curve_name(o.OBJ_txt2nid("prime256v1")) # doesn't need free
+            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
+            ec_group = o.EC_GROUP_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
             ec_point = o.EC_POINT_new(ec_group)
             
             # Add 0x04 byte to signal "uncompressed" public key
-            pubBuf = o.bytesToBuf(bytearray([0x04]) + rawPublicKey)
+            pubBuf = bytesToStr(bytearray([0x04]) + rawPublicKey)
             o.EC_POINT_oct2point(ec_group, ec_point, pubBuf, 65, None)                
             o.EC_KEY_set_public_key(ec_key, ec_point)
             return o.EC_KEY_dup(ec_key)
         finally:
-            o.EC_POINT_free(ec_point)
             o.EC_KEY_free(ec_key)
+            o.EC_KEY_free(ec_group)
+            o.EC_POINT_free(ec_point)
 
     def __str__(self):
         return self.getFingerprint()

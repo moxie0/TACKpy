@@ -1,6 +1,6 @@
 import math, ctypes
 from tack.compat import a2b_hex
-from tack.compat import bytesToStrAscii
+from tack.compat import bytesToStr
 from tack.crypto.ASN1 import toAsn1IntBytes, asn1Length, ASN1Parser
 from tack.crypto.Digest import Digest
 from tack.crypto.ECPublicKey import ECPublicKey
@@ -29,12 +29,12 @@ class ECPrivateKey:
             ecdsa_sig = None
 
             # Hash and apply ECDSA
-            hashBuf = o.bytesToBuf(Digest.SHA256(data))
-            ecdsa_sig = o.ECDSA_do_sign(hashBuf, 32, self.ec_key) # needs free
+            hashBuf = bytesToStr(Digest.SHA256(data))
+            ecdsa_sig = o.ECDSA_do_sign(hashBuf, 32, self.ec_key)
             
             # Encode the signature into 64 bytes
-            rBuf = ctypes.create_string_buffer(32)
-            sBuf = ctypes.create_string_buffer(32)
+            rBuf = bytesToStr(bytearray(32))
+            sBuf = bytesToStr(bytearray(32))
             
             rLen = o.BN_bn2bin(ecdsa_sig.contents.r, rBuf)
             sLen = o.BN_bn2bin(ecdsa_sig.contents.s, sBuf)
@@ -56,8 +56,8 @@ class ECPrivateKey:
         try:
             privBignum, ec_key = None, None
             
-            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1")) # needs free
-            privBuf = o.bytesToBuf(rawPrivateKey)
+            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
+            privBuf = bytesToStr(rawPrivateKey)
             privBignum = o.BN_new() # needs free
             o.BN_bin2bn(privBuf, 32, privBignum)     
             o.EC_KEY_set_private_key(ec_key, privBignum)            

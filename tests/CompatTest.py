@@ -3,7 +3,7 @@ from tack.compat import a2b_hex
 from tack.compat import a2b_base64
 from tack.compat import b2a_hex
 from tack.compat import b2a_base64
-from tack.compat import bytesToStrAscii
+from tack.compat import bytesToStr
 
 class CompatTest(unittest.TestCase):
 
@@ -33,7 +33,7 @@ class CompatTest(unittest.TestCase):
         assert(b2a_base64(bytearray(b"fooba")) == "Zm9vYmE=\n")
         assert(b2a_base64(bytearray(b"foobar")) == "Zm9vYmFy\n")
 
-        assert(bytesToStrAscii(bytearray(b"abcd123")) == "abcd123")
+        assert(bytesToStr(bytearray(b"abcd123")) == "abcd123")
 
 if __name__ == '__main__':
     unittest.main()

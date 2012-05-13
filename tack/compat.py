@@ -38,7 +38,7 @@ if sys.version_info >= (3,0):
     def b2a_base32(b):
         return base64.b32encode(b).decode("ascii")
         
-    def bytesToStrAscii(b):
+    def bytesToStr(b):
         return str(b, "ascii")  
     
     def compat26Str(x): return x
@@ -75,5 +75,5 @@ else:
     def b2a_base32(b):
         return base64.b32encode(str(b))        
         
-    def bytesToStrAscii(b):
+    def bytesToStr(b):
         return str(b)
