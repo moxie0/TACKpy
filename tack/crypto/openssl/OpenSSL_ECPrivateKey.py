@@ -3,7 +3,6 @@ from tack.compat import bytesToStr
 from tack.crypto.Digest import Digest
 from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
 from .OpenSSL import openssl as o
-from tack.util.PEMEncoder import PEMEncoder
 
 class OpenSSL_ECPrivateKey:
 
