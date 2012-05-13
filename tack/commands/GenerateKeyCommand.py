@@ -1,7 +1,7 @@
 import getpass
 import sys
 from tack.commands.Command import Command
-from tack.crypto.ECPrivateKey import ECPrivateKey
+from tack.crypto.ECGenerator import ECGenerator
 from tack.structures.TackKeyFile import TackKeyFile
 
 class GenerateKeyCommand(Command):
@@ -13,7 +13,7 @@ class GenerateKeyCommand(Command):
 
     def execute(self):
         password = self._getPassword()
-        public_key, private_key = ECPrivateKey.generateECKeyPair()
+        public_key, private_key = ECGenerator.generateECKeyPair()
         keyFile  = TackKeyFile.create(public_key, private_key, password)
         self.outputFile.write(self.addPemComments(keyFile.serializeAsPem()))
 

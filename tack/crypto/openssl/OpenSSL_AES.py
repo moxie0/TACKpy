@@ -50,7 +50,7 @@ class OpenSSL_AES:
             o.EVP_CIPHER_CTX_cleanup(ctx)
             o.EVP_CIPHER_CTX_free(ctx)
 
-        # Update the chaining
+        # Update the CBC chaining
         if encrypt:
             self.IV = outBytes[-self.blockSize:]
         else:
