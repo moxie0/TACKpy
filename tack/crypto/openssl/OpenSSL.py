@@ -5,15 +5,29 @@ from ctypes.util import find_library
 class OpenSSL:
     
     def initialize(self):
+        self.initErrorString = "unknown error loading OpenSSL"
+        
         try:
             libraryName = find_library("crypto")
+            if not libraryName:
+                self._setInitError("OpenSSL not found")
+                return
+        except:
+            self._setInitError("OpenSSL not found")
+            return
+            
+        try:
             self._lib = cdll.LoadLibrary(libraryName)
+        except:
+            self._setInitError("error loading OpenSSL ")
+            return
         
+        try:
             self.POINT_CONVERSION_UNCOMPRESSED = 4
-        
+    
             class ECDSA_SIG(Structure):
                 _fields_ = [("r", c_void_p), ("s", c_void_p)]
-        
+    
             self._add("SSLeay_version", ret=c_char_p)
             self._add("OBJ_txt2nid", args=[c_char_p])
             self._add("EC_KEY_new_by_curve_name", ret=c_void_p, args=[c_int])
@@ -38,7 +52,7 @@ class OpenSSL:
             self._add("BN_free", args=[c_void_p], skipWrap=True)
             self._add("BN_bn2bin", args=[c_void_p, c_void_p])
             self._add("BN_bin2bn", args=[c_void_p, c_int, c_void_p])
-        
+    
             self._add("EVP_CIPHER_CTX_new", ret=c_void_p)
             self._add("EVP_CIPHER_CTX_init", args=[c_void_p])
             self._add("EVP_CIPHER_CTX_cleanup", args=[c_void_p])        
@@ -57,7 +71,12 @@ class OpenSSL:
             
                        
     def _add(self, name, ret=None, args=None, skipWrap=False):
-        func = getattr(self._lib, name)
+        try:
+            func = getattr(self._lib, name)
+        except:
+            self._setInitError("error loading OpenSSL:%s" % name)
+            raise
+            
         if ret:
             func.restype = ret
         if args:
@@ -72,6 +91,10 @@ class OpenSSL:
                 return retval            
             setattr(self, name, wrappedFunc)
 
+    def _setInitError(self, s):
+        self.enabled = False
+        self.initErrorString = s
+        
 # Singleton, initialize() this once then use it
 openssl = OpenSSL()
         

@@ -41,7 +41,7 @@ help <command>
         if o.enabled:
             cryptoVersion = "(%s)" % o.SSLeay_version(0)
         else:
-            cryptoVersion = "(python crypto)"
+            cryptoVersion = "(python crypto - %s)" % o.initErrorString
         if message:
             print "Error: %s\n" % message
         sys.stdout.write(

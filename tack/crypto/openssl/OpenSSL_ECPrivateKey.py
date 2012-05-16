@@ -55,7 +55,7 @@ class OpenSSL_ECPrivateKey:
             
             ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
             privBuf = bytesToStr(rawPrivateKey)
-            privBignum = o.BN_new() # needs free
+            privBignum = o.BN_new()
             o.BN_bin2bn(privBuf, 32, privBignum)     
             o.EC_KEY_set_private_key(ec_key, privBignum)            
             return o.EC_KEY_dup(ec_key)
