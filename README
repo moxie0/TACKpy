@@ -21,6 +21,12 @@ Run "python setup.py install" or "make install".  This installs:
 To use the "tack" command without installation you can run
 "selfcontained/tack".
 
+Tackpy tries to use OpenSSL for AES and ECDSA operations. If OpenSSL cannot be
+loaded, Tackpy will fall back to using python crypto code. On UNIX-like
+systems, Tackpy will try to load OpenSSL via the "crypto" shared library. On
+Windows, Tackpy will try to load "libeay32.dll" (which must be in the path).
+Run "tack help" to see if OpenSSL was loaded.
+
 
 Quick start 
 ============ 

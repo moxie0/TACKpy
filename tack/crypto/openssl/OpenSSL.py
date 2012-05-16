@@ -16,17 +16,23 @@ class OpenSSL:
     def initialize(self):
         self.initErrorString = "unknown error loading OpenSSL"
         
-        try:
-            libraryName = find_library("crypto")
+        try:            
+            if sys.platform == "win32":
+                libraryName = find_library("libeay32")
+            else:
+                libraryName = find_library("crypto")
             if not libraryName:
                 self._setInitError("OpenSSL not found")
                 return
         except:
             self._setInitError("OpenSSL not found")
-            return
+            raise
             
         try:
-            self._lib = cdll.LoadLibrary(libraryName)
+            if sys.platform == "win32":
+                self._lib = CDLL(libraryName)
+            else:
+                self._lib = cdll.LoadLibrary(libraryName)
         except:
             self._setInitError("error loading OpenSSL")
             return

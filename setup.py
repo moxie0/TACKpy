@@ -9,7 +9,7 @@ import shutil
 
 shutil.copyfile("tack.py", "tack/tack")
 
-setup(  name="TACKpy",
+setup(  name="tackpy",
         version="0.9.6",
         author="Trevor Perrin",
         author_email="tackpy@trevp.net",
