@@ -32,11 +32,10 @@ test:
 	rm -rf $(TESTDIR)
 	mkdir $(TESTDIR)
 	#$(EXEC) test
-	# NOTE: USE 'asdf' for passwords...
-	$(EXEC) genkey > $(TESTDIR)/TACK_Key1.pem 
+	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key1.pem 
 	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key2.pem 
 	$(EXEC) genkey -p asdf -o $(TESTDIR)/TACK_Key3.pem 
-	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -c $(CERT1) > $(TESTDIR)/TACK1.pem	
+	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) > $(TESTDIR)/TACK1.pem	
 	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT2) -o $(TESTDIR)/TACK2.pem		
 	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -m2 -o $(TESTDIR)/TACK3.pem			
 	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -o $(TESTDIR)/TACK4.pem			
