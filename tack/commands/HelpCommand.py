@@ -39,14 +39,10 @@ help <command>
 
     @staticmethod
     def printGeneralUsage(message=None):
-        if o.enabled:
-            cryptoVersion = "(%s)" % bytesToStr(o.SSLeay_version(0))
-        else:
-            cryptoVersion = "(python crypto - %s)" % o.initErrorString
         if message:
             print ("Error: %s\n" % message)
         sys.stdout.write(
-"""tack.py version %s %s
+"""tack.py version %s (%s)
 
 Commands (use "help <command>" to see optional args):
   genkey
@@ -54,5 +50,5 @@ Commands (use "help <command>" to see optional args):
   break    -k KEY
   view     FILE
   help     COMMAND
-""" % (__version__, cryptoVersion))
+""" % (__version__, Command.getCryptoVersion()))
         sys.exit(-1)

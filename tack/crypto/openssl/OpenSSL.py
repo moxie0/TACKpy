@@ -85,7 +85,6 @@ class OpenSSL:
             self._add("EVP_CipherUpdate", args=[c_void_p, c_void_p, c_void_p, c_void_p, c_int])
             
             self.ERR_load_crypto_strings()
-            
             self.enabled = True
         except:
             self.enabled = False

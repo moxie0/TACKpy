@@ -4,6 +4,8 @@ import sys
 import time
 from tack.structures.TackKeyFile import TackKeyFile
 from tack.util.Time import Time
+from tack.crypto.openssl.OpenSSL import openssl as o
+from tack.compat import bytesToStr
 from tack.version import __version__
 from tack.InvalidPasswordException import InvalidPasswordException
 
@@ -17,6 +19,17 @@ class Command:
             self.values, self.remainder = getopt.getopt(argv, self.options + self.flags)
         except getopt.GetoptError as e:
             self.printError(e)
+
+    @staticmethod
+    def getCryptoVersion():
+        if o.enabled:
+            cryptoVersion = "%s" % bytesToStr(o.SSLeay_version(0))
+        else:
+            cryptoVersion = "python crypto - %s" % o.initErrorString
+        return cryptoVersion
+
+    def writeCryptoVersion(self):
+        sys.stderr.write("Crypto         = %s\n" % Command.getCryptoVersion())
 
     def isVerbose(self):
         return self._containsOption("-v")

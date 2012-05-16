@@ -18,6 +18,7 @@ class GenerateKeyCommand(Command):
         self.outputFile.write(self.addPemComments(keyFile.serializeAsPem()))
 
         if self.isVerbose():
+            self.writeCryptoVersion()
             sys.stderr.write(str(keyFile))
 
     def _getPassword(self):

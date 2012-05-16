@@ -35,6 +35,7 @@ class SignCommand(Command):
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
 
             if self.isVerbose():
+                self.writeCryptoVersion()                    
                 sys.stderr.write(str(tack))
         else:
             # We are signing multiple TACKs, since "-n" was specified
@@ -52,6 +53,7 @@ class SignCommand(Command):
                 outputFile.close()
 
                 if self.isVerbose():
+                    self.writeCryptoVersion()                    
                     sys.stderr.write(str(tack))
 
                 self.expiration += interval
