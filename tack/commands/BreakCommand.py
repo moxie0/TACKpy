@@ -15,6 +15,7 @@ class BreakCommand(Command):
         self.outputFile.write(self.addPemComments(breakSig.serializeAsPem()))
 
         if self.isVerbose():
+            self.writeCryptoVersion()
             sys.stderr.write(str(breakSig))
 
     @staticmethod
