@@ -39,7 +39,7 @@ if sys.version_info >= (3,0):
         return base64.b32encode(b).decode("ascii")
         
     def bytesToStr(b):
-        return str(b, "ascii")  
+        return str(b, "latin-1")  
     
     def compat26Str(x): return x
 

@@ -1,8 +1,10 @@
 import ctypes
-from tack.compat import bytesToStr
 from tack.crypto.Digest import Digest
 from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
+from tack.crypto.python.Python_ECPublicKey import Python_ECPublicKey
 from .OpenSSL import openssl as o
+from .OpenSSL import bytesToC, cToBytes
+
 
 class OpenSSL_ECPrivateKey:
 
@@ -26,19 +28,20 @@ class OpenSSL_ECPrivateKey:
             ecdsa_sig = None
 
             # Hash and apply ECDSA
-            hashBuf = bytesToStr(Digest.SHA256(data))
+            hashBuf = bytesToC(Digest.SHA256(data))
             ecdsa_sig = o.ECDSA_do_sign(hashBuf, 32, self.ec_key)
             
             # Encode the signature into 64 bytes
-            rBuf = bytesToStr(bytearray(32))
-            sBuf = bytesToStr(bytearray(32))
+            rBuf = bytesToC(bytearray(32))
+            sBuf = bytesToC(bytearray(32))
             
             rLen = o.BN_bn2bin(ecdsa_sig.contents.r, rBuf)
             sLen = o.BN_bn2bin(ecdsa_sig.contents.s, sBuf)
             
-            rBytes = bytearray(32-rLen) + bytearray(rBuf[:rLen])
-            sBytes = bytearray(32-sLen) + bytearray(sBuf[:sLen])
+            rBytes = bytearray(32-rLen) + cToBytes(rBuf)[:rLen]
+            sBytes = bytearray(32-sLen) + cToBytes(sBuf)[:sLen]
             sigBytes = rBytes + sBytes   
+            assert(len(sigBytes) == 64)
         finally:
             o.ECDSA_SIG_free(ecdsa_sig)
 
@@ -53,8 +56,8 @@ class OpenSSL_ECPrivateKey:
         try:
             privBignum, ec_key = None, None
             
-            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid("prime256v1"))
-            privBuf = bytesToStr(rawPrivateKey)
+            ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid(b"prime256v1"))
+            privBuf = bytesToC(rawPrivateKey)
             privBignum = o.BN_new()
             o.BN_bin2bn(privBuf, 32, privBignum)     
             o.EC_KEY_set_private_key(ec_key, privBignum)            

@@ -1,6 +1,15 @@
 
+import sys
 from ctypes import *
 from ctypes.util import find_library
+from .OpenSSLException import OpenSSLException
+
+def bytesToC(b):
+    cbuf = create_string_buffer(bytes(b))
+    return cbuf
+    
+def cToBytes(c):
+    return bytearray(c)
 
 class OpenSSL:
     
@@ -19,7 +28,7 @@ class OpenSSL:
         try:
             self._lib = cdll.LoadLibrary(libraryName)
         except:
-            self._setInitError("error loading OpenSSL ")
+            self._setInitError("error loading OpenSSL")
             return
         
         try:
@@ -29,7 +38,12 @@ class OpenSSL:
                 _fields_ = [("r", c_void_p), ("s", c_void_p)]
     
             self._add("SSLeay_version", ret=c_char_p)
-            self._add("OBJ_txt2nid", args=[c_char_p])
+            self._add("OBJ_txt2nid")
+            self._add("ERR_load_crypto_strings", skipWrap=True)
+            self._add("ERR_get_error", ret=c_long, skipWrap=True)
+            self._add("ERR_peek_last_error", ret=c_long, skipWrap=True)
+            self._add("ERR_error_string", ret=c_char_p, args=[c_long,  c_char_p], skipWrap=True)
+            
             self._add("EC_KEY_new_by_curve_name", ret=c_void_p, args=[c_int])
             self._add("EC_KEY_free", args=[c_void_p], skipWrap=True)
             self._add("EC_KEY_dup", ret=c_void_p, args=[c_void_p])
@@ -42,7 +56,7 @@ class OpenSSL:
             self._add("EC_GROUP_free", args=[c_void_p], skipWrap=True)
             self._add("EC_POINT_new", ret=c_void_p, args=[c_void_p])
             self._add("EC_POINT_free", args=[c_void_p], skipWrap=True)
-            self._add("EC_POINT_oct2point", args=[c_void_p, c_void_p, c_void_p, c_int, c_void_p])
+            self._add("EC_POINT_oct2point", args=[c_void_p, c_void_p, c_void_p, c_size_t, c_void_p])
             self._add("EC_POINT_point2oct", args=[c_void_p, c_void_p, c_int, c_void_p, c_int, c_void_p] )
             self._add("ECDSA_do_sign", ret=POINTER(ECDSA_SIG), args=[c_void_p, c_int, c_void_p])
             self._add("ECDSA_do_verify", args=[c_void_p, c_int, POINTER(ECDSA_SIG), c_void_p], skipWrap=True)
@@ -63,6 +77,8 @@ class OpenSSL:
             self._add("EVP_aes_256_cbc", ret=c_void_p)
             self._add("EVP_CipherInit", args=[c_void_p, c_void_p, c_void_p, c_void_p, c_int])
             self._add("EVP_CipherUpdate", args=[c_void_p, c_void_p, c_void_p, c_void_p, c_int])
+            
+            self.ERR_load_crypto_strings()
             
             self.enabled = True
         except:
@@ -87,7 +103,11 @@ class OpenSSL:
         else:
             def wrappedFunc(*a):
                 retval = func(*a)
-                assert(retval)
+                if not retval:
+                    errNum = self.ERR_peek_last_error()
+                    errBuf = create_string_buffer(1024)
+                    errStr = self.ERR_error_string(errNum, errBuf)
+                    raise OpenSSLException(errStr)
                 return retval            
             setattr(self, name, wrappedFunc)
 

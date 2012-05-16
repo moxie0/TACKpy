@@ -22,5 +22,11 @@ class Python_ECGenerator:
         publicKeyPoint = generator_256 * d        
         rawPublicKey = (numberToBytes(publicKeyPoint.x(), 32) + 
                         numberToBytes(publicKeyPoint.y(), 32))
-        return (Python_ECPublicKey(rawPublicKey), 
-                Python_ECPrivateKey(rawPrivateKey, rawPublicKey))
+                        
+        # Test signing and verification with the new key
+        # sign() does a verify() internally
+        pub = Python_ECPublicKey(rawPublicKey)
+        priv = Python_ECPrivateKey(rawPrivateKey, rawPublicKey)
+        priv.sign(b"test")
+                        
+        return (pub, priv)

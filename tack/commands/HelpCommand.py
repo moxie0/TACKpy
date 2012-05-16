@@ -1,4 +1,5 @@
 import sys
+from tack.compat import bytesToStr
 from tack.commands.CertificateCommand import CertificateCommand
 from tack.version import __version__
 from tack.commands.BreakCommand import BreakCommand
@@ -39,11 +40,11 @@ help <command>
     @staticmethod
     def printGeneralUsage(message=None):
         if o.enabled:
-            cryptoVersion = "(%s)" % o.SSLeay_version(0)
+            cryptoVersion = "(%s)" % bytesToStr(o.SSLeay_version(0))
         else:
             cryptoVersion = "(python crypto - %s)" % o.initErrorString
         if message:
-            print "Error: %s\n" % message
+            print ("Error: %s\n" % message)
         sys.stdout.write(
 """tack.py version %s %s
 

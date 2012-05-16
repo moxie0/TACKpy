@@ -1,6 +1,6 @@
 import ctypes
 from .OpenSSL import openssl as o
-from tack.compat import bytesToStr
+from .OpenSSL import bytesToC, cToBytes
 
 BLOCKSIZE = 16
 
@@ -24,20 +24,22 @@ class OpenSSL_AES:
     def _transform(self, inBytes, encrypt):
         assert(len(inBytes) % BLOCKSIZE == 0)
         ctx = None
-        inBuf = bytesToStr(inBytes)
+        inBuf = bytesToC(inBytes)
+        keyBuf = bytesToC(self.key)
+        ivBuf = bytesToC(self.IV)
         outBuf = ctypes.create_string_buffer(len(inBytes))
         try:
             # Create the CIPHER_CTX
             ctx = o.EVP_CIPHER_CTX_new()
             o.EVP_CIPHER_CTX_init(ctx)
-            o.EVP_CipherInit(ctx, self.cipherType, bytesToStr(self.key), bytesToStr(self.IV), encrypt)
+            o.EVP_CipherInit(ctx, self.cipherType, keyBuf, ivBuf, encrypt)
             o.EVP_CIPHER_CTX_set_padding(ctx, 0)
 
             # Encrypt or Decrypt
             outLen = ctypes.c_int()
             o.EVP_CipherUpdate(ctx, outBuf, ctypes.byref(outLen), inBuf, len(inBytes))
             assert(outLen.value == len(inBytes))
-            outBytes = bytearray(outBuf[:len(inBytes)])
+            outBytes = cToBytes(outBuf)[:len(inBytes)]
         finally:
             o.EVP_CIPHER_CTX_cleanup(ctx)
             o.EVP_CIPHER_CTX_free(ctx)

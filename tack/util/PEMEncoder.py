@@ -1,4 +1,5 @@
-from binascii import b2a_base64
+from tack.compat import b2a_base64
+import sys
 
 class PEMEncoder:
 
