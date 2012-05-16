@@ -2,26 +2,18 @@ import ctypes
 from .OpenSSL import openssl as o
 from tack.compat import bytesToStr
 
+BLOCKSIZE = 16
+
 class OpenSSL_AES:
+    
     def __init__(self, key, IV):
+        if len(key) != 32:
+            raise AssertionError()
         if len(IV) != 16:
             raise AssertionError()
-
-        self.blockSize = 16
+        self.cipherType = o.EVP_aes_256_cbc()
         self.key = key
-        self.IV = IV
-
-        if len(key)==16:
-            self.name = "aes128"
-            self.cipherType = o.EVP_aes_128_cbc()
-        elif len(key)==24:
-            self.name = "aes192"
-            self.cipherType = o.EVP_aes_192_cbc()
-        elif len(key)==32:
-            self.name = "aes256"
-            self.cipherType = o.EVP_aes_256_cbc()            
-        else:
-            raise AssertionError()
+        self.IV = IV 
 
     def encrypt(self, plaintext):
         return self._transform(plaintext, 1)
@@ -30,7 +22,7 @@ class OpenSSL_AES:
         return self._transform(ciphertext, 0)
                 
     def _transform(self, inBytes, encrypt):
-        assert(len(inBytes) % 16 == 0)
+        assert(len(inBytes) % BLOCKSIZE == 0)
         ctx = None
         inBuf = bytesToStr(inBytes)
         outBuf = ctypes.create_string_buffer(len(inBytes))
@@ -52,7 +44,7 @@ class OpenSSL_AES:
 
         # Update the CBC chaining
         if encrypt:
-            self.IV = outBytes[-self.blockSize:]
+            self.IV = outBytes[-BLOCKSIZE:]
         else:
-            self.IV = inBytes[-self.blockSize:]
+            self.IV = inBytes[-BLOCKSIZE:]
         return outBytes
