@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from tack.compat import a2b_base64
 
 class PEMDecoder:

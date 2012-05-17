@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from tack.structures.Tack import Tack
 from tack.structures.TackActivation import TackActivation
 from tack.structures.TackBreakSig import TackBreakSig

@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import sys
 from tack.commands.Command import Command
 from tack.structures.Tack import Tack

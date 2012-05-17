@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from tack.compat import a2b_hex, bytesToStr
 from tack.crypto.ASN1 import ASN1Parser, asn1Length
 from tack.crypto.Digest import Digest

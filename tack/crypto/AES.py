@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from .openssl.OpenSSL import openssl
 from .openssl.OpenSSL_AES import OpenSSL_AES
 from .python.Python_AES import Python_AES

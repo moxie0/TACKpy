@@ -1,7 +1,9 @@
-# Author: Trevor Perrin
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
 # See the LICENSE file for legal information regarding use of this file.
 
-################ ASN1 ###
 from tack.tls.TlsStructure import TlsStructure
 
 def asn1Length(x):

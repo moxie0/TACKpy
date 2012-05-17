@@ -25,9 +25,9 @@ OpenSSL
 Tackpy tries to use OpenSSL for AES and ECDSA operations. If OpenSSL cannot be
 loaded, Tackpy will fall back to using slower python crypto code. 
 
-To use OpenSSL on Windows you will need "libeay32.dll" on your path. On Red
-Hat Linux systems you will need to provide your own libcrypto as the system
-default does not include elliptic curve functionality.
+To use OpenSSL on Windows you need "libeay32.dll" on your path. On Red Hat
+systems you need to provide your own libcrypto as the system default does not
+include elliptic curve support.
 
 
 Quick start with command-line tool

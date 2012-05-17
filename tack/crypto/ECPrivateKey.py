@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from .python.Python_ECPrivateKey import Python_ECPrivateKey
 from .openssl.OpenSSL_ECPrivateKey import OpenSSL_ECPrivateKey
 from .openssl.OpenSSL import openssl as o

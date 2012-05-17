@@ -1,7 +1,11 @@
 #! /usr/bin/env python
 
-# Author: Trevor Perrin
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
 # See the LICENSE file for legal information regarding use of this file.
+
 import sys
 from tack.commands.BreakCommand import BreakCommand
 from tack.commands.CertificateCommand import CertificateCommand

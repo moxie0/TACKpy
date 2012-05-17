@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import unittest
 from tack.compat import a2b_hex
 from tack.crypto.ECGenerator import ECGenerator

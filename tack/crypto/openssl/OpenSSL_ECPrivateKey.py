@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import ctypes
 from tack.crypto.Digest import Digest
 from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey

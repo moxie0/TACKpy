@@ -1,3 +1,8 @@
+# Authors: 
+#   Trevor Perrin
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import os
 from tack.crypto.Digest import Digest
 from .cryptomath import numberToBytes, bytesToNumber

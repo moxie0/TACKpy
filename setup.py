@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from distutils.core import setup
 
-# Author: Trevor Perrin
-# See the LICENSE file for legal information regarding use of this file.
 import os
 import shutil
 

@@ -1,7 +1,9 @@
-# Author: Trevor Perrin
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
 # See the LICENSE file for legal information regarding use of this file.
 
-################ COMPAT ###
 """These functions abstract away the differences between Python 2 and 3.
 """
 

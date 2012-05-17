@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 from tack.crypto.ECPublicKey import ECPublicKey
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter

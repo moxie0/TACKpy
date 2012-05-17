@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import ctypes
 from .OpenSSL import openssl as o
 from .OpenSSL import bytesToC, cToBytes

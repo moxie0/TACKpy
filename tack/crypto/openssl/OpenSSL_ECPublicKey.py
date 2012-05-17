@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import ctypes, sys
 from tack.compat import b2a_base32
 from tack.crypto.Digest import Digest

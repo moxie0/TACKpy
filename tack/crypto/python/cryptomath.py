@@ -1,7 +1,7 @@
-# Author: Trevor Perrin
+# Authors: 
+#   Trevor Perrin
+#
 # See the LICENSE file for legal information regarding use of this file.
-
-################ CRYPTOMATH ###
 
 import math, hashlib, hmac
 

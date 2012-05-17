@@ -1,3 +1,9 @@
+# Authors: 
+#   Trevor Perrin
+#   Moxie Marlinspike
+#
+# See the LICENSE file for legal information regarding use of this file.
+
 import sys
 from tack.compat import bytesToStr
 from tack.commands.CertificateCommand import CertificateCommand
