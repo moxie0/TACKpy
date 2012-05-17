@@ -36,8 +36,9 @@ class SignCommand(Command):
     def execute(self):
         if not self.numArg:
             #We are only signing a single TACK (this is the typical mode)
-            tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
-                            self.generation, self.expiration, self.certificate.key_sha256)
+            tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), 
+                            self.min_generation, self.generation, self.expiration, 
+                            self.certificate.key_sha256)
 
             self.outputFile.write(self.addPemComments(tack.serializeAsPem()))
 
@@ -52,8 +53,9 @@ class SignCommand(Command):
                 self.printError("-o required with -n")
 
             for x in range(numTacks):
-                tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
-                            self.generation, self.expiration, self.certificate.key_sha256)
+                tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), 
+                                    self.min_generation, self.generation, 
+                                    self.expiration, self.certificate.key_sha256)
 
                 try:
                     outputFileName = self.outputFileName + "_%04d.pem" % x
@@ -82,8 +84,7 @@ class SignCommand(Command):
             else:
                 certificateBytes = bytearray(open(certificateFile, "rb").read())
                 
-            inCert = TlsCertificate.createFromBytes(certificateBytes)
-            return inCert
+            return TlsCertificate.createFromBytes(certificateBytes)
         except SyntaxError:
             self.printError("Certificate malformed: %s" % certificateFile)
         except IOError:
@@ -114,7 +115,7 @@ class SignCommand(Command):
                 raise ValueError()
             return numTacks, interval
         except (ValueError, SyntaxError):
-            self.printError("Bad -n NUMTACKS: %s:" % numArgRaw)
+            self.printError("Bad -n NUMTACKS (1 - 10000): %s:" % numArgRaw)
 
     def _getGeneration(self):
         generation = self._getOptionValue("-g")

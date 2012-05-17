@@ -66,7 +66,7 @@ class CertificateCommand(Command):
     def _getInputFile(self):
         fileName = self._getOptionValue("-i")
         if fileName is None:
-            self.printError("-i missing")
+            self.printError("-i missing (Certificate or TACK)")
         try:
 
             text, binary = self._readFileTextAndBinary(fileName)

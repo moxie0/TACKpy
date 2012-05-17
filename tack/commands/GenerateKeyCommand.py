@@ -18,7 +18,7 @@ class GenerateKeyCommand(Command):
         self.outputFile, self.outputFileName = self.getOutputFile()
 
     def execute(self):
-        password = self._getPassword()
+        password = self._getPasswordWithPrompt()
         public_key, private_key = ECGenerator.generateECKeyPair()
         keyFile  = TackKeyFile.create(public_key, private_key, password)
         self.outputFile.write(self.addPemComments(keyFile.serializeAsPem()))
@@ -27,7 +27,7 @@ class GenerateKeyCommand(Command):
             self.writeCryptoVersion()
             sys.stderr.write(str(keyFile))
 
-    def _getPassword(self):
+    def _getPasswordWithPrompt(self):
         if not self.password:
             password, password2 = "this", "that"
             while password != password2:
