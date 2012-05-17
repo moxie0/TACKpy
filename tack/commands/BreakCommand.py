@@ -5,7 +5,7 @@ from tack.structures.TackBreakSig import TackBreakSig
 class BreakCommand(Command):
 
     def __init__(self, argv):
-        Command.__init__(self, argv, "pok", "v")
+        Command.__init__(self, argv, "pok", "vx")
         self.password                        = self.getPassword()
         self.outputFile, self.outputFileName = self.getOutputFile()
         self.keyfile                         = self.getKeyFile(self.getPassword())
@@ -29,6 +29,7 @@ class BreakCommand(Command):
 
 Optional arguments:
   -v                 : Verbose
+  -x                 : Use python crypto (not OpenSSL)  
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)

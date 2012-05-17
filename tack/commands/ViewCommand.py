@@ -11,23 +11,23 @@ from tack.util.PEMDecoder import PEMDecoder
 class ViewCommand(Command):
 
     def __init__(self, argv):
-        Command.__init__(self, argv, "", "")
+        Command.__init__(self, argv, "", "x", allowArgRemainder=True)
 
-        if len(argv) < 1:
+        if len(self.argRemainder) < 1:
             self.printError("Missing argument: file to view")
-        if len(argv) > 1:
+        if len(self.argRemainder) > 1:
             self.printError("Can only view one file")
 
 
-    def _readFile(self, argv):
+    def _readFile(self, fname):
         try:
             # Read both binary (bytearray) and text (str) versions of the input
             try:
-                if argv[0] == "-":
+                if fname == "-":
                     # Read as binary
                     b = readStdinBinary()
                 else:      
-                    b = bytearray(open(argv[0], "rb").read())
+                    b = bytearray(open(fname, "rb").read())
                 s = bytesToStr(b, "ascii")
             except UnicodeDecodeError:
                 # Python3 error, so it must be a binary file; not text
@@ -38,7 +38,7 @@ class ViewCommand(Command):
             self.printError("Error opening file: %s" % argv[0])
 
     def execute(self):
-        text, binary = self._readFile(self.argv)
+        text, binary = self._readFile(self.argRemainder[0])
         fileType     = None
 
         try:
@@ -83,5 +83,8 @@ class ViewCommand(Command):
         print(
 """Views a TACK, TACK Key, TACK Break Sig, or certificate.
 
-view <file> ("-" for stdin)
+view [-x] <file> ("-" for stdin)
+
+Optional arguments:
+  -x                 : Use python crypto (not OpenSSL) to verify signatures
 """)

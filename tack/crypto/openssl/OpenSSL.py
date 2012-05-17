@@ -22,10 +22,10 @@ class OpenSSL:
             else:
                 libraryName = find_library("crypto")
             if not libraryName:
-                self._setInitError("OpenSSL not found")
+                self.setInitError("OpenSSL not found")
                 return
         except:
-            self._setInitError("OpenSSL not found")
+            self.setInitError("OpenSSL not found")
             raise
             
         try:
@@ -34,7 +34,7 @@ class OpenSSL:
             else:
                 self._lib = cdll.LoadLibrary(libraryName)
         except:
-            self._setInitError("error loading OpenSSL")
+            self.setInitError("error loading OpenSSL")
             return
         
         try:
@@ -95,7 +95,7 @@ class OpenSSL:
         try:
             func = getattr(self._lib, name)
         except:
-            self._setInitError("error loading OpenSSL:%s" % name)
+            self.setInitError("error loading OpenSSL:%s" % name)
             raise
             
         if ret:
@@ -116,7 +116,7 @@ class OpenSSL:
                 return retval            
             setattr(self, name, wrappedFunc)
 
-    def _setInitError(self, s):
+    def setInitError(self, s):
         self.enabled = False
         self.initErrorString = s
         

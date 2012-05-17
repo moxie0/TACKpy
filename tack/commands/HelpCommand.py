@@ -16,12 +16,12 @@ class HelpCommand(Command):
                 "tackcert" : CertificateCommand}
 
     def __init__(self, argv):
-        Command.__init__(self, argv, "", "")
+        Command.__init__(self, argv, "", "", allowArgRemainder=True)
 
-        if len(argv) < 1:
+        if len(self.argRemainder) < 1 or len(self.argRemainder)>1:
             HelpCommand.printGeneralUsage()
 
-        self.command = argv[0]
+        self.command = self.argRemainder[0]
 
         if not self.command in HelpCommand.COMMANDS:
             self.printError("%s not a valid command." % self.command)

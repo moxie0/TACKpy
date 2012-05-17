@@ -11,12 +11,16 @@ from tack.InvalidPasswordException import InvalidPasswordException
 
 class Command:
 
-    def __init__(self, argv, options, flags):
+    def __init__(self, argv, options, flags, allowArgRemainder=False):
         try:
-            self.argv                   = argv
             self.flags                  = flags
             self.options                = ":".join(options) + ":"
-            self.values, self.remainder = getopt.getopt(argv, self.options + self.flags)
+            self.values, self.argRemainder = getopt.getopt(argv, self.options + self.flags)
+            if not allowArgRemainder and self.argRemainder:
+                self.printError("Too many arguments: %s" % self.argRemainder)
+            if self._containsOption("-x"):
+                o.setInitError("requested from command line")
+                o.enabled = False
         except getopt.GetoptError as e:
             self.printError(e)
 

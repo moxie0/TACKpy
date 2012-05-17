@@ -33,17 +33,17 @@ test:
 	mkdir $(TESTDIR)
 	#$(EXEC) test
 	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key1.pem 
-	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key2.pem 
+	$(EXEC) genkey -x -p asdf > $(TESTDIR)/TACK_Key2.pem 
 	$(EXEC) genkey -p asdf -o $(TESTDIR)/TACK_Key3.pem 
 	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) > $(TESTDIR)/TACK1.pem	
 	cat $(TESTDIR)/TACK_Key1.pem | $(EXEC) sign -k- -p asdf -c $(CERT2) -o $(TESTDIR)/TACK2.pem		
-	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -m2 -o $(TESTDIR)/TACK3.pem			
+	$(EXEC) sign -x -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -m2 -o $(TESTDIR)/TACK3.pem			
 	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -c $(CERT1) -o $(TESTDIR)/TACK4.pem			
-	$(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -e 2030-06-06Z -c $(CERT2) -o $(TESTDIR)/TACK5.pem
+	$(EXEC) sign -x -k $(TESTDIR)/TACK_Key1.pem -p asdf -e 2030-06-06Z -c $(CERT2) -o $(TESTDIR)/TACK5.pem
 	cat $(CERT1) | $(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -g2 -m2 -c- -o $(TESTDIR)/TACK6.pem
 	cat $(CERT2) | $(EXEC) sign -k $(TESTDIR)/TACK_Key1.pem -p asdf -m250 -g251 -c - -o $(TESTDIR)/T6 -e 2013-01-02Z -n 3@1d
 	$(EXEC) break -k $(TESTDIR)/TACK_Key1.pem -p asdf > $(TESTDIR)/TACK_Break_Sig1.pem
-	$(EXEC) b -k $(TESTDIR)/TACK_Key2.pem -p asdf -o $(TESTDIR)/TACK_Break_Sig2.pem
+	$(EXEC) b -x -k $(TESTDIR)/TACK_Key2.pem -p asdf -o $(TESTDIR)/TACK_Break_Sig2.pem
 	cat $(TESTDIR)/TACK_Break_Sig1.pem $(TESTDIR)/TACK_Break_Sig2.pem > $(TESTDIR)/TACK_Break_Sigs.pem
 	$(EXEC) tackcert -i $(TESTDIR)/TACK3.pem > $(TESTDIR)/TACK_Cert3.pem
 	$(EXEC) tackcert -i $(TESTDIR)/TACK4.pem -b $(TESTDIR)/TACK_Break_Sigs.pem > $(TESTDIR)/TACK_Cert4.pem

@@ -10,7 +10,7 @@ from tack.util.Time import Time
 class SignCommand(Command):
 
     def __init__(self, argv):
-        Command.__init__(self, argv, "kcopmgen", "v")
+        Command.__init__(self, argv, "kcopmgen", "vx")
 
         self.password                        = self.getPassword()
         self.keyfile                         = self.getKeyFile(self.password)
@@ -157,6 +157,7 @@ class SignCommand(Command):
 
 Optional arguments:
   -v                 : Verbose
+  -x                 : Use python crypto (not OpenSSL)  
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
   -m MIN_GENERATION  : Use this min_generation number (0-255)

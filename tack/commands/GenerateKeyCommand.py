@@ -7,7 +7,7 @@ from tack.structures.TackKeyFile import TackKeyFile
 class GenerateKeyCommand(Command):
 
     def __init__(self, argv):
-        Command.__init__(self, argv, "po", "v")
+        Command.__init__(self, argv, "po", "vx")
         self.password                        = self.getPassword()
         self.outputFile, self.outputFileName = self.getOutputFile()
 
@@ -44,6 +44,7 @@ class GenerateKeyCommand(Command):
 
 Optional arguments:
   -v                 : Verbose
+  -x                 : Use python crypto (not OpenSSL)
   -o FILE            : Write the output to this file (instead of stdout)
   -p PASSWORD        : Use this TACK key password instead of prompting
 """)
