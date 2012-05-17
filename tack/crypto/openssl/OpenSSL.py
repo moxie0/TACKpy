@@ -49,8 +49,15 @@ class OpenSSL:
             self._add("ERR_get_error", ret=c_long, skipWrap=True)
             self._add("ERR_peek_last_error", ret=c_long, skipWrap=True)
             self._add("ERR_error_string", ret=c_char_p, args=[c_long,  c_char_p], skipWrap=True)
-            
-            self._add("EC_KEY_new_by_curve_name", ret=c_void_p, args=[c_int])
+
+            # Handle this specially as it may indicate Red Hat's 
+            # OpenSSL without EC
+            try:
+                self._add("EC_KEY_new_by_curve_name", ret=c_void_p, args=[c_int])
+            except:
+                self.setInitError("OpenSSL is missing EC functions")
+                return
+        
             self._add("EC_KEY_free", args=[c_void_p], skipWrap=True)
             self._add("EC_KEY_dup", ret=c_void_p, args=[c_void_p])
             self._add("EC_KEY_generate_key", args=[c_void_p])

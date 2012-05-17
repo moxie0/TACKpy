@@ -1,4 +1,4 @@
-tackpy version 0.9.6                                             Feb 23 2012
+Tackpy version 0.9.6                                             Feb 23 2012
 ============================================================================
 
 Licenses/Acknowledgements
@@ -14,22 +14,24 @@ Installation
 =============
 Tackpy requires Python 2.6 or greater, or Python 3.
 
-Run "python setup.py install" or "make install".  This installs:
+Run "make install" or "python setup.py install".  This installs:
  - The "tack" library for use by other Python programs (such as TLS Lite).
- - The "tack" command for working with TACKs.
+ - The "tack" command-line tool.
 
-To use the "tack" command without installation you can run
-"selfcontained/tack".
+To use the command-line tool without installation run "./tack.py".
 
+OpenSSL
+--------
 Tackpy tries to use OpenSSL for AES and ECDSA operations. If OpenSSL cannot be
-loaded, Tackpy will fall back to using python crypto code. On UNIX-like
-systems, Tackpy will try to load OpenSSL via the "crypto" shared library. On
-Windows, Tackpy will try to load "libeay32.dll" (which must be in the path).
-Run "tack help" to see if OpenSSL was loaded.
+loaded, Tackpy will fall back to using slower python crypto code. 
+
+To use OpenSSL on Windows you will need "libeay32.dll" on your path. On Red
+Hat Linux systems you will need to provide your own libcrypto as the system
+default does not include elliptic curve functionality.
 
 
-Quick start 
-============ 
+Quick start with command-line tool
+=================================== 
 You will need to create one or more TACK keys to "pin" your hostnames to. You
 should use a different key for each hostname, unless those hostnames are
 closely related (such as aliases for the same host, or hosts sharing a TLS
@@ -98,7 +100,7 @@ break signatures add to TLS handshake overhead, so are best avoided.
 Create a break signature for a TACK:
   1) Run "tack break -k KEY.pem > TACK_Break_Sig.pem"
   2) Add the break signature to your web server.
-
+       - Apache: Set "SSLTACKBreakSigsFile" to a file with break signatures.
 
 Advanced uses
 ==============
