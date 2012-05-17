@@ -38,12 +38,18 @@ RVUKuxd+eEaH3BpPAau4MP2n24gy6WEsJ2auB81ee9fDnx/tfKPqvyuc4r4/Z4aL
 5CvQvlPHaG/TTXXNh3pZFl3d/J5/76ZfeQzQtZ+dCrE4a4601Q4hBBXEq5gQfaof
 H4yTGzfDv+JLIICAIcCs
 -----END CERTIFICATE-----"""
-        sslc = TlsCertificate()
-        sslc.parsePem(s)
+        sslc = TlsCertificate.createFromPem(s)
         assert(sslc.key_sha256 == a2b_hex("ffd30bcb84dbbc211a510875694354c58863d84fb7fc5853dfe36f4be2eb2e50"))
         assert(sslc.cert_sha256 == a2b_hex("1a50e3de3a153f33b314b67c1aacc2f59fc99c49b8449c33dcc3665663e2bff1"))
         assert(Time.posixTimeToStr(sslc.notAfter, True) == "2012-07-08T00:19:57Z")
-        assert(isinstance(sslc.writeText(), str))
+        
+        # Write to binary and re-parse it, then check again
+        b = sslc.serialize()
+        sslc2 = TlsCertificate(b)
+        assert(sslc2.key_sha256 == a2b_hex("ffd30bcb84dbbc211a510875694354c58863d84fb7fc5853dfe36f4be2eb2e50"))
+        assert(sslc2.cert_sha256 == a2b_hex("1a50e3de3a153f33b314b67c1aacc2f59fc99c49b8449c33dcc3665663e2bff1"))
+        assert(Time.posixTimeToStr(sslc2.notAfter, True) == "2012-07-08T00:19:57Z")
+        
         return 1
 
 if __name__ == '__main__':

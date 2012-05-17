@@ -1,5 +1,6 @@
 import unittest
 from tack.compat import a2b_hex
+from tack.crypto.ECGenerator import ECGenerator
 from tack.structures.Tack import Tack
 from tack.structures.TackBreakSig import TackBreakSig
 from tack.structures.TackKeyFile import TackKeyFile
@@ -89,7 +90,8 @@ PgegVlKuDULIASht9fvs6xTfxcFJDUgNaenZfcqAgAI=
         kf2 = TackKeyFile.createFromPem(kf.serializeAsPem(), "asdf")
         assert(kf2.getPublicKey().getRawKey() == publicKey)
         assert(kf2.getPrivateKey().getRawKey() == privateKey)
-        kf3 = TackKeyFile.createRandom("123")
+        public_key, private_key = ECGenerator.generateECKeyPair()
+        kf3  = TackKeyFile.create(public_key, private_key, "123")
         kf4 = TackKeyFile.createFromPem(kf3.serializeAsPem(), "123")
         assert(kf3.getPublicKey().getRawKey() == kf4.getPublicKey().getRawKey())
 

@@ -13,6 +13,9 @@ def cToBytes(c):
 
 class OpenSSL:
     
+    def __init__(self):
+        self.setInitError("uninitialized")
+    
     def initialize(self):
         self.initErrorString = "unknown error loading OpenSSL"
         

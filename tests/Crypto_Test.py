@@ -4,23 +4,25 @@ from tack.crypto.AES import AES
 from tack.crypto.ASN1 import asn1Length, toAsn1IntBytes, fromAsn1IntBytes
 from tack.crypto.ECGenerator import ECGenerator
 
+import binascii
+
 class CryptoTest(unittest.TestCase):
 
     def test_AES(self):
-        key = a2b_hex("c286696d887c9aa0611bbb3e2025a45a")
-        IV = a2b_hex("562e17996d093d28ddb3ba695a2e6f58")
-        plaintext = a2b_hex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
-        ciphertext = a2b_hex("d296cd94c2cccf8a3a863028b5e1dc0a7586602d253cfff91b8266bea6d61ab1")
+        key = a2b_hex("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
+        IV = a2b_hex("000102030405060708090A0B0C0D0E0F")
+        plaintext = a2b_hex("6bc1bee22e409f96e93d7e117393172a")
+        ciphertext = a2b_hex("f58c4c04d6e5f1ba779eabfb5f7bfbd6")
 
-        assert(AES(key, IV).encrypt(plaintext) == ciphertext)
-        assert(AES(key, IV).decrypt(ciphertext) == plaintext)
+        assert(AES.create(key, IV).encrypt(plaintext) == ciphertext)
+        assert(AES.create(key, IV).decrypt(ciphertext) == plaintext)
 
     def test_ECDSA(self):
         publicKey, privateKey = ECGenerator().generateECKeyPair()
         data = bytearray([0,1,2,3])
         badData = bytearray([0,1,2,4])
 
-        signature = privateKey.getSignature(data)
+        signature = privateKey.sign(data)
         assert(publicKey.verify(data, signature))
         assert(not publicKey.verify(badData, signature))
 
