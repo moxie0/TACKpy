@@ -25,7 +25,7 @@ class BreakCommand(Command):
 
   break -k KEY
 
-  -k KEY             : Use this TACK key file
+  -k KEY             : Use this TACK key file ("-" for stdin)
 
 Optional arguments:
   -v                 : Verbose

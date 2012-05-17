@@ -38,8 +38,12 @@ if sys.version_info >= (3,0):
     def b2a_base32(b):
         return base64.b32encode(b).decode("ascii")
         
-    def bytesToStr(b):
-        return str(b, "latin-1")  
+    # Decodes all 256 byte values, use "ascii" for first 128
+    def bytesToStr(b, encoding="latin-1"):
+        return b.decode(encoding)  
+        
+    def readStdinBinary():
+        return sys.stdin.buffer.read()        
     
     def compat26Str(x): return x
 
@@ -50,8 +54,8 @@ else:
         def compat26Str(x): return str(x)
     else:
         def compat26Str(x): return x
-        
- 
+
+
     def a2b_hex(s):
         try:
             b = bytearray(binascii.a2b_hex(s))
@@ -73,7 +77,14 @@ else:
         return binascii.b2a_base64(compat26Str(b))
         
     def b2a_base32(b):
-        return base64.b32encode(str(b))        
+        return base64.b32encode(str(b))    
         
-    def bytesToStr(b):
-        return str(b)
+    # This at least returns a byte array, but it doesn't actually 
+    # ready binary data - on a Windows system, CRLFs may still get mangled
+    # if you try to pipe binary data in... oh well, can live with that
+    def readStdinBinary():
+        return bytearray(sys.stdin.read()) 
+        
+    # Decodes all 256 byte values, use "ascii" for first 128
+    def bytesToStr(b, encoding="latin-1"):
+        return b.decode(encoding)

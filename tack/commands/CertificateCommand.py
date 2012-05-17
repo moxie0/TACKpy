@@ -55,7 +55,10 @@ class CertificateCommand(Command):
         if fileName is None:
             return None
 
-        contents = open(fileName, "r").read()
+        try:
+            contents = open(fileName, "r").read()
+        except IOError:
+            self.printError("Error opening break signature: %s" % fileName)
 
         return TackBreakSig.createFromPemList(contents)
 
@@ -78,7 +81,11 @@ class CertificateCommand(Command):
 
         if PEMDecoder(contents).containsEncoded("CERTIFICATE"):
             certificate = TlsCertificate()
-            certificate.open(self._getOptionValue("-i"))
+            certificateName = self._getOptionValue("-i")
+            try:
+                certificate.open(open(certificateName, "rb").read())
+            except IOError:
+                self.printError("Error opening certificate: %s" % certificateName)
             return certificate
 
     def _getInputFileContents(self):
@@ -86,8 +93,12 @@ class CertificateCommand(Command):
 
         if fileName is None:
             return None
+        
+        try:
+            return open(fileName, "r").read()
+        except IOError:
+            self.printError("Error opening input file: %s" % fileName)
 
-        return open(fileName, "r").read()
 
     @staticmethod
     def printHelp():

@@ -47,7 +47,10 @@ class Command:
             password = self._promptPassword()
 
         try:
-            keyPemData = open(keyPemFile, "rU").read()
+            if keyPemFile == "-":
+                keyPemData = sys.stdin.read()
+            else:
+                keyPemData = open(keyPemFile, "rU").read()
 
             while True:
                 try:

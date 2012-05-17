@@ -1,5 +1,7 @@
 import sys
+from tack.compat import bytesToStr
 from tack.commands.Command import Command
+from tack.compat import readStdinBinary
 from tack.structures.Tack import Tack
 from tack.structures.TackKeyFile import TackKeyFile
 from tack.structures.TackBreakSig import TackBreakSig
@@ -20,9 +22,13 @@ class ViewCommand(Command):
     def _readFile(self, argv):
         try:
             # Read both binary (bytearray) and text (str) versions of the input
-            b = bytearray(open(argv[0], "rb").read())
             try:
-                s = open(argv[0], "rU").read()
+                if argv[0] == "-":
+                    # Read as binary
+                    b = readStdinBinary()
+                else:      
+                    b = bytearray(open(argv[0], "rb").read())
+                s = bytesToStr(b, "ascii")
             except UnicodeDecodeError:
                 # Python3 error, so it must be a binary file; not text
                 s = None
@@ -77,5 +83,5 @@ class ViewCommand(Command):
         print(
 """Views a TACK, TACK Key, TACK Break Sig, or certificate.
 
-view <file>
+view <file> ("-" for stdin)
 """)

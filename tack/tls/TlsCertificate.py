@@ -1,4 +1,4 @@
-from tack.compat import a2b_hex
+from tack.compat import a2b_hex, bytesToStr
 from tack.crypto.ASN1 import ASN1Parser, asn1Length
 from tack.crypto.Digest import Digest
 from tack.structures.TackExtension import TackExtension
@@ -45,18 +45,17 @@ class TlsCertificate:
         self.postExtBytes = a2b_hex(
             "300d06092a864886f70d01010505000303003993")
 
-    def open(self, filename):
-        # May raise IOError or SyntaxError
+    def open(self, fileBytes):
+        # May raise SyntaxError
         try:
-            sslStr = open(filename, "rU").read() # IOError, UnicodeDecodeError
-            self.parsePem(sslStr) # SyntaxError
+            fileStr = bytesToStr(fileBytes, "ascii") # UnicodeDecodeError
+            self.parsePem(fileStr) # SyntaxError
             return
-        except (UnicodeDecodeError, SyntaxError):
-            # File had non-text chars in it (python3), *OR*
+        except (UnicodeDecodeError, SyntaxError) as e:
+            # File had non-ASCII chars in it, *OR*
             # File did not PEM-decode
             pass
-        sslBytes = bytearray(open(filename, "rb").read()) # IOError
-        self.parse(sslBytes)  # SyntaxError
+        self.parse(bytearray(fileBytes))  # SyntaxError
 
     def matches(self, tack):
         return self.key_sha256 == tack.target_hash

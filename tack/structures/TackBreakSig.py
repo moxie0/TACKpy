@@ -16,9 +16,6 @@ class TackBreakSig(TlsStructure):
 
             self.public_key = ECPublicKey.new(self.getBytes(64))
             self.signature  = self.getBytes(64)
-
-            if self.index != len(data):
-                raise SyntaxError("Excess bytes in TACK_Break_Sig")
                 
             if not self.verifySignature():
                 raise SyntaxError("TACK_Break_Sig has bad signature")

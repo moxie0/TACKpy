@@ -1,6 +1,7 @@
 import sys
 import time
 import math
+from tack.compat import readStdinBinary
 from tack.commands.Command import Command
 from tack.structures.Tack import Tack
 from tack.tls.TlsCertificate import TlsCertificate
@@ -17,7 +18,7 @@ class SignCommand(Command):
         self.certificate                     = self._getCertificate()
         self.generation                      = self._getGeneration()
         self.min_generation                  = self._getMinGeneration()
-        self.expiration                      = self._getExpiration()
+        self.expiration                      = self._getExpiration(self.certificate)
         self.numArg                          = self._getNumArg()
         # If -n, then -o is a filename prefix only, so is not opened
         if self.numArg:
@@ -48,9 +49,13 @@ class SignCommand(Command):
                 tack = Tack.create(self.keyfile.getPublicKey(), self.keyfile.getPrivateKey(), self.min_generation,
                             self.generation, self.expiration, self.certificate.key_sha256)
 
-                outputFile = open(self.outputFileName + "_%04d.pem" % x, "w")
-                outputFile.write(self.addPemComments(tack.serializeAsPem()))
-                outputFile.close()
+                try:
+                    outputFileName = self.outputFileName + "_%04d.pem" % x
+                    outputFile = open(outputFileName, "w")
+                    outputFile.write(self.addPemComments(tack.serializeAsPem()))
+                    outputFile.close()
+                except IOError:
+                    self.printError("Error opening output file: %s" % outputFileName)
 
                 if self.isVerbose():
                     self.writeCryptoVersion()                    
@@ -65,19 +70,25 @@ class SignCommand(Command):
             self.printError("-c missing (Certificate)")
 
         try:
+            if certificateFile == "-":
+                # Read as binary
+                certificateBytes = readStdinBinary()
+            else:
+                certificateBytes = bytearray(open(certificateFile, "rb").read())
+                
             inCert = TlsCertificate()
-            inCert.open(certificateFile)
+            inCert.open(certificateBytes)
             return inCert
         except SyntaxError:
             self.printError("Certificate malformed: %s" % certificateFile)
         except IOError:
             self.printError("Error opening certificate: %s" % certificateFile)
 
-    def _getExpiration(self):
+    def _getExpiration(self, certificate):
         expiration = self._getOptionValue("-e")
 
         if expiration is None and self._getNumArg() is None:
-            return int(math.ceil(self._getCertificate().notAfter / 60.0))
+            return int(math.ceil(certificate.notAfter / 60.0))
         else:
             try:
                 return Time.parseTimeArg(expiration)
@@ -141,8 +152,8 @@ class SignCommand(Command):
 
   sign -k KEY -c CERT
 
-  -k KEY             : Use this TACK key file
-  -c CERT            : Sign this certificate's public key
+  -k KEY             : Use this TACK key file ("-" for stdin)
+  -c CERT            : Sign this certificate's public key ("-" for stdin)
 
 Optional arguments:
   -v                 : Verbose
