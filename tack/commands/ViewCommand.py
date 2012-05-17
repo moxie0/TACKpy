@@ -18,27 +18,8 @@ class ViewCommand(Command):
         if len(self.argRemainder) > 1:
             self.printError("Can only view one file")
 
-
-    def _readFile(self, fname):
-        try:
-            # Read both binary (bytearray) and text (str) versions of the input
-            try:
-                if fname == "-":
-                    # Read as binary
-                    b = readStdinBinary()
-                else:      
-                    b = bytearray(open(fname, "rb").read())
-                s = bytesToStr(b, "ascii")
-            except UnicodeDecodeError:
-                # Python3 error, so it must be a binary file; not text
-                s = None
-
-            return s, b
-        except IOError:
-            self.printError("Error opening file: %s" % argv[0])
-
     def execute(self):
-        text, binary = self._readFile(self.argRemainder[0])
+        text, binary = self._readFileTextAndBinary(self.argRemainder[0])
         fileType     = None
 
         try:
@@ -64,15 +45,13 @@ class ViewCommand(Command):
                     return
                 elif decoder.containsEncoded( "CERTIFICATE"):
                     fileType = "Certificate"
-                    sslc = TlsCertificate()
-                    sslc.parsePem(text)
-                    sys.stdout.write(sslc.writeText())
+                    sslc = TlsCertificate.createFromPem(text)
+                    sys.stdout.write(str(sslc))
                     return
                     # Is it a certificate?
             try:
-                sslc = TlsCertificate()
-                sslc.parse(binary)
-                sys.stdout.write(sslc.writeText())
+                sslc = TlsCertificate(binary)
+                sys.stdout.write(str(sslc))
             except SyntaxError:
                 self.printError("Unrecognized file type")
         except SyntaxError as e:

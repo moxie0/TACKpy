@@ -76,8 +76,7 @@ class SignCommand(Command):
             else:
                 certificateBytes = bytearray(open(certificateFile, "rb").read())
                 
-            inCert = TlsCertificate()
-            inCert.open(certificateBytes)
+            inCert = TlsCertificate.createFromBytes(certificateBytes)
             return inCert
         except SyntaxError:
             self.printError("Certificate malformed: %s" % certificateFile)

@@ -37,22 +37,27 @@ class TackKeyFile(TlsStructure):
     LENGTH = 149 # length of keyfile in bytes
 
     def __init__(self, data=None, password=None):
+        if data is None:
+            return
+        
         TlsStructure.__init__(self, data)
-        if data is not None:
-            self.version = self.getInt(1)
+        if len(data) != TackKeyFile.LENGTH:
+            raise SyntaxError("Key File is the wrong size. Is %s and should be %s." % (len(data), TackKeyFile.LENGTH))
+            
+        self.version = self.getInt(1)
 
-            if self.version != 1:
-                raise SyntaxError("Bad version in Key File")
+        if self.version != 1:
+            raise SyntaxError("Bad version in Key File")
 
-            self.iter_count  = self.getInt(4)
-            self.salt        = self.getBytes(16)
-            self.ciphertext  = self.getBytes(32)
-            self.public_key  = ECPublicKey.new(self.getBytes(64))
-            self.mac         = self.getBytes(32)
+        self.iter_count  = self.getInt(4)
+        self.salt        = self.getBytes(16)
+        self.ciphertext  = self.getBytes(32)
+        self.public_key  = ECPublicKey.create(self.getBytes(64))
+        self.mac         = self.getBytes(32)
 
-            if password is not None:
-                rawPrivateKey = self._decrypt(password)
-                self.private_key = ECPrivateKey.new(rawPrivateKey, self.public_key.getRawKey())
+        if password is not None:
+            rawPrivateKey = self._decrypt(password)
+            self.private_key = ECPrivateKey.create(rawPrivateKey, self.public_key.getRawKey())
 
     @classmethod
     def create(cls, public_key, private_key, password):
@@ -89,7 +94,7 @@ class TackKeyFile(TlsStructure):
 
     def _encrypt(self, password):
         encKey, authKey = self._deriveKeys(password, self.salt, self.iter_count)
-        ciphertext      = AES.new(encKey, bytearray(16)).encrypt(self.private_key.getRawKey())
+        ciphertext      = AES.create(encKey, bytearray(16)).encrypt(self.private_key.getRawKey())
         macData         = ciphertext + self.public_key.getRawKey()
         mac             = Digest.HMAC_SHA256(authKey, macData)
         self.ciphertext = ciphertext
@@ -103,7 +108,7 @@ class TackKeyFile(TlsStructure):
         if not Util.constTimeCompare(calcMac, self.mac):
             raise InvalidPasswordException("Bad password")
 
-        return AES.new(encKey, bytearray(16)).decrypt(self.ciphertext)
+        return AES.create(encKey, bytearray(16)).decrypt(self.ciphertext)
 
     # Uses PBKDF2, then HMAC-SHA256 as PRF to derive independent 32-byte keys
     def _deriveKeys(self, password, salt, iter_count):

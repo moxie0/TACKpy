@@ -10,24 +10,25 @@ class Tack(TlsStructure):
     LENGTH =  166
 
     def __init__(self, data=None):
+        if data is None:
+            return
+
         TlsStructure.__init__(self, data)
+        if len(data) != Tack.LENGTH:
+            raise SyntaxError("TACK is the wrong size. Is %s and should be %s" % (len(data), Tack.LENGTH))        
 
-        if data is not None:
-            if len(data) != Tack.LENGTH:
-                raise SyntaxError("TACK is the wrong size. Is %s and should be %s" % (len(data), Tack.LENGTH))        
+        self.public_key     = ECPublicKey.create(self.getBytes(64))
+        self.min_generation = self.getInt(1)
+        self.generation     = self.getInt(1)
+        self.expiration     = self.getInt(4)
+        self.target_hash    = self.getBytes(32)
+        self.signature      = self.getBytes(64)
 
-            self.public_key     = ECPublicKey.new(self.getBytes(64))
-            self.min_generation = self.getInt(1)
-            self.generation     = self.getInt(1)
-            self.expiration     = self.getInt(4)
-            self.target_hash    = self.getBytes(32)
-            self.signature      = self.getBytes(64)
-
-            if self.generation < self.min_generation:
-                raise SyntaxError("Generation less than min_generation")
-                
-            if not self.verifySignature():
-                raise SyntaxError("TACK has bad signature")
+        if self.generation < self.min_generation:
+            raise SyntaxError("Generation less than min_generation")
+            
+        if not self.verifySignature():
+            raise SyntaxError("TACK has bad signature")
 
 
     @classmethod

@@ -11,61 +11,22 @@ class TlsCertificate:
 
     OID_TACK = bytearray(b"\x2B\x06\x01\x04\x01\x82\xB0\x34\x01")
 
-#    def __init__(self, data):
-#        if data is not None:
-#            self.serialized  = data
-#            self.certificate = X509.load_cert_string(data)
-#            self.notAfter    = time.mktime(self.certificate.get_not_after().get_datetime().timetuple())
-#            self.cert_sha256 = bytearray(base64.b16decode(self.certificate.get_fingerprint(md='sha256')))
-#            self.key_sha256  = Util.SHA256(self.certificate.get_pubkey().as_der())
-#            self.tackExt     = self._parseTackExtension(data)
-
-    def __init__(self):
-        self.key_sha256 = bytearray(32)
-        self.cert_sha256 = bytearray(32)
+    def __init__(self, data=None):
+        if data is None:
+            return
+        #self.key_sha256 = bytearray(32)
+        #self.cert_sha256 = bytearray(32)
         self.notAfter = 0
+        
         # Below values are populated for TACK certs
         self.tackExt = None
+        
         # Below values hold cert contents excluding TACK stuff
         self.preExtBytes = None
         self.extBytes = None
         self.postExtBytes = None
 
-    def create(self, tackExt = None):
-        self.tackExt = tackExt
-        self.preExtBytes = a2b_hex(
-            "a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
-            "3045441434b301e170d3031303730353138303534385a170d34343037303431383035"
-            "34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
-            "10500030e00300b0204010203050203010001")
-        # Below is BasicConstraints, saving space by omitting
-        #self.extBytes = binascii.a2b_hex(\
-        #"300c0603551d13040530030101ff")
-        self.extBytes = bytearray()
-        self.postExtBytes = a2b_hex(
-            "300d06092a864886f70d01010505000303003993")
-
-    def open(self, fileBytes):
-        # May raise SyntaxError
-        try:
-            fileStr = bytesToStr(fileBytes, "ascii") # UnicodeDecodeError
-            self.parsePem(fileStr) # SyntaxError
-            return
-        except (UnicodeDecodeError, SyntaxError) as e:
-            # File had non-ASCII chars in it, *OR*
-            # File did not PEM-decode
-            pass
-        self.parse(bytearray(fileBytes))  # SyntaxError
-
-    def matches(self, tack):
-        return self.key_sha256 == tack.target_hash
-
-    def parsePem(self, s):
-        b = PEMDecoder(s).decode("CERTIFICATE")
-        self.parse(b)
-
-    def parse(self, b):
-        p = ASN1Parser(b)
+        p = ASN1Parser(data)
 
         #Get the tbsCertificate
         tbsCertificateP = p.getChild(0)
@@ -92,7 +53,7 @@ class TlsCertificate:
             raise SyntaxError()
 
         # Get the hash values
-        self.cert_sha256 = Digest.SHA256(b)
+        self.cert_sha256 = Digest.SHA256(data)
         self.key_sha256 = Digest.SHA256(spkiP.getTotalBytes())
 
         # Check if this is a TACK certificate:
@@ -114,7 +75,7 @@ class TlsCertificate:
                 break
             x += 1
 
-        self.preExtBytes = b[versionP.offset : certFieldP.offset]
+        self.preExtBytes = data[versionP.offset : certFieldP.offset]
         self.extBytes = bytearray()
 
         # Iterate through extensions
@@ -135,14 +96,48 @@ class TlsCertificate:
                 self.tackExt = TackExtension(extFieldP.getChild(1).value)
             else:
             # Collect all non-TACK extensions:
-                self.extBytes += b[extFieldP.offset :\
+                self.extBytes += data[extFieldP.offset :\
                 extFieldP.offset + extFieldP.getTotalLength()]
             x += 1
 
             # Finish copying the tail of the certificate
-        self.postExtBytes = b[certFieldP.offset + certFieldP.getTotalLength():]
+        self.postExtBytes = data[certFieldP.offset + certFieldP.getTotalLength():]
 
-    def write(self):
+    @classmethod
+    def create(cls, tackExt = None):
+        tlsCert = cls()
+        tlsCert.tackExt = tackExt
+        tlsCert.preExtBytes = a2b_hex(
+            "a003020102020100300d06092a864886f70d0101050500300f310d300b06035504031"
+            "3045441434b301e170d3031303730353138303534385a170d34343037303431383035"
+            "34385a300f310d300b060355040313045441434b301f300d06092a864886f70d01010"
+            "10500030e00300b0204010203050203010001")
+        # Below is BasicConstraints, saving space by omitting
+        #self.extBytes = binascii.a2b_hex(\
+        #"300c0603551d13040530030101ff")
+        tlsCert.extBytes = bytearray()
+        tlsCert.postExtBytes = a2b_hex(
+            "300d06092a864886f70d01010505000303003993")
+
+        # Parse the cert to populate its key_sha256, cert_sha256, and notAfter
+        return cls(tlsCert.serialize())
+
+    @classmethod
+    def createFromBytes(cls, fileBytes):
+        # May raise SyntaxError
+        try:
+            fileStr = bytesToStr(fileBytes, "ascii") # UnicodeDecodeError
+            return cls.createFromPem(fileStr) # SyntaxError
+        except (UnicodeDecodeError, SyntaxError) as e:
+            # File had non-ASCII chars in it, *OR*
+            # File did not PEM-decode
+            return cls(bytearray(fileBytes))  # SyntaxError
+
+    @classmethod
+    def createFromPem(cls, s):
+        return cls(PEMDecoder(s).decode("CERTIFICATE"))
+
+    def serialize(self):
         b = bytearray(0)
         if self.tackExt:
             # type=SEQ,len=?,type=6,len=9(for OID),
@@ -165,10 +160,10 @@ class TlsCertificate:
         b = bytearray([0x30]) + asn1Length(len(b)) + b
         return b
 
-    def writePem(self):
-        b = self.write()
-        return PEMEncoder(b).encode("CERTIFICATE")
-    def writeText(self):
+    def serializeAsPem(self):
+        return PEMEncoder(self.serialize()).encode("CERTIFICATE")
+
+    def __str__(self):
         s =\
         """key_sha256     = %s
 notAfter       = %s
@@ -178,3 +173,6 @@ notAfter       = %s
         if self.tackExt:
             s += "\n" + str(self.tackExt)
         return s
+
+    def matches(self, tack):
+        return self.key_sha256 == tack.target_hash

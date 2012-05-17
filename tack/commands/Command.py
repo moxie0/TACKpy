@@ -5,7 +5,7 @@ import time
 from tack.structures.TackKeyFile import TackKeyFile
 from tack.util.Time import Time
 from tack.crypto.openssl.OpenSSL import openssl as o
-from tack.compat import bytesToStr
+from tack.compat import bytesToStr, readStdinBinary
 from tack.version import __version__
 from tack.InvalidPasswordException import InvalidPasswordException
 
@@ -108,6 +108,24 @@ class Command:
         for option, value in self.values:
             if option == flag:
                 return True
+
+    def _readFileTextAndBinary(self, fname):
+        try:
+            # Read both binary (bytearray) and text (str) versions of the input
+            try:
+                if fname == "-":
+                    # Read as binary
+                    binary = readStdinBinary()
+                else:      
+                    binary = bytearray(open(fname, "rb").read())
+                text = bytesToStr(binary, "ascii")
+            except UnicodeDecodeError:
+                # So it must be a binary file, not text
+                text = None
+
+            return text, binary
+        except IOError:
+            self.printError("Error opening file: %s" % argv[0])
 
     def printError(self, error):
         """Print error message and exit"""

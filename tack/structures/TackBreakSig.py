@@ -8,17 +8,18 @@ class TackBreakSig(TlsStructure):
     LENGTH = 128
 
     def __init__(self, data=None):
+        if data is None:
+            return
+
         TlsStructure.__init__(self, data)
+        if len(data) != TackBreakSig.LENGTH:
+            raise SyntaxError("Break signature is the wrong size. Is %s and should be %s." % (len(data), TackBreakSig.LENGTH))
 
-        if data is not None:
-            if len(data) != TackBreakSig.LENGTH:
-                raise SyntaxError("Break signature is the wrong size. Is %s and should be %s." % (len(data), TackBreakSig.LENGTH))
-
-            self.public_key = ECPublicKey.new(self.getBytes(64))
-            self.signature  = self.getBytes(64)
-                
-            if not self.verifySignature():
-                raise SyntaxError("TACK_Break_Sig has bad signature")
+        self.public_key = ECPublicKey.create(self.getBytes(64))
+        self.signature  = self.getBytes(64)
+            
+        if not self.verifySignature():
+            raise SyntaxError("TACK_Break_Sig has bad signature")
 
 
     @classmethod

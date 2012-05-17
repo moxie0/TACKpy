@@ -13,21 +13,16 @@ class CertificateCommand(Command):
         Command.__init__(self, argv, "oib", "v")
 
         self.outputFile, self.outputFileName = self.getOutputFile()
-        self.inputTack                       = self._getInputTack()
-        self.inputCertificate                = self._getInputCertificate()
+        (self.inputTack, self.inputCertificate) = self._getInputFile()
         self.breakSignatures                 = self._getBreakSignatures()
-
-        if self.inputTack is None and self.inputCertificate is None:
-            self.printError("-i missing")
 
     def execute(self):
         if self.inputTack is not None:
             tackExtension = TackExtension.create(self.inputTack, self.breakSignatures,
                                                     TackActivation.DISABLED)
-            tlsCertificate = TlsCertificate()
-            tlsCertificate.create(tackExtension)
 
-            self.outputFile.write(tlsCertificate.writePem())
+            tlsCertificate = TlsCertificate.create(tackExtension)
+            self.outputFile.write(tlsCertificate.serializeAsPem())
 
             if self.isVerbose():
                 sys.stderr.write(str(tackExtension) + "\n")
@@ -48,6 +43,8 @@ class CertificateCommand(Command):
 
             if self.isVerbose():
                 sys.stderr.write(self.inputCertificate.writeText())
+        else:
+            assert(False)
 
     def _getBreakSignatures(self):
         fileName = self._getOptionValue("-b")
@@ -60,45 +57,28 @@ class CertificateCommand(Command):
         except IOError:
             self.printError("Error opening break signature: %s" % fileName)
 
-        return TackBreakSig.createFromPemList(contents)
-
-    def _getInputTack(self):
-        contents = self._getInputFileContents()
-
-        if contents is None:
-            return None
-
-        if PEMDecoder(contents).containsEncoded("TACK"):
-            return Tack.createFromPem(contents)
-
-        return None
-
-    def _getInputCertificate(self):
-        contents = self._getInputFileContents()
-
-        if contents is None:
-            return None
-
-        if PEMDecoder(contents).containsEncoded("CERTIFICATE"):
-            certificate = TlsCertificate()
-            certificateName = self._getOptionValue("-i")
-            try:
-                certificate.open(open(certificateName, "rb").read())
-            except IOError:
-                self.printError("Error opening certificate: %s" % certificateName)
-            return certificate
-
-    def _getInputFileContents(self):
+    def _getInputFile(self):
         fileName = self._getOptionValue("-i")
-
         if fileName is None:
-            return None
-        
+            self.printError("-i missing")
         try:
-            return open(fileName, "r").read()
+
+            text, binary = self._readFileTextAndBinary(fileName)
+            if text:
+                pem = PEMDecoder(text)
+                if pem.containsEncoded("TACK"):
+                    return (Tack.createFromPem(text), None)
+                elif pem.containsEncoded("CERTIFICATE"):
+                    return (None, TlsCertificate.createFromPem(text))
+                else:
+                    self.printError("Unrecognized input file: %s" % fileName)
+            else:
+                return (None, TlsCertificate(binary))
+
         except IOError:
             self.printError("Error opening input file: %s" % fileName)
-
+        except SyntaxError:
+            self.printError("Error parsing input file: %s" % fileName)
 
     @staticmethod
     def printHelp():

@@ -8,17 +8,19 @@ from tack.tls.TlsStructureWriter import TlsStructureWriter
 class TackExtension(TlsStructure):
 
     def __init__(self, data=None):
+        if data is None:
+            return
+
         TlsStructure.__init__(self, data)
-        if data is not None:
-            self.tack           = self._parseTack()
-            self.break_sigs     = self._parseBreakSigs()
-            self.pin_activation = self.getInt(1)
+        self.tack           = self._parseTack()
+        self.break_sigs     = self._parseBreakSigs()
+        self.pin_activation = self.getInt(1)
 
-            if self.pin_activation not in TackActivation.ALL:
-                raise SyntaxError("Bad pin_activation value")
+        if self.pin_activation not in TackActivation.ALL:
+            raise SyntaxError("Bad pin_activation value")
 
-            if self.index != len(data):
-                raise SyntaxError("Excess bytes in TACK_Extension")
+        if self.index != len(data):
+            raise SyntaxError("Excess bytes in TACK_Extension")
 
     @classmethod
     def create(cls, tack, break_sigs, pin_activation):

@@ -5,7 +5,7 @@ from .openssl.OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
 class ECPublicKey:
 
     @staticmethod
-    def new(rawPublicKey):
+    def create(rawPublicKey):
         if o.enabled:
             return OpenSSL_ECPublicKey(rawPublicKey)
         else:

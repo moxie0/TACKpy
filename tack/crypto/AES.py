@@ -5,7 +5,7 @@ from .python.Python_AES import Python_AES
 class AES:
 
     @staticmethod
-    def new(key, IV):
+    def create(key, IV):
         if openssl.enabled:
             return OpenSSL_AES(key, IV)
         else:
