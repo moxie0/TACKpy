@@ -14,11 +14,11 @@ import shutil
 shutil.copyfile("tack.py", "tack/tack")
 
 setup(  name="tackpy",
-        version="0.9.6",
+        version="0.9.7",
         author="Trevor Perrin",
         author_email="tackpy@trevp.net",
         url="https://github.com/trevp/TACKpy",
-        description="TACKpy implements TACK in python",
+        description="Tackpy implements TACK in python",
         license="public domain",
         scripts=["tack/tack"],
         packages=["tack", "tack/commands", "tack/crypto", "tack/crypto/openssl",

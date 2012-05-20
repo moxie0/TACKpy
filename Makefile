@@ -23,7 +23,7 @@ clean:
 
 # Variables for testing
 TESTDIR = testoutput
-EXEC = python3 ./tack.py
+EXEC = ~/Downloads/Python-2.6.7/python.exe ./tack.py
 CERT1 = ./testdata/serverX509Cert.pem
 CERT2 = ./testdata/serverX509Cert.der
 
@@ -31,7 +31,6 @@ CERT2 = ./testdata/serverX509Cert.der
 test:
 	rm -rf $(TESTDIR)
 	mkdir $(TESTDIR)
-	#$(EXEC) test
 	$(EXEC) genkey -p asdf > $(TESTDIR)/TACK_Key1.pem 
 	$(EXEC) genkey -x -p asdf > $(TESTDIR)/TACK_Key2.pem 
 	$(EXEC) genkey -p asdf -o $(TESTDIR)/TACK_Key3.pem 
