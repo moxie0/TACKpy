@@ -19,7 +19,7 @@ class HelpCommand(Command):
 
     COMMANDS = {"genkey" : GenerateKeyCommand, "sign" : SignCommand,
                 "break" : BreakCommand, "view" : ViewCommand,
-                "tackcert" : CertificateCommand}
+                "cert" : CertificateCommand}
 
     def __init__(self, argv):
         Command.__init__(self, argv, "", "", allowArgRemainder=True)

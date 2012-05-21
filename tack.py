@@ -26,11 +26,12 @@ if __name__ == '__main__':
         SignCommand(sys.argv[2:]).execute()
     elif sys.argv[1] == "break"[:len(sys.argv[1])]:
         BreakCommand(sys.argv[2:]).execute()
-    elif sys.argv[1] == "tackcert"[:len(sys.argv[1])]:
-        CertificateCommand(sys.argv[2:]).execute()
     elif sys.argv[1] == "view"[:len(sys.argv[1])]:
         ViewCommand(sys.argv[2:]).execute()
     elif sys.argv[1] == "help"[:len(sys.argv[1])]:
         HelpCommand(sys.argv[2:]).execute()
+    # Special hidden command:
+    elif sys.argv[1] == "cert"[:len(sys.argv[1])]:
+        CertificateCommand(sys.argv[2:]).execute()
     else:
         HelpCommand.printGeneralUsage("Unknown command: %s" % sys.argv[1])
