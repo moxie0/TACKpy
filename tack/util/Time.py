@@ -21,25 +21,11 @@ class Time:
             s = time.strftime("%Y-%m-%dT%H:%MZ", t)
         return s
 
-    # u in minutes
-    @staticmethod
-    def durationToStr(u):
-        s = ""
-        if u >= (1440): # 1440 minutes per day
-            s += "%dd" % (u//1440)
-            u %= 1440
-        if u >= (60): # 60 minutes per hour
-            s += "%dh" % (u//60)
-            u %= 60
-        if u>0 or not s:
-            s += "%dm" % u
-        return s
-
     @staticmethod
     def parseTimeArg(arg):
-        # First, see if they specified time as a duration
+        # First, see if they specified time as a delta
         try:
-            mins = Time.parseDurationArg(arg)
+            mins = Time.parseDeltaArg(arg)
             return int(math.ceil(time.time() / 60.0)) + mins
         except SyntaxError:
             pass
@@ -60,7 +46,7 @@ class Time:
             raise SyntaxError(
     '''Invalid time format, use e.g. "%s" (current time)
     or some prefix, such as: "%sZ", "%sZ", or "%sZ",
-    *OR* some duration, such as "5m", "30d", "1d12h5m", etc."''' %
+    *OR* some delta, such as "5m", "30d", "1d12h5m", etc."''' %
                 (s, s[:13], s[:10], s[:4]))
         u = int(calendar.timegm(t)//60)
         if u < 0:
@@ -68,7 +54,7 @@ class Time:
         return u
 
     @staticmethod
-    def parseDurationArg(arg):
+    def parseDeltaArg(arg):
         arg = arg.upper()
         foundSomething = False
         try:

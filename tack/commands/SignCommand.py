@@ -110,7 +110,7 @@ class SignCommand(Command):
         try:
             leftArg, rightArg = numArgRaw.split("@") # could raise ValueError
             numTacks = int(leftArg) # could raise ValueError
-            interval = Time.parseDurationArg(rightArg) # SyntaxError
+            interval = Time.parseDeltaArg(rightArg) # SyntaxError
             if numTacks < 1 or numTacks >= 10000:
                 raise ValueError()
             return numTacks, interval

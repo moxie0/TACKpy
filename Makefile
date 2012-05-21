@@ -23,7 +23,7 @@ clean:
 
 # Variables for testing
 TESTDIR = testoutput
-EXEC = ~/Downloads/Python-2.6.7/python.exe ./tack.py
+EXEC = ./tack.py
 CERT1 = ./testdata/serverX509Cert.pem
 CERT2 = ./testdata/serverX509Cert.der
 
