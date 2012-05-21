@@ -388,20 +388,3 @@ def encrypt(key, block):
 
 def decrypt(key, block):
     return rijndael(key, len(block)).decrypt(block)
-
-def testRijndael():
-    print("Testing RIJNDAEL")    
-    def t(kl, bl):
-        b = bytearray(b'b') * bl
-        r = rijndael(bytearray(b'a') * kl, bl)
-        assert r.decrypt(r.encrypt(b)) == b
-    t(16, 16)
-    t(16, 24)
-    t(16, 32)
-    t(24, 16)
-    t(24, 24)
-    t(24, 32)
-    t(32, 16)
-    t(32, 24)
-    t(32, 32)
-    return 1

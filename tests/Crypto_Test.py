@@ -10,8 +10,6 @@ from tack.crypto.AES import AES
 from tack.crypto.ASN1 import asn1Length, toAsn1IntBytes, fromAsn1IntBytes
 from tack.crypto.ECGenerator import ECGenerator
 
-import binascii
-
 class CryptoTest(unittest.TestCase):
 
     def test_AES(self):
