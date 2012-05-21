@@ -86,8 +86,8 @@ part of the TLS connection.
 
 This break signature must remain published at the hostname until all pins
 between the hostname and the old TACK key have become inactive (30 days at
-most; this is exactly the same as the "waiting period" described in previous
-section).
+most; this is exactly the same as the "waiting period" described in the
+previous section).
 
 A break signature from a TACK key causes any client who encounters it to
 discard all pins involving the TACK key. Thus, once a break signature is
@@ -107,34 +107,35 @@ Advanced uses
 
 Revoking older generations of a TACK 
 -------------------------------------
-If a server's TLS public key (not its TACK key) has been compromised and you
-are switching to a new TLS key, you may revoke the TACK for the old key by "-m
+If a server's TLS key (not its TACK key) has been compromised and you are
+switching to a new TLS key, you may revoke the TACK for the old key by "-m
 <min_generation>" in the "sign" command. <min_generation> is a number from
 0-255 that is larger than the generation of the TACK you wish to revoke.
 
-Clients who encounter the new TACK will reject older generations from then on.
-Prior to publishing a new <min_generation> you should replace all your TACKs
-with this generation number (or higher) by signing with "-g <generation>".
+Clients who encounter the new TACK will reject older generation TACKs from
+then on. Prior to publishing a new <min_generation> you should replace all
+your TACKs with this generation number (or higher) by signing with "-g
+<generation>".
 
-For example: By default TACK signatures have generation=0, so the first time
-you use this capability you will want to set "-m1" after pushing out a new set
-of TACKs signed with "-g1". If you use it a second time, you will set "-m2",
-and so on.
+For example: By default TACKs have generation=0, so the first time you use
+this capability you will want to set "-m1" after pushing out a new set of
+TACKs signed with "-g1". If you use it a second time, you will set "-m2", and
+so on.
 
 Security Consideration: This only provides protection if clients receive the
-new min_generation. For a more robust defense against SSL key compromise,
+new min_generation. For a more robust defense against TLS key compromise,
 consider using short-lived TACKs.
 
 Short-lived TACKs
 ------------------
 Every TACK contains a signature covering a TLS public key. The TLS key is
-contained in a certificate. By default the TACK signature is set to expire at
-the same time as the certificate, and must be replaced by an updated TACK at
-that point.
+contained in a certificate. By default the TACK is set to expire at the same
+time as the certificate, and must be replaced by an updated TACK at that
+point.
 
-If you shorten the TACK's expiration time, then a compromised SSL certificate
-will become unusable to an attacker once the TACK expires. For example, every
-day at midnight you could deploy a new TACK that expires within 48 hours.
+If you shorten the TACK's expiration time, then a compromised TLS key will
+become unusable to an attacker once the TACK expires. For example, every day
+at midnight you could deploy a new TACK that expires within 48 hours.
 
 A good way to handle short-lived TACKs is to generate a batch of them and
 store the TACKs on a secure system that distributes them to servers. This way,
