@@ -7,7 +7,6 @@
 from tack.structures.Tack import Tack
 from tack.structures.TackActivation import TackActivation
 from tack.structures.TackBreakSig import TackBreakSig
-from tack.structures.TackActivation import TackActivation
 from tack.tls.TlsStructure import TlsStructure
 from tack.tls.TlsStructureWriter import TlsStructureWriter
 

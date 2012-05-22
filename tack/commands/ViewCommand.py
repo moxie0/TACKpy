@@ -5,9 +5,7 @@
 # See the LICENSE file for legal information regarding use of this file.
 
 import sys
-from tack.compat import bytesToStr
 from tack.commands.Command import Command
-from tack.compat import readStdinBinary
 from tack.structures.Tack import Tack
 from tack.structures.TackKeyFile import TackKeyFile
 from tack.structures.TackBreakSig import TackBreakSig

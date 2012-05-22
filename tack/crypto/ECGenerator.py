@@ -4,9 +4,9 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-from .openssl.OpenSSL_ECGenerator import OpenSSL_ECGenerator
-from .python.Python_ECGenerator import Python_ECGenerator
-from .openssl.OpenSSL import openssl as o
+from tack.crypto.openssl.OpenSSL_ECGenerator import OpenSSL_ECGenerator
+from tack.crypto.python.Python_ECGenerator import Python_ECGenerator
+from tack.crypto.openssl.OpenSSL import openssl as o
 
 class ECGenerator:
     

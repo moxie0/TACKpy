@@ -131,7 +131,7 @@ class Command:
 
             return text, binary
         except IOError:
-            self.printError("Error opening file: %s" % argv[0])
+            self.printError("Error opening file: %s" % fname)
 
     def printError(self, error):
         """Print error message and exit"""

@@ -5,7 +5,7 @@
 # See the LICENSE file for legal information regarding use of this file.
 # Also see Peter Pearson's statement below
 
-from .numbertheory import *
+from tack.crypto.python.numbertheory import *
 
 ################ ELLIPTIC CURVE ###
 
@@ -104,7 +104,7 @@ class Point( object ):
 
     p = self.__curve.p()
 
-    l = ( ( other.__y - self.__y ) * \
+    l = ( ( other.__y - self.__y ) *
           inverse_mod( other.__x - self.__x, p ) ) % p
 
     x3 = ( l * l - self.__x - other.__x ) % p
@@ -160,7 +160,7 @@ class Point( object ):
     p = self.__curve.p()
     a = self.__curve.a()
 
-    l = ( ( 3 * self.__x * self.__x + a ) * \
+    l = ( ( 3 * self.__x * self.__x + a ) *
           inverse_mod( 2 * self.__y, p ) ) % p
 
     x3 = ( l * l - 2 * self.__x ) % p

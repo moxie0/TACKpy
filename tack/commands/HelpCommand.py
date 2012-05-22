@@ -5,7 +5,6 @@
 # See the LICENSE file for legal information regarding use of this file.
 
 import sys
-from tack.compat import bytesToStr
 from tack.commands.CertificateCommand import CertificateCommand
 from tack.version import __version__
 from tack.commands.BreakCommand import BreakCommand
@@ -13,7 +12,6 @@ from tack.commands.Command import Command
 from tack.commands.GenerateKeyCommand import GenerateKeyCommand
 from tack.commands.SignCommand import SignCommand
 from tack.commands.ViewCommand import ViewCommand
-from tack.crypto.openssl.OpenSSL import openssl as o
 
 class HelpCommand(Command):
 

@@ -5,7 +5,6 @@
 # See the LICENSE file for legal information regarding use of this file.
 
 from tack.compat import b2a_base64
-import sys
 
 class PEMEncoder:
 

@@ -37,7 +37,6 @@ If any strings are of the wrong length a ValueError is thrown
 # deleting all the comments and renaming all the variables
 
 import copy
-import string
 
 
 

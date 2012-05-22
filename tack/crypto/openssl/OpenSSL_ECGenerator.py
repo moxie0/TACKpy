@@ -4,20 +4,18 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-import math, ctypes
-from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
-from .OpenSSL_ECPrivateKey import OpenSSL_ECPrivateKey
-from tack.crypto.python.Python_ECPrivateKey import Python_ECPrivateKey
-from .OpenSSL import openssl as o
-from .OpenSSL import bytesToC, cToBytes
+from tack.crypto.openssl.OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
+from tack.crypto.openssl.OpenSSL_ECPrivateKey import OpenSSL_ECPrivateKey
+from tack.crypto.openssl.OpenSSL import openssl as o
+from tack.crypto.openssl.OpenSSL import bytesToC, cToBytes
 
 class OpenSSL_ECGenerator:
     
     @staticmethod
     def generateECKeyPair():
-        try:
-            ec_key, ec_group = None, None
+        ec_key, ec_group = None, None
 
+        try:
             # Generate the new key
             ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid(b"prime256v1"))
             o.EC_KEY_generate_key(ec_key)
@@ -47,5 +45,7 @@ class OpenSSL_ECGenerator:
 
             return (pub, priv)
         finally:
-            o.EC_KEY_free(ec_key)
-            o.EC_GROUP_free(ec_group)
+            if ec_key:
+                o.EC_KEY_free(ec_key)
+            if ec_group:
+                o.EC_GROUP_free(ec_group)

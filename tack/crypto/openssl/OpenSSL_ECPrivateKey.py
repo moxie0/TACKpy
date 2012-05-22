@@ -4,12 +4,10 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-import ctypes
 from tack.crypto.Digest import Digest
-from .OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
-from tack.crypto.python.Python_ECPublicKey import Python_ECPublicKey
-from .OpenSSL import openssl as o
-from .OpenSSL import bytesToC, cToBytes
+from tack.crypto.openssl.OpenSSL_ECPublicKey import OpenSSL_ECPublicKey
+from tack.crypto.openssl.OpenSSL import openssl as o
+from tack.crypto.openssl.OpenSSL import bytesToC, cToBytes
 
 
 class OpenSSL_ECPrivateKey:
@@ -29,10 +27,10 @@ class OpenSSL_ECPrivateKey:
     def __del__(self):
         o.EC_KEY_free(self.ec_key)
 
-    def sign(self, data):        
-        try:
-            ecdsa_sig = None
+    def sign(self, data):
+        ecdsa_sig = None
 
+        try:
             # Hash and apply ECDSA
             hashBuf = bytesToC(Digest.SHA256(data))
             ecdsa_sig = o.ECDSA_do_sign(hashBuf, 32, self.ec_key)
@@ -49,7 +47,8 @@ class OpenSSL_ECPrivateKey:
             sigBytes = rBytes + sBytes   
             assert(len(sigBytes) == 64)
         finally:
-            o.ECDSA_SIG_free(ecdsa_sig)
+            if ecdsa_sig:
+                o.ECDSA_SIG_free(ecdsa_sig)
 
         # Double-check the signature before returning
         assert(OpenSSL_ECPublicKey(self.rawPublicKey).verify(data, sigBytes))
@@ -59,9 +58,9 @@ class OpenSSL_ECPrivateKey:
         return self.rawPrivateKey
         
     def _constructEcFromRawKey(self, rawPrivateKey):
+        privBignum, ec_key = None, None
+
         try:
-            privBignum, ec_key = None, None
-            
             ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid(b"prime256v1"))
             privBuf = bytesToC(rawPrivateKey)
             privBignum = o.BN_new()
@@ -69,8 +68,11 @@ class OpenSSL_ECPrivateKey:
             o.EC_KEY_set_private_key(ec_key, privBignum)            
             return o.EC_KEY_dup(ec_key)
         finally:
-            o.BN_free(privBignum)
-            o.EC_KEY_free(ec_key)
+            if privBignum:
+                o.BN_free(privBignum)
+
+            if ec_key:
+                o.EC_KEY_free(ec_key)
 
 
 

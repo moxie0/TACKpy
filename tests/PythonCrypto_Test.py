@@ -90,7 +90,7 @@ class PythonCryptoTest(unittest.TestCase):
           calculated = square_root_mod_prime( sq, p )
           if ( calculated * calculated ) % p != sq:
             error_tally = error_tally + 1
-            print("Failed to find %d as sqrt( %d ) mod %d. Said %d." % \
+            print("Failed to find %d as sqrt( %d ) mod %d. Said %d." %
                   ( root, sq, p, calculated ))
 
         for nonsquare in range( 0, p ):
@@ -101,7 +101,7 @@ class PythonCryptoTest(unittest.TestCase):
               pass
             else:
               error_tally = error_tally + 1
-              print("Failed to report no root for sqrt( %d ) mod %d." % \
+              print("Failed to report no root for sqrt( %d ) mod %d." %
                     ( nonsquare, p ))
 
       # Test the jacobi function:
@@ -272,7 +272,7 @@ class PythonCryptoTest(unittest.TestCase):
           #      ( got, expected ))
           pass
         else:
-          print("*** Signature test failed: got %s, expected %s." % \
+          print("*** Signature test failed: got %s, expected %s." %
                 ( got, expected ))
           assert()
 
@@ -322,29 +322,29 @@ class PythonCryptoTest(unittest.TestCase):
 
       #print("Testing point validity, as per ECDSAVS.pdf B.2.2:")
 
-      test_point_validity( \
-        p192, \
-        0xcd6d0f029a023e9aaca429615b8f577abee685d8257cc83a, \
-        0x00019c410987680e9fb6c0b6ecc01d9a2647c8bae27721bacdfc, \
-        False )
+      test_point_validity(
+          p192,
+          0xcd6d0f029a023e9aaca429615b8f577abee685d8257cc83a,
+          0x00019c410987680e9fb6c0b6ecc01d9a2647c8bae27721bacdfc,
+          False )
 
       test_point_validity(
-        p192, \
-        0x00017f2fce203639e9eaf9fb50b81fc32776b30e3b02af16c73b, \
-        0x95da95c5e72dd48e229d4748d4eee658a9a54111b23b2adb, \
-        False )
+        p192,
+          0x00017f2fce203639e9eaf9fb50b81fc32776b30e3b02af16c73b,
+          0x95da95c5e72dd48e229d4748d4eee658a9a54111b23b2adb,
+          False )
 
       test_point_validity(
-        p192, \
-        0x4f77f8bc7fccbadd5760f4938746d5f253ee2168c1cf2792, \
-        0x000147156ff824d131629739817edb197717c41aab5c2a70f0f6, \
-        False )
+        p192,
+          0x4f77f8bc7fccbadd5760f4938746d5f253ee2168c1cf2792,
+          0x000147156ff824d131629739817edb197717c41aab5c2a70f0f6,
+          False )
 
       test_point_validity(
-        p192, \
-        0xc58d61f88d905293bcd4cd0080bcb1b7f811f2ffa41979f6, \
-        0x8804dc7a7c4c7f8b5d437f5156f3312ca7d6de8a0e11867f, \
-        True )
+        p192,
+          0xc58d61f88d905293bcd4cd0080bcb1b7f811f2ffa41979f6,
+          0x8804dc7a7c4c7f8b5d437f5156f3312ca7d6de8a0e11867f,
+          True )
       """
       test_point_validity(
         p192, \

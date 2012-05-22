@@ -3,12 +3,10 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-import ctypes
 from tack.compat import b2a_base32
-from tack.compat import bytesToStr
 from tack.crypto.Digest import Digest
-from .ecdsa import Public_key, Point, generator_256, Signature
-from .cryptomath import bytesToNumber, numberToBytes
+from tack.crypto.python.ecdsa import Public_key, Point, generator_256, Signature
+from tack.crypto.python.cryptomath import bytesToNumber
 
 class Python_ECPublicKey:
 

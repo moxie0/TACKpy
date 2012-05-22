@@ -3,7 +3,7 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-import math, hashlib, hmac
+import math
 
 def bytesToNumber(bytes):
     "Convert a sequence of bytes (eg bytearray) into integer."

@@ -5,8 +5,8 @@
 # See the LICENSE file for legal information regarding use of this file.
 # Also see Peter Pearson's statement below
 
-from .numbertheory import *
-from .ellipticcurve import *
+from tack.crypto.python.numbertheory import *
+from tack.crypto.python.ellipticcurve import *
 from tack.compat import compat26Str
 
 ################ ECDSA ###
@@ -149,7 +149,7 @@ class Private_key( object ):
     p1 = k * G
     r = p1.x()
     if r == 0: raise RuntimeError("amazingly unlucky random number r")
-    s = ( inverse_mod( k, n ) * \
+    s = ( inverse_mod( k, n ) *
           ( hash + ( self.secret_multiplier * r ) % n ) ) % n
     if s == 0: raise RuntimeError("amazingly unlucky random number s")
     return Signature( r, s )

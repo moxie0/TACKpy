@@ -4,11 +4,10 @@
 #
 # See the LICENSE file for legal information regarding use of this file.
 
-import ctypes, sys
 from tack.compat import b2a_base32
 from tack.crypto.Digest import Digest
-from .OpenSSL import openssl as o
-from .OpenSSL import bytesToC, cToBytes
+from tack.crypto.openssl.OpenSSL import openssl as o
+from tack.crypto.openssl.OpenSSL import bytesToC
 
 
 class OpenSSL_ECPublicKey:
@@ -29,9 +28,9 @@ class OpenSSL_ECPublicKey:
 
     def verify(self, data, signature):
         assert(len(signature) == 64)
-        try:
-            ecdsa_sig = None
+        ecdsa_sig = None
 
+        try:
             # Create ECDSA_SIG
             ecdsa_sig = o.ECDSA_SIG_new()
             rBuf = bytesToC(signature[ : 32])
@@ -49,7 +48,8 @@ class OpenSSL_ECPublicKey:
             else:
                 assert(False)
         finally:
-            o.ECDSA_SIG_free(ecdsa_sig)
+            if ecdsa_sig:
+                o.ECDSA_SIG_free(ecdsa_sig)
 
     def getRawKey(self):
         return self.rawPublicKey
@@ -61,9 +61,9 @@ class OpenSSL_ECPublicKey:
         return "%s.%s.%s.%s.%s" % (s[:5],s[5:10],s[10:15],s[15:20],s[20:25])
 
     def _constructEcFromRawKey(self, rawPublicKey):
-        try:
-            ec_key, ec_group, ec_point = None, None, None
+        ec_key, ec_group, ec_point = None, None, None
 
+        try:
             ec_key = o.EC_KEY_new_by_curve_name(o.OBJ_txt2nid(b"prime256v1"))
             ec_group = o.EC_GROUP_new_by_curve_name(o.OBJ_txt2nid(b"prime256v1"))
             ec_point = o.EC_POINT_new(ec_group)
@@ -74,9 +74,14 @@ class OpenSSL_ECPublicKey:
             o.EC_KEY_set_public_key(ec_key, ec_point)
             return o.EC_KEY_dup(ec_key)
         finally:
-            o.EC_KEY_free(ec_key)
-            o.EC_KEY_free(ec_group)
-            o.EC_POINT_free(ec_point)
+            if ec_key:
+                o.EC_KEY_free(ec_key)
+
+            if ec_group:
+                o.EC_KEY_free(ec_group)
+
+            if ec_point:
+                o.EC_POINT_free(ec_point)
 
     def __str__(self):
         return self.getFingerprint()

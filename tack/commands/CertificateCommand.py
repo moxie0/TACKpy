@@ -8,7 +8,6 @@ import sys
 from tack.commands.Command import Command
 from tack.structures.Tack import Tack
 from tack.structures.TackActivation import TackActivation
-from tack.structures.TackBreakSig import TackBreakSig
 from tack.structures.TackExtension import TackExtension
 from tack.tls.TlsCertificate import TlsCertificate
 from tack.util.PEMDecoder import PEMDecoder
@@ -48,7 +47,7 @@ class CertificateCommand(Command):
             self.outputFile.write(s)
 
             if self.isVerbose():
-                sys.stderr.write(self.inputCertificate.writeText())
+                sys.stderr.write(str(self.inputCertificate))
         else:
             assert(False)
 
