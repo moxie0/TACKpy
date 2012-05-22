@@ -21,10 +21,12 @@ setup(  name="tackpy",
         description="Tackpy implements TACK in python",
         license="public domain",
         scripts=["tack/tack"],
-        packages=["tack", "tack/commands", "tack/crypto", "tack/crypto/openssl",
-                "tack/crypto/python", "tack/structures", "tack/tls", "tack/util"],
+        packages=["tack", "tack/commands", 
+                    "tack/crypto", "tack/crypto/openssl", "tack/crypto/python", 
+                    "tack/structures", "tack/tls", "tack/util"],
         data_files=[("", ["LICENSE", "tack.py", "Makefile"]),
-                    ("testdata", ["testdata/serverX509Cert.pem", "testdata/serverX509Cert.der"])]
+                    ("testdata", ["testdata/serverX509Cert.pem", 
+                                    "testdata/serverX509Cert.der"])]
         )
 
 print "Cleaning up..."

@@ -31,7 +31,7 @@ class CertificateCommand(Command):
             self.outputFile.write(tlsCertificate.serializeAsPem())
 
             if self.isVerbose():
-                sys.stderr.write(str(tackExtension) + "\n")
+                sys.stderr.write(str(tackExtension))
 
         elif self.inputCertificate is not None:
             if self.breakSignatures is not None:
@@ -94,7 +94,7 @@ class CertificateCommand(Command):
 (Alternatively, if input is a TACK certificate, writes out the TACK and/or
 Break Signatures as PEM files).
 
-tackcert -i (TACK or CERT)
+cert -i (TACK or CERT)
 
 Optional arguments:
   -v                 : Verbose
