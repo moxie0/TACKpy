@@ -6,11 +6,16 @@
 
 import unittest
 from tack.compat import a2b_hex
+from tack.crypto.openssl.OpenSSL import openssl
 from tack.crypto.AES import AES
 from tack.crypto.ASN1 import asn1Length, toAsn1IntBytes, fromAsn1IntBytes
 from tack.crypto.ECGenerator import ECGenerator
 
 class CryptoTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        openssl.initialize()
 
     def test_AES(self):
         key = a2b_hex("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
